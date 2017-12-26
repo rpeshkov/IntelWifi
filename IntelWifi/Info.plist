@@ -19,10 +19,29 @@
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>IOKitPersonalities</key>
-	<dict/>
+	<dict>
+		<key>IntelWifi</key>
+		<dict>
+			<key>CFBundleIdentifier</key>
+			<string>net.rpeshkov.IntelWifi</string>
+			<key>IOPCIPrimaryMatch</key>
+			<string>0x08968086</string>
+			<key>IOClass</key>
+			<string>IntelWifi</string>
+			<key>IOProviderClass</key>
+			<string>IOPCIDevice</string>
+		</dict>
+	</dict>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2017 Roman Peshkov. All rights reserved.</string>
-	<key>OSBundleLibraries</key>
-	<dict/>
+    <key>OSBundleLibraries</key>
+    <dict>
+        <key>com.apple.iokit.IOPCIFamily</key>
+        <string>2.9</string>
+        <key>com.apple.kpi.iokit</key>
+        <string>16.7</string>
+        <key>com.apple.kpi.libkern</key>
+        <string>16.7</string>
+    </dict>
 </dict>
 </plist>
