@@ -7,12 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A61264FA1FF20162006A7AEA /* iwl-csr.h in Headers */ = {isa = PBXBuildFile; fileRef = A61264F91FF20162006A7AEA /* iwl-csr.h */; };
 		A65083781FEFB2DC001300AC /* IntelWifi.hpp in Headers */ = {isa = PBXBuildFile; fileRef = A65083771FEFB2DC001300AC /* IntelWifi.hpp */; };
 		A650837A1FEFB2DC001300AC /* IntelWifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A65083791FEFB2DC001300AC /* IntelWifi.cpp */; };
 		A65CD61D1FF1D201004AA810 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = A65CD61C1FF1D201004AA810 /* README.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A61264F91FF20162006A7AEA /* iwl-csr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-csr.h"; sourceTree = "<group>"; };
 		A65083741FEFB2DC001300AC /* IntelWifi.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = IntelWifi.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		A65083771FEFB2DC001300AC /* IntelWifi.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IntelWifi.hpp; sourceTree = "<group>"; };
 		A65083791FEFB2DC001300AC /* IntelWifi.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IntelWifi.cpp; sourceTree = "<group>"; };
@@ -32,6 +34,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A61264F81FF200F6006A7AEA /* iwlwifi */ = {
+			isa = PBXGroup;
+			children = (
+				A61264F91FF20162006A7AEA /* iwl-csr.h */,
+			);
+			path = iwlwifi;
+			sourceTree = "<group>";
+		};
 		A650836A1FEFB2DC001300AC = {
 			isa = PBXGroup;
 			children = (
@@ -52,6 +62,7 @@
 		A65083761FEFB2DC001300AC /* IntelWifi */ = {
 			isa = PBXGroup;
 			children = (
+				A61264F81FF200F6006A7AEA /* iwlwifi */,
 				A65083771FEFB2DC001300AC /* IntelWifi.hpp */,
 				A65083791FEFB2DC001300AC /* IntelWifi.cpp */,
 				A650837B1FEFB2DC001300AC /* Info.plist */,
@@ -67,6 +78,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A61264FA1FF20162006A7AEA /* iwl-csr.h in Headers */,
 				A65083781FEFB2DC001300AC /* IntelWifi.hpp in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
