@@ -5,6 +5,13 @@
 #include "iwlwifi/iwl-csr.h"
 
 
+#include <sys/errno.h>
+
+
+
+
+
+
 
 #define super IOEthernetController
 
@@ -33,6 +40,12 @@ bool IntelWifi::init(OSDictionary *properties) {
 
 void IntelWifi::free() {
     TraceLog("free()\n");
+    
+    if (eeprom) {
+        eeprom->release();
+        eeprom = NULL;
+    }
+    
     super::free();
 }
 
@@ -61,44 +74,63 @@ bool IntelWifi::start(IOService *provider) {
     UInt16 deviceId = pciDevice->configRead16(kIOPCIConfigDeviceID);
     UInt16 subsystemId = pciDevice->configRead16(kIOPCIConfigSubSystemID);
     
-    UInt16 *e = (UInt16*)IOMalloc(OTP_LOW_IMAGE_SIZE / 2);
-    
-    IOMemoryMap *map = pciDevice->mapDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0);
-    if (map) {
-        
-        volatile void *baseAddr = reinterpret_cast<volatile void *>(map->getVirtualAddress());
-        
-       
-        for (UInt16 a = 0; a < OTP_LOW_IMAGE_SIZE; a += sizeof(UInt16)) {
-            OSWriteLittleInt32(baseAddr, CSR_EEPROM_REG, CSR_EEPROM_REG_MSK_ADDR & (a << 1));
-            
-            int ret = iwl_poll_bit(baseAddr,
-                         CSR_EEPROM_REG,
-                         CSR_EEPROM_REG_READ_VALID_MSK,
-                         CSR_EEPROM_REG_READ_VALID_MSK,
-                         5000);
-            
-            
-            
-            if (ret < 0) {
-                
-                map->release();
-                pciDevice->release();
-                pciDevice = NULL;
-                return false;
-            }
-
-            
-            UInt32 r = OSReadLittleInt32(baseAddr, CSR_EEPROM_REG);
-
-            e[a/2] = (r >> 16);
+    fMemoryMap = pciDevice->mapDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0);
+    if (!fMemoryMap) {
+        if (pciDevice) {
+            pciDevice->release();
+            pciDevice = NULL;
         }
         
-        eeprom = (UInt8 *)e;
-
-        map->release();
+        return false;
     }
     
+        
+    volatile void *baseAddr = reinterpret_cast<volatile void *>(fMemoryMap->getVirtualAddress());
+        
+    eeprom = IntelEeprom::withAddress(baseAddr);
+    if (!eeprom) {
+        if (fMemoryMap) {
+            fMemoryMap->release();
+            fMemoryMap = NULL;
+        }
+        
+        if (pciDevice) {
+            pciDevice->release();
+            pciDevice = NULL;
+        }
+        
+        return false;
+    }
+    fNvmData = eeprom->parse();
+    if (!fNvmData) {
+        if (eeprom) {
+            eeprom->release();
+            eeprom = NULL;
+        }
+        
+        if (fMemoryMap) {
+            fMemoryMap->release();
+            fMemoryMap = NULL;
+        }
+        
+        if (pciDevice) {
+            pciDevice->release();
+            pciDevice = NULL;
+        }
+        
+        return false;
+    }
+    
+    DebugLog("MAC: %02x:%02x:%02x:%02x:%02x:%02x\n"
+             "Num addr: %d\n"
+             "Calib: version - %d, voltage - %d\n"
+             "Raw temperature: %u",
+             
+             fNvmData->hw_addr[0],fNvmData->hw_addr[1],fNvmData->hw_addr[2],fNvmData->hw_addr[3],fNvmData->hw_addr[4],fNvmData->hw_addr[5],
+             fNvmData->n_hw_addrs,
+             fNvmData->calib_version, fNvmData->calib_voltage,
+             fNvmData->raw_temperature);
+     
     
     DebugLog("Device loaded. Vendor: %#06x, Device: %#06x, SubSystem: %#06x", vendorId, deviceId, subsystemId);
    
@@ -190,7 +222,7 @@ IOReturn IntelWifi::disable(IONetworkInterface *netif) {
 
 
 IOReturn IntelWifi::getHardwareAddress(IOEthernetAddress *addrP) {
-    memcpy(&addrP->bytes, &eeprom[EEPROM_MAC_ADDRESS], 6);
+    memcpy(addrP->bytes, fNvmData->hw_addr, 6);
     
     return kIOReturnSuccess;
 }
@@ -226,22 +258,6 @@ bool IntelWifi::configureInterface(IONetworkInterface *netif) {
     return true;
 }
 
-int IntelWifi::iwl_poll_bit(volatile void * base, UInt32 addr,
-                            UInt32 bits, UInt32 mask, int timeout) {
-    int t = 0;
-    do {
-        if ((OSReadLittleInt32(base, addr) & mask) == (bits & mask)) {
-            return t;
-        }
-        
-        IODelay(10);
-        t += 10;
-    } while (t < timeout);
-    
-    return -110;
-}
-
-
 const OSString* IntelWifi::newVendorString() const {
     return OSString::withCString("Intel");
 }
@@ -251,4 +267,22 @@ const OSString* IntelWifi::newModelString() const {
     const char    *model = "Centrino N-130";
     return OSString::withCString(model);
 }
+
+
+// MARK: iwl-io.c
+int IntelWifi::iwl_poll_bit(volatile void * base, UInt32 addr, UInt32 bits, UInt32 mask, int timeout) {
+    int t = 0;
+    do {
+        if ((OSReadLittleInt32(base, addr) & mask) == (bits & mask)) {
+            return t;
+        }
+        
+        IODelay(1);
+        t += 1;
+    } while (t < timeout);
+    
+    return -ETIMEDOUT;
+}
+
+
 
