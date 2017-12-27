@@ -4,68 +4,28 @@
 
 #include "iwlwifi/iwl-csr.h"
 
+
+
 #define super IOEthernetController
 
 OSDefineMetaClassAndStructors(IntelWifi, IOEthernetController)
-
-
-struct iwl_nvm_data {
-    int n_hw_addrs;
-    UInt8 hw_addr[6];
-    
-    UInt8 calib_version;
-    UInt16 calib_voltage;
-    
-    UInt16 raw_temperature;
-    UInt16 kelvin_temperature;
-    UInt16 kelvin_voltage;
-    UInt16 xtal_calib[2];
-    
-    bool sku_cap_band_24GHz_enable;
-    bool sku_cap_band_52GHz_enable;
-    bool sku_cap_11n_enable;
-    bool sku_cap_11ac_enable;
-    bool sku_cap_amt_enable;
-    bool sku_cap_ipan_enable;
-    bool sku_cap_mimo_disabled;
-    
-    UInt16 radio_cfg_type;
-    UInt8 radio_cfg_step;
-    UInt8 radio_cfg_dash;
-    UInt8 radio_cfg_pnum;
-    UInt8 valid_tx_ant, valid_rx_ant;
-    
-    UInt32 nvm_version;
-    int8_t max_tx_pwr_half_dbm;
-    
-    bool lar_enabled;
-    bool vht160_supported;
-    
-};
 
 #define EEPROM_MAC_ADDRESS                  (2*0x15)
 
 #define OTP_LOW_IMAGE_SIZE        (2 * 512 * sizeof(UInt16)) /* 2 KB */
 
-
 static struct MediumTable
 {
     IOMediumType type;
     UInt32 speed;
-}
-mediumTable[] =
-
-
-{
-    {kIOMediumEthernetNone, 0},
-    {kIOMediumEthernetAuto, 0},
-    {kIOMediumEthernet10BaseT | kIOMediumOptionFullDuplex,  10},
-    {kIOMediumEthernet100BaseTX | kIOMediumOptionFullDuplex, 100},
-    {kIOMediumEthernet1000BaseT | kIOMediumOptionFullDuplex, 1000},
+} mediumTable[] = {
+    {kIOMediumIEEE80211None, 0},
+    {kIOMediumIEEE80211Auto, 0}
 };
 
 bool IntelWifi::init(OSDictionary *properties) {
     TraceLog("init()\n");
+    
     return super::init(properties);
 }
 
@@ -80,6 +40,8 @@ void IntelWifi::free() {
 
 bool IntelWifi::start(IOService *provider) {
     TraceLog("Start");
+    
+    
     
     if (!super::start(provider)) {
         TraceLog("Super start call failed!");
@@ -151,6 +113,9 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
+    netif->registerService();
+    
+    
     
     return true;
 }
@@ -177,6 +142,8 @@ void IntelWifi::stop(IOService *provider) {
     TraceLog("Stopped");
 }
 
+
+
 bool IntelWifi::createMediumDict() {
     UInt32 capacity = sizeof(mediumTable) / sizeof(struct MediumTable);
     
@@ -197,35 +164,44 @@ bool IntelWifi::createMediumDict() {
         return false;
     }
     
-    IONetworkMedium *m = IONetworkMedium::getMediumWithType(mediumDict, kIOMediumEthernetAuto);
+    IONetworkMedium *m = IONetworkMedium::getMediumWithType(mediumDict, kIOMediumIEEE80211Auto);
     setSelectedMedium(m);
     return true;
 }
 
 
-IOReturn IntelWifi::enable(IONetworkInterface *netif) { 
-    IOMediumType mediumType = kIOMediumEthernet1000BaseT | kIOMediumOptionFullDuplex;
+
+IOReturn IntelWifi::enable(IONetworkInterface *netif) {
+    
+    IOMediumType mediumType = kIOMediumIEEE80211Auto;
     IONetworkMedium *medium = IONetworkMedium::getMediumWithType(mediumDict, mediumType);
     
-    setLinkStatus(kIONetworkLinkActive | kIONetworkLinkValid, medium, 1000 * 1000000);
+    setLinkStatus(kIONetworkLinkActive | kIONetworkLinkValid, medium);
     return kIOReturnSuccess;
 }
+
+
 
 IOReturn IntelWifi::disable(IONetworkInterface *netif) { 
     netif->flushInputQueue();
     return kIOReturnSuccess;
 }
 
+
+
 IOReturn IntelWifi::getHardwareAddress(IOEthernetAddress *addrP) {
-    memcpy(&addrP->bytes, eeprom + EEPROM_MAC_ADDRESS, 6);
-    
+    memcpy(&addrP->bytes, &eeprom[EEPROM_MAC_ADDRESS], 6);
     
     return kIOReturnSuccess;
 }
 
+
+
 IOReturn IntelWifi::setHardwareAddress(const IOEthernetAddress *addrP) { 
     return kIOReturnSuccess;
 }
+
+
 
 UInt32 IntelWifi::outputPacket(mbuf_t m, void *param) { 
     return 0;
@@ -265,4 +241,14 @@ int IntelWifi::iwl_poll_bit(volatile void * base, UInt32 addr,
     return -110;
 }
 
+
+const OSString* IntelWifi::newVendorString() const {
+    return OSString::withCString("Intel");
+}
+
+
+const OSString* IntelWifi::newModelString() const {
+    const char    *model = "Centrino N-130";
+    return OSString::withCString(model);
+}
 

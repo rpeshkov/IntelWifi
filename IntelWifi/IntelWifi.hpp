@@ -24,7 +24,6 @@ public:
     virtual IOReturn enable(IONetworkInterface* netif) override;
     virtual IOReturn disable(IONetworkInterface* netif) override;
     virtual IOReturn getHardwareAddress(IOEthernetAddress* addrP) override;
-    // Allow our driver's Mac address to be set
     virtual IOReturn setHardwareAddress(const IOEthernetAddress* addrP) override;
     virtual UInt32 outputPacket(mbuf_t m, void* param) override;
     
@@ -39,6 +38,9 @@ public:
     }
     
     bool createMediumDict();
+    
+    virtual const OSString* newVendorString() const override;
+    virtual const OSString* newModelString() const override;
     
 protected:
     IOPCIDevice *pciDevice;
