@@ -50,12 +50,20 @@
 		A61264F81FF200F6006A7AEA /* iwlwifi */ = {
 			isa = PBXGroup;
 			children = (
+				A61525971FF4B6480094A282 /* cfg */,
 				A636DA731FF421B6006AECC9 /* iwl-config.h */,
 				A6E59FE31FF34BA600E86DC0 /* iwl-agn-hw.h */,
 				A61264F91FF20162006A7AEA /* iwl-csr.h */,
 				A611F3EA1FF33BCD001B5538 /* iwl-eeprom-parse.h */,
 			);
 			path = iwlwifi;
+			sourceTree = "<group>";
+		};
+		A61525971FF4B6480094A282 /* cfg */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = cfg;
 			sourceTree = "<group>";
 		};
 		A650836A1FEFB2DC001300AC = {

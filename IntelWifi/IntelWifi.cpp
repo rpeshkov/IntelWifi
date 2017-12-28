@@ -176,8 +176,21 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
+    fWorkLoop = getWorkLoop();
+    if (!fWorkLoop) {
+        TraceLog("getWorkLoop failed!");
+        RELEASE(eeprom);
+        RELEASE(io);
+        RELEASE(fMemoryMap);
+        RELEASE(pciDevice);
+        return false;
+    }
+    
+    fWorkLoop->retain();
+    
     if (!attachInterface((IONetworkInterface**)&netif)) {
         TraceLog("Interface attach failed!");
+        RELEASE(fWorkLoop);
         RELEASE(mediumDict);
         RELEASE(eeprom);
         RELEASE(io);
@@ -185,6 +198,17 @@ bool IntelWifi::start(IOService *provider) {
         RELEASE(pciDevice);
         return false;
     }
+    
+    netif->registerService();
+    
+    fInterruptSource = IOTimerEventSource::timerEventSource(this, interruptOccured);
+    if (!fInterruptSource)
+        return false;
+    if (fWorkLoop->addEventSource(fInterruptSource) != kIOReturnSuccess)
+        return false;
+    
+    fInterruptSource->enable();
+    
     
     registerService();
     
@@ -198,6 +222,8 @@ void IntelWifi::stop(IOService *provider) {
         detachInterface(netif);
         netif = NULL;
     }
+    RELEASE(fInterruptSource);
+    RELEASE(fWorkLoop);
     RELEASE(mediumDict);
     RELEASE(eeprom);
     RELEASE(io);
@@ -306,6 +332,18 @@ const OSString* IntelWifi::newVendorString() const {
 const OSString* IntelWifi::newModelString() const {
     return OSString::withCString("Centrino N-130");
 }
+void IntelWifi::interruptOccured(OSObject* owner, IOTimerEventSource*
+                                                      sender) {
+//    mbuf_t packet;
+    DebugLog("Interrupt!");
+    IntelWifi* me = (IntelWifi*)owner;
+    
+    if (!me)
+    return;
+}
+
+
+
 
 // MARK: iwl trans.c copy paste
 

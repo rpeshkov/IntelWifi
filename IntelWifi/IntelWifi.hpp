@@ -1,6 +1,7 @@
 /* add your code here */
 
 #include <IOKit/IOLib.h>
+#include <IOKit/IOTimerEventSource.h>
 #include <IOKit/pci/IOPCIDevice.h>
 #include <IOKit/network/IOEthernetController.h>
 #include <IOKit/network/IOEthernetInterface.h>
@@ -48,7 +49,8 @@ public:
 protected:
     IOPCIDevice *pciDevice;
     IOEthernetInterface *netif;
-    IOWorkLoop *workloop;
+    IOWorkLoop *fWorkLoop;
+    IOTimerEventSource *fInterruptSource;
     OSDictionary *mediumDict;
     
     IONetworkStats *fNetworkStats;
@@ -63,6 +65,9 @@ protected:
     struct iwl_nvm_data *fNvmData;
     
 private:
+    static void  interruptOccured(OSObject* owner, IOTimerEventSource* sender);
+    
+    // IWL stuff
     int iwl_pcie_prepare_card_hw();
     int iwl_pcie_set_hw_ready();
     void iwl_pcie_sw_reset();
