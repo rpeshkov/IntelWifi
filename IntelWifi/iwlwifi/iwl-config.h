@@ -65,10 +65,10 @@
 #ifndef __IWL_CONFIG_H__
 #define __IWL_CONFIG_H__
 
-//#include <linux/types.h>
-//#include <linux/netdevice.h>
-//#include <linux/ieee80211.h>
-//#include <linux/nl80211.h>
+#include <linux/types.h>
+#include <linux/netdevice.h>
+#include <linux/ieee80211.h>
+#include <linux/nl80211.h>
 
 enum iwl_device_family {
 	IWL_DEVICE_FAMILY_UNDEFINED,
@@ -399,7 +399,7 @@ struct iwl_cfg {
 /*
  * This list declares the config structures for all devices.
  */
-#if IS_ENABLED(CONFIG_IWLDVM)
+
 extern const struct iwl_cfg iwl5300_agn_cfg;
 extern const struct iwl_cfg iwl5100_agn_cfg;
 extern const struct iwl_cfg iwl5350_agn_cfg;
@@ -442,8 +442,8 @@ extern const struct iwl_cfg iwl6035_2agn_sff_cfg;
 extern const struct iwl_cfg iwl105_bgn_cfg;
 extern const struct iwl_cfg iwl105_bgn_d_cfg;
 extern const struct iwl_cfg iwl135_bgn_cfg;
-#endif /* CONFIG_IWLDVM */
-#if IS_ENABLED(CONFIG_IWLMVM)
+
+#ifdef CONFIG_IWLMVM
 extern const struct iwl_cfg iwl7260_2ac_cfg;
 extern const struct iwl_cfg iwl7260_2ac_cfg_high_temp;
 extern const struct iwl_cfg iwl7260_2n_cfg;

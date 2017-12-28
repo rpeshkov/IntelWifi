@@ -10,12 +10,35 @@
 		A60DDC051FF46EE200E81A4B /* IntelIO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A60DDC031FF46EE200E81A4B /* IntelIO.cpp */; };
 		A60DDC061FF46EE200E81A4B /* IntelIO.hpp in Headers */ = {isa = PBXBuildFile; fileRef = A60DDC041FF46EE200E81A4B /* IntelIO.hpp */; };
 		A61264FA1FF20162006A7AEA /* iwl-csr.h in Headers */ = {isa = PBXBuildFile; fileRef = A61264F91FF20162006A7AEA /* iwl-csr.h */; };
+		A61525A01FF4B6F90094A282 /* 8000.c in Sources */ = {isa = PBXBuildFile; fileRef = A61525981FF4B6F80094A282 /* 8000.c */; };
+		A61525A11FF4B6F90094A282 /* 6000.c in Sources */ = {isa = PBXBuildFile; fileRef = A61525991FF4B6F80094A282 /* 6000.c */; };
+		A61525A21FF4B6F90094A282 /* 9000.c in Sources */ = {isa = PBXBuildFile; fileRef = A615259A1FF4B6F80094A282 /* 9000.c */; };
+		A61525A31FF4B6F90094A282 /* 1000.c in Sources */ = {isa = PBXBuildFile; fileRef = A615259B1FF4B6F80094A282 /* 1000.c */; };
+		A61525A41FF4B6F90094A282 /* 5000.c in Sources */ = {isa = PBXBuildFile; fileRef = A615259C1FF4B6F80094A282 /* 5000.c */; };
+		A61525A51FF4B6F90094A282 /* a000.c in Sources */ = {isa = PBXBuildFile; fileRef = A615259D1FF4B6F90094A282 /* a000.c */; };
+		A61525A61FF4B6F90094A282 /* 7000.c in Sources */ = {isa = PBXBuildFile; fileRef = A615259E1FF4B6F90094A282 /* 7000.c */; };
+		A61525A71FF4B6F90094A282 /* 2000.c in Sources */ = {isa = PBXBuildFile; fileRef = A615259F1FF4B6F90094A282 /* 2000.c */; };
+		A61525B11FF4C2FD0094A282 /* iwl-op-mode.h in Headers */ = {isa = PBXBuildFile; fileRef = A61525B01FF4C2FD0094A282 /* iwl-op-mode.h */; };
+		A61525B41FF4C48E0094A282 /* iwl-prph.h in Headers */ = {isa = PBXBuildFile; fileRef = A61525B31FF4C48E0094A282 /* iwl-prph.h */; };
+		A61525B91FF4C52A0094A282 /* iwl-fh.h in Headers */ = {isa = PBXBuildFile; fileRef = A61525B81FF4C52A0094A282 /* iwl-fh.h */; };
+		A61525BD1FF4C89D0094A282 /* file.h in Headers */ = {isa = PBXBuildFile; fileRef = A61525BC1FF4C89D0094A282 /* file.h */; };
+		A61525BF1FF4C9600094A282 /* error-dump.h in Headers */ = {isa = PBXBuildFile; fileRef = A61525BE1FF4C9600094A282 /* error-dump.h */; };
+		A61525C11FF4CB760094A282 /* img.h in Headers */ = {isa = PBXBuildFile; fileRef = A61525C01FF4CB760094A282 /* img.h */; };
+		A61525C31FF4CE520094A282 /* iwl-modparams.h in Headers */ = {isa = PBXBuildFile; fileRef = A61525C21FF4CE520094A282 /* iwl-modparams.h */; };
+		A61525C51FF4CED70094A282 /* iwl-context-info.h in Headers */ = {isa = PBXBuildFile; fileRef = A61525C41FF4CED70094A282 /* iwl-context-info.h */; };
+		A61525C81FF4CF6A0094A282 /* cmdhdr.h in Headers */ = {isa = PBXBuildFile; fileRef = A61525C71FF4CF6A0094A282 /* cmdhdr.h */; };
+		A61525CA1FF4CF900094A282 /* txq.h in Headers */ = {isa = PBXBuildFile; fileRef = A61525C91FF4CF900094A282 /* txq.h */; };
+		A61525CC1FF4CFC60094A282 /* iwl-trans.h in Headers */ = {isa = PBXBuildFile; fileRef = A61525CB1FF4CFC60094A282 /* iwl-trans.h */; };
+		A61525D11FF4E30F0094A282 /* iwl-trans.c in Sources */ = {isa = PBXBuildFile; fileRef = A61525D01FF4E30E0094A282 /* iwl-trans.c */; };
+		A61525D41FF4E38D0094A282 /* iwl-drv.c in Sources */ = {isa = PBXBuildFile; fileRef = A61525D21FF4E38C0094A282 /* iwl-drv.c */; };
+		A61525D51FF4E38D0094A282 /* iwl-drv.h in Headers */ = {isa = PBXBuildFile; fileRef = A61525D31FF4E38C0094A282 /* iwl-drv.h */; };
 		A6157B7A1FF3303E00DAC8CE /* IntelEeprom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A6157B781FF3303E00DAC8CE /* IntelEeprom.cpp */; };
 		A6157B7B1FF3303E00DAC8CE /* IntelEeprom.hpp in Headers */ = {isa = PBXBuildFile; fileRef = A6157B791FF3303E00DAC8CE /* IntelEeprom.hpp */; };
 		A636DA741FF421B7006AECC9 /* iwl-config.h in Headers */ = {isa = PBXBuildFile; fileRef = A636DA731FF421B6006AECC9 /* iwl-config.h */; };
 		A65083781FEFB2DC001300AC /* IntelWifi.hpp in Headers */ = {isa = PBXBuildFile; fileRef = A65083771FEFB2DC001300AC /* IntelWifi.hpp */; };
 		A650837A1FEFB2DC001300AC /* IntelWifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A65083791FEFB2DC001300AC /* IntelWifi.cpp */; };
 		A65CD61D1FF1D201004AA810 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = A65CD61C1FF1D201004AA810 /* README.md */; };
+		A6D275E71FF50F8C00F5723B /* firmware_file.h in Headers */ = {isa = PBXBuildFile; fileRef = A6D275E61FF50F8C00F5723B /* firmware_file.h */; };
 		A6E59FE41FF34BA600E86DC0 /* iwl-agn-hw.h in Headers */ = {isa = PBXBuildFile; fileRef = A6E59FE31FF34BA600E86DC0 /* iwl-agn-hw.h */; };
 /* End PBXBuildFile section */
 
@@ -24,6 +47,45 @@
 		A60DDC041FF46EE200E81A4B /* IntelIO.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IntelIO.hpp; sourceTree = "<group>"; };
 		A611F3EA1FF33BCD001B5538 /* iwl-eeprom-parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "iwl-eeprom-parse.h"; sourceTree = "<group>"; };
 		A61264F91FF20162006A7AEA /* iwl-csr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-csr.h"; sourceTree = "<group>"; };
+		A61525981FF4B6F80094A282 /* 8000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = 8000.c; sourceTree = "<group>"; };
+		A61525991FF4B6F80094A282 /* 6000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = 6000.c; sourceTree = "<group>"; };
+		A615259A1FF4B6F80094A282 /* 9000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = 9000.c; sourceTree = "<group>"; };
+		A615259B1FF4B6F80094A282 /* 1000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = 1000.c; sourceTree = "<group>"; };
+		A615259C1FF4B6F80094A282 /* 5000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = 5000.c; sourceTree = "<group>"; };
+		A615259D1FF4B6F90094A282 /* a000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = a000.c; sourceTree = "<group>"; };
+		A615259E1FF4B6F90094A282 /* 7000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = 7000.c; sourceTree = "<group>"; };
+		A615259F1FF4B6F90094A282 /* 2000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = 2000.c; sourceTree = "<group>"; };
+		A61525AA1FF4B72C0094A282 /* module.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = module.h; sourceTree = "<group>"; };
+		A61525AB1FF4B79C0094A282 /* stringify.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stringify.h; sourceTree = "<group>"; };
+		A61525AC1FF4B86E0094A282 /* types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = types.h; sourceTree = "<group>"; };
+		A61525AD1FF4B8830094A282 /* netdevice.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = netdevice.h; sourceTree = "<group>"; };
+		A61525AE1FF4B8970094A282 /* ieee80211.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
+		A61525AF1FF4B8A30094A282 /* nl80211.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = nl80211.h; sourceTree = "<group>"; };
+		A61525B01FF4C2FD0094A282 /* iwl-op-mode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-op-mode.h"; sourceTree = "<group>"; };
+		A61525B21FF4C30D0094A282 /* debugfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = debugfs.h; sourceTree = "<group>"; };
+		A61525B31FF4C48E0094A282 /* iwl-prph.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-prph.h"; sourceTree = "<group>"; };
+		A61525B51FF4C4A30094A282 /* bitfield.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bitfield.h; sourceTree = "<group>"; };
+		A61525B81FF4C52A0094A282 /* iwl-fh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-fh.h"; sourceTree = "<group>"; };
+		A61525BC1FF4C89D0094A282 /* file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = file.h; sourceTree = "<group>"; };
+		A61525BE1FF4C9600094A282 /* error-dump.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "error-dump.h"; sourceTree = "<group>"; };
+		A61525C01FF4CB760094A282 /* img.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = img.h; sourceTree = "<group>"; };
+		A61525C21FF4CE520094A282 /* iwl-modparams.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-modparams.h"; sourceTree = "<group>"; };
+		A61525C41FF4CED70094A282 /* iwl-context-info.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-context-info.h"; sourceTree = "<group>"; };
+		A61525C71FF4CF6A0094A282 /* cmdhdr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cmdhdr.h; sourceTree = "<group>"; };
+		A61525C91FF4CF900094A282 /* txq.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = txq.h; sourceTree = "<group>"; };
+		A61525CB1FF4CFC60094A282 /* iwl-trans.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-trans.h"; sourceTree = "<group>"; };
+		A61525CD1FF4CFDE0094A282 /* mm.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mm.h; sourceTree = "<group>"; };
+		A61525CE1FF4CFE60094A282 /* lockdep.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lockdep.h; sourceTree = "<group>"; };
+		A61525CF1FF4CFF60094A282 /* kernel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = kernel.h; sourceTree = "<group>"; };
+		A61525D01FF4E30E0094A282 /* iwl-trans.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-trans.c"; sourceTree = "<group>"; };
+		A61525D21FF4E38C0094A282 /* iwl-drv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-drv.c"; sourceTree = "<group>"; };
+		A61525D31FF4E38C0094A282 /* iwl-drv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-drv.h"; sourceTree = "<group>"; };
+		A61525D61FF4E3C30094A282 /* completion.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = completion.h; sourceTree = "<group>"; };
+		A61525D71FF4E3D00094A282 /* dma-mapping.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "dma-mapping.h"; sourceTree = "<group>"; };
+		A61525D81FF4E3E30094A282 /* firmware.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = firmware.h; sourceTree = "<group>"; };
+		A61525D91FF4E3F70094A282 /* vmalloc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vmalloc.h; sourceTree = "<group>"; };
+		A61525DA1FF4E40B0094A282 /* export.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = export.h; sourceTree = "<group>"; };
+		A61525DB1FF4ED460094A282 /* iwl-debug.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "iwl-debug.h"; sourceTree = "<group>"; };
 		A6157B781FF3303E00DAC8CE /* IntelEeprom.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IntelEeprom.cpp; sourceTree = "<group>"; };
 		A6157B791FF3303E00DAC8CE /* IntelEeprom.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IntelEeprom.hpp; sourceTree = "<group>"; };
 		A636DA731FF421B6006AECC9 /* iwl-config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-config.h"; sourceTree = "<group>"; };
@@ -33,6 +95,7 @@
 		A650837B1FEFB2DC001300AC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A65CD61C1FF1D201004AA810 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		A65CD61E1FF1D2BB004AA810 /* Logging.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Logging.h; sourceTree = "<group>"; };
+		A6D275E61FF50F8C00F5723B /* firmware_file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = firmware_file.h; sourceTree = "<group>"; };
 		A6E59FE31FF34BA600E86DC0 /* iwl-agn-hw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-agn-hw.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -50,11 +113,23 @@
 		A61264F81FF200F6006A7AEA /* iwlwifi */ = {
 			isa = PBXGroup;
 			children = (
+				A6D275E61FF50F8C00F5723B /* firmware_file.h */,
+				A61525D21FF4E38C0094A282 /* iwl-drv.c */,
+				A61525D31FF4E38C0094A282 /* iwl-drv.h */,
+				A61525D01FF4E30E0094A282 /* iwl-trans.c */,
+				A61525CB1FF4CFC60094A282 /* iwl-trans.h */,
+				A61525C41FF4CED70094A282 /* iwl-context-info.h */,
 				A61525971FF4B6480094A282 /* cfg */,
-				A636DA731FF421B6006AECC9 /* iwl-config.h */,
+				A61525BB1FF4C8810094A282 /* fw */,
 				A6E59FE31FF34BA600E86DC0 /* iwl-agn-hw.h */,
+				A636DA731FF421B6006AECC9 /* iwl-config.h */,
 				A61264F91FF20162006A7AEA /* iwl-csr.h */,
 				A611F3EA1FF33BCD001B5538 /* iwl-eeprom-parse.h */,
+				A61525B81FF4C52A0094A282 /* iwl-fh.h */,
+				A61525C21FF4CE520094A282 /* iwl-modparams.h */,
+				A61525B01FF4C2FD0094A282 /* iwl-op-mode.h */,
+				A61525B31FF4C48E0094A282 /* iwl-prph.h */,
+				A61525DB1FF4ED460094A282 /* iwl-debug.h */,
 			);
 			path = iwlwifi;
 			sourceTree = "<group>";
@@ -62,8 +137,67 @@
 		A61525971FF4B6480094A282 /* cfg */ = {
 			isa = PBXGroup;
 			children = (
+				A615259B1FF4B6F80094A282 /* 1000.c */,
+				A615259F1FF4B6F90094A282 /* 2000.c */,
+				A615259C1FF4B6F80094A282 /* 5000.c */,
+				A61525991FF4B6F80094A282 /* 6000.c */,
+				A615259E1FF4B6F90094A282 /* 7000.c */,
+				A61525981FF4B6F80094A282 /* 8000.c */,
+				A615259A1FF4B6F80094A282 /* 9000.c */,
+				A615259D1FF4B6F90094A282 /* a000.c */,
 			);
 			path = cfg;
+			sourceTree = "<group>";
+		};
+		A61525A81FF4B70E0094A282 /* porting */ = {
+			isa = PBXGroup;
+			children = (
+				A61525A91FF4B71F0094A282 /* linux */,
+			);
+			path = porting;
+			sourceTree = "<group>";
+		};
+		A61525A91FF4B71F0094A282 /* linux */ = {
+			isa = PBXGroup;
+			children = (
+				A61525B51FF4C4A30094A282 /* bitfield.h */,
+				A61525D61FF4E3C30094A282 /* completion.h */,
+				A61525B21FF4C30D0094A282 /* debugfs.h */,
+				A61525D71FF4E3D00094A282 /* dma-mapping.h */,
+				A61525DA1FF4E40B0094A282 /* export.h */,
+				A61525D81FF4E3E30094A282 /* firmware.h */,
+				A61525AE1FF4B8970094A282 /* ieee80211.h */,
+				A61525CF1FF4CFF60094A282 /* kernel.h */,
+				A61525CE1FF4CFE60094A282 /* lockdep.h */,
+				A61525CD1FF4CFDE0094A282 /* mm.h */,
+				A61525AA1FF4B72C0094A282 /* module.h */,
+				A61525AD1FF4B8830094A282 /* netdevice.h */,
+				A61525AF1FF4B8A30094A282 /* nl80211.h */,
+				A61525AB1FF4B79C0094A282 /* stringify.h */,
+				A61525AC1FF4B86E0094A282 /* types.h */,
+				A61525D91FF4E3F70094A282 /* vmalloc.h */,
+			);
+			path = linux;
+			sourceTree = "<group>";
+		};
+		A61525BB1FF4C8810094A282 /* fw */ = {
+			isa = PBXGroup;
+			children = (
+				A61525C61FF4CF530094A282 /* api */,
+				A61525C01FF4CB760094A282 /* img.h */,
+				A61525BE1FF4C9600094A282 /* error-dump.h */,
+				A61525BC1FF4C89D0094A282 /* file.h */,
+			);
+			path = fw;
+			sourceTree = "<group>";
+		};
+		A61525C61FF4CF530094A282 /* api */ = {
+			isa = PBXGroup;
+			children = (
+				A61525C91FF4CF900094A282 /* txq.h */,
+				A61525C71FF4CF6A0094A282 /* cmdhdr.h */,
+			);
+			path = api;
 			sourceTree = "<group>";
 		};
 		A650836A1FEFB2DC001300AC = {
@@ -86,6 +220,7 @@
 		A65083761FEFB2DC001300AC /* IntelWifi */ = {
 			isa = PBXGroup;
 			children = (
+				A61525A81FF4B70E0094A282 /* porting */,
 				A61264F81FF200F6006A7AEA /* iwlwifi */,
 				A65083771FEFB2DC001300AC /* IntelWifi.hpp */,
 				A65083791FEFB2DC001300AC /* IntelWifi.cpp */,
@@ -106,11 +241,24 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A61525C31FF4CE520094A282 /* iwl-modparams.h in Headers */,
+				A61525C11FF4CB760094A282 /* img.h in Headers */,
+				A61525BD1FF4C89D0094A282 /* file.h in Headers */,
+				A6D275E71FF50F8C00F5723B /* firmware_file.h in Headers */,
 				A61264FA1FF20162006A7AEA /* iwl-csr.h in Headers */,
 				A60DDC061FF46EE200E81A4B /* IntelIO.hpp in Headers */,
+				A61525C51FF4CED70094A282 /* iwl-context-info.h in Headers */,
+				A61525BF1FF4C9600094A282 /* error-dump.h in Headers */,
+				A61525C81FF4CF6A0094A282 /* cmdhdr.h in Headers */,
+				A61525D51FF4E38D0094A282 /* iwl-drv.h in Headers */,
+				A61525CA1FF4CF900094A282 /* txq.h in Headers */,
 				A6E59FE41FF34BA600E86DC0 /* iwl-agn-hw.h in Headers */,
+				A61525B41FF4C48E0094A282 /* iwl-prph.h in Headers */,
+				A61525CC1FF4CFC60094A282 /* iwl-trans.h in Headers */,
+				A61525B11FF4C2FD0094A282 /* iwl-op-mode.h in Headers */,
 				A636DA741FF421B7006AECC9 /* iwl-config.h in Headers */,
 				A65083781FEFB2DC001300AC /* IntelWifi.hpp in Headers */,
+				A61525B91FF4C52A0094A282 /* iwl-fh.h in Headers */,
 				A6157B7B1FF3303E00DAC8CE /* IntelEeprom.hpp in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -184,9 +332,19 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A61525D41FF4E38D0094A282 /* iwl-drv.c in Sources */,
+				A61525A61FF4B6F90094A282 /* 7000.c in Sources */,
+				A61525A11FF4B6F90094A282 /* 6000.c in Sources */,
 				A6157B7A1FF3303E00DAC8CE /* IntelEeprom.cpp in Sources */,
+				A61525A71FF4B6F90094A282 /* 2000.c in Sources */,
 				A60DDC051FF46EE200E81A4B /* IntelIO.cpp in Sources */,
+				A61525D11FF4E30F0094A282 /* iwl-trans.c in Sources */,
 				A650837A1FEFB2DC001300AC /* IntelWifi.cpp in Sources */,
+				A61525A41FF4B6F90094A282 /* 5000.c in Sources */,
+				A61525A21FF4B6F90094A282 /* 9000.c in Sources */,
+				A61525A01FF4B6F90094A282 /* 8000.c in Sources */,
+				A61525A31FF4B6F90094A282 /* 1000.c in Sources */,
+				A61525A51FF4B6F90094A282 /* a000.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -303,6 +461,8 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
 				DEVELOPMENT_TEAM = 3MRY8X5EYM;
+				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
+				HEADER_SEARCH_PATHS = IntelWifi/porting/;
 				INFOPLIST_FILE = IntelWifi/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MODULE_NAME = net.rpeshkov.IntelWifi;
@@ -310,6 +470,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = net.rpeshkov.IntelWifi;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.12;
+				SYSTEM_HEADER_SEARCH_PATHS = IntelWifi/porting/;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
@@ -321,6 +482,8 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
 				DEVELOPMENT_TEAM = 3MRY8X5EYM;
+				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
+				HEADER_SEARCH_PATHS = IntelWifi/porting/;
 				INFOPLIST_FILE = IntelWifi/Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MODULE_NAME = net.rpeshkov.IntelWifi;
@@ -328,6 +491,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = net.rpeshkov.IntelWifi;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.12;
+				SYSTEM_HEADER_SEARCH_PATHS = IntelWifi/porting/;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
