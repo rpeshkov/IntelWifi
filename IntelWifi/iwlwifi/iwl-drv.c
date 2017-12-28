@@ -82,8 +82,6 @@
 
 #include "firmware_file.h"
 
-//#include <sys/malloc.h>
-
 /******************************************************************************
  *
  * module boiler plate
@@ -217,11 +215,11 @@ static void iwl_free_fw_desc(struct iwl_drv *drv, struct fw_desc *desc)
 
 static void iwl_free_fw_img(struct iwl_drv *drv, struct fw_img *img)
 {
-//    int i;
-//    for (i = 0; i < img->num_sec; i++)
-//        iwl_free_fw_desc(drv, &img->sec[i]);
-//    //kfree(img->sec);
-//    IOFree(img->sec, sizeof(*(img->sec)));
+    int i;
+    for (i = 0; i < img->num_sec; i++)
+        iwl_free_fw_desc(drv, &img->sec[i]);
+    //kfree(img->sec);
+    IOFree(img->sec, sizeof(*img->sec) * img->num_sec);
 	
 }
 
@@ -343,7 +341,7 @@ static int iwl_request_firmware(struct iwl_drv *drv, bool first)
 
 
 struct fw_img_parsing {
-	struct fw_sec sec[2];
+	struct fw_sec *sec;
 	int sec_counter;
 };
 
@@ -393,7 +391,7 @@ static struct fw_sec *get_sec(struct iwl_firmware_pieces *pieces,
 	return &pieces->img[type].sec[sec];
 }
 
-static bool alloc_sec_data(struct iwl_firmware_pieces *pieces,
+static void alloc_sec_data(struct iwl_firmware_pieces *pieces,
 			   enum iwl_ucode_type type,
 			   int sec)
 {
@@ -402,23 +400,21 @@ static bool alloc_sec_data(struct iwl_firmware_pieces *pieces,
     size_t alloc_size = sizeof(struct fw_sec) * size;
 
     if (img->sec && img->sec_counter >= size)
-        return true;
+        return;
 
-    //sec_memory = krealloc(img->sec, alloc_size, GFP_KERNEL);
     struct fw_sec *sec_memory = IOMalloc(alloc_size);
 
     if (!sec_memory) {
         IOLog("ALLOC FAILED!!!!");
-        return false;
+        return;
     }
     
 
-//    if (img->sec && img->sec_counter > 0)
-//        memcpy(sec_memory, img->sec, img->sec_counter * sizeof(struct fw_sec));
+    if (img->sec && img->sec_counter > 0)
+        memcpy(sec_memory, img->sec, sec * sizeof(struct fw_sec));
 
-//    img->sec = sec_memory;
+    img->sec = sec_memory;
     img->sec_counter = size;
-    return true;
 }
 
 static void set_sec_data(struct iwl_firmware_pieces *pieces,
@@ -426,8 +422,8 @@ static void set_sec_data(struct iwl_firmware_pieces *pieces,
 			 int sec,
 			 const void *data)
 {
-	//if (alloc_sec_data(pieces, type, sec))
-        pieces->img[type].sec[sec].data = data;
+    alloc_sec_data(pieces, type, sec);
+    pieces->img[type].sec[sec].data = data;
 }
 
 static void set_sec_size(struct iwl_firmware_pieces *pieces,
@@ -435,8 +431,8 @@ static void set_sec_size(struct iwl_firmware_pieces *pieces,
 			 int sec,
 			 size_t size)
 {
-	//if (alloc_sec_data(pieces, type, sec))
-        pieces->img[type].sec[sec].size = size;
+    alloc_sec_data(pieces, type, sec);
+    pieces->img[type].sec[sec].size = size;
 }
 
 static size_t get_sec_size(struct iwl_firmware_pieces *pieces,
@@ -451,8 +447,8 @@ static void set_sec_offset(struct iwl_firmware_pieces *pieces,
 			   int sec,
 			   u32 offset)
 {
-	//if (alloc_sec_data(pieces, type, sec))
-        pieces->img[type].sec[sec].offset = offset;
+    alloc_sec_data(pieces, type, sec);
+    pieces->img[type].sec[sec].offset = offset;
 }
 
 static int iwl_store_cscheme(struct iwl_fw *fw, const u8 *data, const u32 len)
@@ -526,14 +522,14 @@ static int iwl_store_ucode_sec(struct iwl_firmware_pieces *pieces,
 
 	img = &pieces->img[type];
 
-//    alloc_size = sizeof(*img->sec) * (img->sec_counter + 1);
-//    //sec = krealloc(img->sec, alloc_size, GFP_KERNEL);
-//    sec = IOMalloc(alloc_size);
-//    memcpy(sec, img->sec, alloc_size);
-//
-//    if (!sec)
-//        return -ENOMEM;
-//    img->sec = sec;
+    alloc_size = sizeof(*img->sec) * (img->sec_counter + 1);
+    //sec = krealloc(img->sec, alloc_size, GFP_KERNEL);
+    sec = IOMalloc(alloc_size);
+    memcpy(sec, img->sec, sizeof(*img->sec) * img->sec_counter);
+
+    if (!sec)
+        return -ENOMEM;
+    img->sec = sec;
 
 	sec = &img->sec[img->sec_counter];
 
@@ -573,9 +569,9 @@ static void iwl_set_ucode_api_flags(struct iwl_drv *drv, const u8 *data,
 	int i;
 
 	if (api_index >= DIV_ROUND_UP(NUM_IWL_UCODE_TLV_API, 32)) {
-//        IWL_WARN(drv,
-//             "api flags index %d larger than supported by driver\n",
-//             api_index);
+        IWL_WARN(drv,
+             "api flags index %d larger than supported by driver\n",
+             api_index);
 		return;
 	}
 
@@ -594,9 +590,9 @@ static void iwl_set_ucode_capabilities(struct iwl_drv *drv, const u8 *data,
 	int i;
 
 	if (api_index >= DIV_ROUND_UP(NUM_IWL_UCODE_TLV_CAPA, 32)) {
-//        IWL_WARN(drv,
-//             "capa flags index %d larger than supported by driver\n",
-//             api_index);
+        IWL_WARN(drv,
+             "capa flags index %d larger than supported by driver\n",
+             api_index);
 		return;
 	}
 
@@ -1173,7 +1169,8 @@ static int iwl_parse_tlv_firmware(struct iwl_drv *drv,
 			       (pieces->n_dbg_mem_tlv + 1);
             // n = krealloc(pieces->dbg_mem_tlv, size, GFP_KERNEL);
             n = IOMalloc(size);
-            memcpy(n, pieces->dbg_mem_tlv, size);
+            memcpy(n, pieces->dbg_mem_tlv, sizeof(*pieces->dbg_mem_tlv) *
+                   (pieces->n_dbg_mem_tlv));
 			if (!n)
 				return -ENOMEM;
 			pieces->dbg_mem_tlv = n;
@@ -1378,17 +1375,11 @@ static void iwl_req_fw_callback(const struct firmware *ucode_raw, void *context)
     pieces = IOMalloc(sizeof(*pieces));
     memset(pieces, 0, sizeof(*pieces));
     
-    if (!pieces) {
-        IOLog("Pieces allocation fail!");
+    if (!pieces)
         goto out_free_fw;
-    }
-		
 
-    if (!ucode_raw) {
-        IOLog("UCODE RAW is null");
+    if (!ucode_raw)
         goto try_again;
-    }
-		
 
     IWL_DEBUG_INFO(drv, "Loaded firmware file '%s' (%zd bytes).\n",
                drv->firmware_name, ucode_raw->size);
@@ -1408,10 +1399,9 @@ static void iwl_req_fw_callback(const struct firmware *ucode_raw, void *context)
 		err = iwl_parse_tlv_firmware(drv, ucode_raw, pieces,
 					     &fw->ucode_capa, &usniffer_images);
 
-    if (err) {
-        IOLog("Parsing error");
+    if (err)
         goto try_again;
-    }
+    
 		
 
 	if (fw_has_api(&drv->fw.ucode_capa, IWL_UCODE_TLV_API_NEW_VERSION))
@@ -1436,10 +1426,8 @@ static void iwl_req_fw_callback(const struct firmware *ucode_raw, void *context)
 	 * In mvm uCode there is no difference between data and instructions
 	 * sections.
 	 */
-    if (fw->type == IWL_FW_DVM && validate_sec_sizes(drv, pieces, drv->trans->cfg)) {
-        IOLog("Sec size validation fail!");
+    if (fw->type == IWL_FW_DVM && validate_sec_sizes(drv, pieces, drv->trans->cfg))
         goto try_again;
-    }
     
 
 	/* Allocate ucode buffers for card's bus-master loading ... */
@@ -1447,15 +1435,10 @@ static void iwl_req_fw_callback(const struct firmware *ucode_raw, void *context)
 	/* Runtime instructions and 2 copies of data:
 	 * 1) unmodified from disk
 	 * 2) backup cache for save/restore during power-downs */
-    for (i = 0; i < IWL_UCODE_TYPE_MAX; i++) {
-        if (iwl_alloc_ucode(drv, pieces, i)) {
-            IOLog("Alloc ucode fail!");
+    for (i = 0; i < IWL_UCODE_TYPE_MAX; i++)
+        if (iwl_alloc_ucode(drv, pieces, i))
             goto out_free_fw;
-        }
-    }
-    
-    
-
+        
     if (pieces->dbg_dest_tlv) {
         memcpy(drv->fw.dbg_dest_tlv,
                pieces->dbg_dest_tlv,
@@ -1637,7 +1620,7 @@ static void iwl_req_fw_callback(const struct firmware *ucode_raw, void *context)
 	if (pieces) {
         for (i = 0; i < ARRAY_SIZE(pieces->img); i++) {
             //kfree(pieces->img[i].sec);
-//            IOFree(pieces->img[i].sec, sizeof(*pieces->img[i].sec)));
+            IOFree(pieces->img[i].sec, sizeof(*pieces->img[i].sec) * pieces->img[i].sec_counter);
         }
 			
 //        kfree(pieces->dbg_mem_tlv);

@@ -12,17 +12,18 @@
 #define Logging_h
 
 #ifdef DEBUG
-#define DebugLog(args...) IOLog("IntelWifi: " args)
+#define DebugLog(args...) IOLog(args)
 #else
 #define DebugLog(args...)
 #endif
 
-#define TraceLog(args...) IOLog("IntelWifi: " args)
+#define TraceLog(args...) IOLog(args)
 
-#define IWL_DEBUG_INFO(trans, args...) DebugLog(args)
+#define IWL_DEBUG_INFO(trans, args...) DebugLog("DEBUG INFO: " args)
 #define IWL_ERR(trans, args...) TraceLog("ERROR: " args)
 #define IWL_INFO(trans, args...) TraceLog("INFO: " args)
 #define IWL_DEBUG_FW(drv, args...) DebugLog("DEBUG FW: " args)
+#define IWL_WARN(drv, args...) TraceLog("WARN: " args)
 
 
 #endif /* Logging_h */
