@@ -62,5 +62,12 @@ protected:
     
     struct iwl_nvm_data *fNvmData;
     
+private:
+    int iwl_pcie_prepare_card_hw();
+    int iwl_pcie_set_hw_ready();
+    void iwl_pcie_sw_reset();
+    int iwl_pcie_apm_init();
+    void iwl_pcie_apm_config();
+    
     
 };
