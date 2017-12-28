@@ -10,6 +10,8 @@
 
 #include "iwlwifi/iwl-csr.h"
 
+#include "Logging.h"
+
 #define super OSObject
 OSDefineMetaClassAndStructors( IntelEeprom, OSObject )
 
@@ -75,6 +77,32 @@ enum eeprom_sku_bits {
 #define EEPROM_RF_CFG_RX_ANT_MSK(x) ((x >> 12) & 0xF) /* bits 12-15 */
 
 
+/*
+ * EEPROM access time values:
+ *
+ * Driver initiates EEPROM read by writing byte address << 1 to CSR_EEPROM_REG.
+ * Driver then polls CSR_EEPROM_REG for CSR_EEPROM_REG_READ_VALID_MSK (0x1).
+ * When polling, wait 10 uSec between polling loops, up to a maximum 5000 uSec.
+ * Driver reads 16-bit value from bits 31-16 of CSR_EEPROM_REG.
+ */
+#define IWL_EEPROM_ACCESS_TIMEOUT    5000 /* uSec */
+
+#define IWL_EEPROM_SEM_TIMEOUT        10   /* microseconds */
+#define IWL_EEPROM_SEM_RETRY_LIMIT    1000 /* number of attempts (not time) */
+
+
+/*
+ * The device's EEPROM semaphore prevents conflicts between driver and uCode
+ * when accessing the EEPROM; each access is a series of pulses to/from the
+ * EEPROM chip, not a single event, so even reads could conflict if they
+ * weren't arbitrated by the semaphore.
+ */
+
+#define    EEPROM_SEM_TIMEOUT 10        /* milliseconds */
+#define EEPROM_SEM_RETRY_LIMIT 1000    /* number of attempts (not time) */
+
+
+
 IntelEeprom* IntelEeprom::withAddress(volatile void * p) {
     IntelEeprom *eeprom = new IntelEeprom;
     
@@ -92,9 +120,20 @@ bool IntelEeprom::initWithAddress(volatile void * p) {
         return false;
     }
     
+    lock = IOLockAlloc();
+    
     baseHwAddr = p;
     
-    UInt16 *e = (UInt16*)IOMalloc(OTP_LOW_IMAGE_SIZE / 2);
+    UInt16 *e = (UInt16*)IOMalloc(OTP_LOW_IMAGE_SIZE);
+    
+    int ret = iwl_eeprom_acquire_semaphore();
+    if (ret < 0) {
+        TraceLog("Failed to acquire EEPROM semaphore.\n");
+        IOFree(e, OTP_LOW_IMAGE_SIZE);
+        return false;
+    }
+
+
     
     for (UInt16 a = 0; a < OTP_LOW_IMAGE_SIZE; a += sizeof(UInt16)) {
         iwl_write32(CSR_EEPROM_REG, CSR_EEPROM_REG_MSK_ADDR & (a << 1));
@@ -114,9 +153,29 @@ bool IntelEeprom::initWithAddress(volatile void * p) {
         e[a/2] = (r >> 16);
     }
     
+    iwl_eeprom_release_semaphore();
+    
     fEeprom = (UInt8 *)e;
     
+    
+    
     return true;
+}
+
+void IntelEeprom::release() {
+    if (lock) {
+        IOLockFree(lock);
+        lock = NULL;
+    }
+    
+    if (fEeprom) {
+        IOFree(fEeprom, OTP_LOW_IMAGE_SIZE);
+        fEeprom = NULL;
+    }
+    
+    
+    
+    super::release();
 }
 
 struct iwl_nvm_data* IntelEeprom::parse() {
@@ -184,6 +243,8 @@ struct iwl_nvm_data* IntelEeprom::parse() {
     return nvmData;
 
 }
+
+UInt32 IntelEeprom::getHardwareRevisionId()  { return iwl_read32(CSR_HW_REV); }
 
 // MARK: Private
 int IntelEeprom::iwl_poll_bit(UInt32 addr, UInt32 bits, UInt32 mask, int timeout) {
@@ -272,3 +333,64 @@ int IntelEeprom::iwl_eeprom_read_calib(struct iwl_nvm_data *data)
     
     return 0;
 }
+
+
+int IntelEeprom::iwl_eeprom_acquire_semaphore()
+{
+    UInt16 count;
+    int ret;
+    
+    for (count = 0; count < EEPROM_SEM_RETRY_LIMIT; count++) {
+        /* Request semaphore */
+        iwl_set_bit(CSR_HW_IF_CONFIG_REG, CSR_HW_IF_CONFIG_REG_BIT_EEPROM_OWN_SEM);
+        
+        /* See if we got it */
+        ret = iwl_poll_bit(CSR_HW_IF_CONFIG_REG,
+                           CSR_HW_IF_CONFIG_REG_BIT_EEPROM_OWN_SEM,
+                           CSR_HW_IF_CONFIG_REG_BIT_EEPROM_OWN_SEM,
+                           EEPROM_SEM_TIMEOUT);
+        if (ret >= 0) {
+            TraceLog("Acquired semaphore after %d tries.\n", count+1);
+            return ret;
+        }
+    }
+    
+    return ret;
+}
+
+void IntelEeprom::iwl_eeprom_release_semaphore()
+{
+    iwl_clear_bit(CSR_HW_IF_CONFIG_REG, CSR_HW_IF_CONFIG_REG_BIT_EEPROM_OWN_SEM);
+}
+
+void IntelEeprom::iwl_set_bit(UInt32 reg, UInt32 mask)
+{
+    iwl_trans_pcie_set_bits_mask(reg, mask, mask);
+}
+
+void IntelEeprom::iwl_clear_bit(UInt32 reg, UInt32 mask)
+{
+    iwl_trans_pcie_set_bits_mask(reg, mask, 0);
+}
+
+void IntelEeprom::iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value)
+{
+    //spin_lock_irqsave(&trans_pcie->reg_lock, flags);
+    IOLockLock(lock);
+    __iwl_trans_pcie_set_bits_mask(reg, mask, value);
+    //spin_unlock_irqrestore(&trans_pcie->reg_lock, flags);
+    IOLockUnlock(lock);
+    
+}
+
+void IntelEeprom::__iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value)
+{
+    UInt32 v;
+    
+    v = iwl_read32(reg);
+    v &= ~mask;
+    v |= value;
+    iwl_write32(reg, v);
+}
+
+

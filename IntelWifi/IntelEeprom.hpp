@@ -30,12 +30,10 @@ class IntelEeprom : public OSObject {
 public:
     static IntelEeprom* withAddress(volatile void * p);
     bool initWithAddress(volatile void * p);
-    UInt8* addr() {
-        return fEeprom;
-    }
-    
+    void release();
     struct iwl_nvm_data* parse();
     
+    UInt32 getHardwareRevisionId();
     
 private:
     
@@ -47,8 +45,22 @@ private:
     UInt16 iwl_eeprom_query16(int offset);
     int iwl_eeprom_read_calib(struct iwl_nvm_data *data);
     
+    int iwl_eeprom_acquire_semaphore();
+    void iwl_eeprom_release_semaphore();
+    void iwl_set_bit(UInt32 reg, UInt32 mask);
+    
+    void iwl_clear_bit(UInt32 reg, UInt32 mask);
+    
+    void iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value);
+    void __iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value);
+    
     volatile void * baseHwAddr;
     UInt8* fEeprom;
+    
+    IOLock *lock;
+   
 };
+
+
 
 #endif /* IntelEeprom_hpp */

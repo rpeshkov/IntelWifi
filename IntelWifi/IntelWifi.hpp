@@ -63,10 +63,5 @@ protected:
     
     struct iwl_nvm_data *fNvmData;
     
-private:
-    // iwl-io.c
-    int iwl_poll_bit(volatile void * base, UInt32 addr, UInt32 bits, UInt32 mask, int timeout);
     
-    // iwl-eeprom-read.c
-    int iwl_read_eeprom(struct iwl_trans *trans, UInt8 **eeprom, size_t *eeprom_size);
 };

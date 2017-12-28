@@ -54,8 +54,6 @@ void IntelWifi::free() {
 bool IntelWifi::start(IOService *provider) {
     TraceLog("Start");
     
-    
-    
     if (!super::start(provider)) {
         TraceLog("Super start call failed!");
         return false;
@@ -67,15 +65,20 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     pciDevice->retain();
-    
+
+    //    pci_set_master(pdev);
+    pciDevice->setBusMasterEnable(true);
     pciDevice->setMemoryEnable(true);
     
     UInt16 vendorId = pciDevice->configRead16(kIOPCIConfigVendorID);
     UInt16 deviceId = pciDevice->configRead16(kIOPCIConfigDeviceID);
     UInt16 subsystemId = pciDevice->configRead16(kIOPCIConfigSubSystemID);
+    DebugLog("Device loaded. Vendor: %#06x, Device: %#06x, SubSystem: %#06x", vendorId, deviceId, subsystemId);
+    
     
     fMemoryMap = pciDevice->mapDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0);
     if (!fMemoryMap) {
+        TraceLog("MemoryMap failed!");
         if (pciDevice) {
             pciDevice->release();
             pciDevice = NULL;
@@ -84,11 +87,15 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
+    pciDevice->configWrite8(0x41, 0);
+    
+    
         
     volatile void *baseAddr = reinterpret_cast<volatile void *>(fMemoryMap->getVirtualAddress());
         
     eeprom = IntelEeprom::withAddress(baseAddr);
     if (!eeprom) {
+        TraceLog("EEPROM init failed!");
         if (fMemoryMap) {
             fMemoryMap->release();
             fMemoryMap = NULL;
@@ -101,8 +108,11 @@ bool IntelWifi::start(IOService *provider) {
         
         return false;
     }
+    
     fNvmData = eeprom->parse();
     if (!fNvmData) {
+        TraceLog("EEPROM parse failed!");
+        
         if (eeprom) {
             eeprom->release();
             eeprom = NULL;
@@ -130,24 +140,50 @@ bool IntelWifi::start(IOService *provider) {
              fNvmData->n_hw_addrs,
              fNvmData->calib_version, fNvmData->calib_voltage,
              fNvmData->raw_temperature);
-     
     
-    DebugLog("Device loaded. Vendor: %#06x, Device: %#06x, SubSystem: %#06x", vendorId, deviceId, subsystemId);
-   
+    // original: trans->hw_rev = iwl_read32(trans, CSR_HW_REV);
+    UInt32 hardwareRevisionId = eeprom->getHardwareRevisionId();
+    DebugLog("Hardware revision ID: %#010x", hardwareRevisionId);
     
     if (!createMediumDict()) {
         TraceLog("MediumDict creation failed!");
+        if (eeprom) {
+            eeprom->release();
+            eeprom = NULL;
+        }
+        
+        if (fMemoryMap) {
+            fMemoryMap->release();
+            fMemoryMap = NULL;
+        }
+        
+        if (pciDevice) {
+            pciDevice->release();
+            pciDevice = NULL;
+        }
         return false;
     }
     
     if (!attachInterface((IONetworkInterface**)&netif)) {
         TraceLog("Interface attach failed!");
+        if (eeprom) {
+            eeprom->release();
+            eeprom = NULL;
+        }
+        
+        if (fMemoryMap) {
+            fMemoryMap->release();
+            fMemoryMap = NULL;
+        }
+        
+        if (pciDevice) {
+            pciDevice->release();
+            pciDevice = NULL;
+        }
         return false;
     }
     
-    netif->registerService();
-    
-    
+    registerService();
     
     return true;
 }
@@ -163,6 +199,16 @@ void IntelWifi::stop(IOService *provider) {
     if (mediumDict) {
         mediumDict->release();
         mediumDict = NULL;
+    }
+    
+    if (eeprom) {
+        eeprom->release();
+        eeprom = NULL;
+    }
+    
+    if (fMemoryMap) {
+        fMemoryMap->release();
+        fMemoryMap = NULL;
     }
     
     if (pciDevice) {
@@ -205,6 +251,8 @@ bool IntelWifi::createMediumDict() {
 
 IOReturn IntelWifi::enable(IONetworkInterface *netif) {
     
+    TraceLog("enable");
+    
     IOMediumType mediumType = kIOMediumIEEE80211Auto;
     IONetworkMedium *medium = IONetworkMedium::getMediumWithType(mediumDict, mediumType);
     
@@ -214,7 +262,8 @@ IOReturn IntelWifi::enable(IONetworkInterface *netif) {
 
 
 
-IOReturn IntelWifi::disable(IONetworkInterface *netif) { 
+IOReturn IntelWifi::disable(IONetworkInterface *netif) {
+    TraceLog("disable");
     netif->flushInputQueue();
     return kIOReturnSuccess;
 }
@@ -240,7 +289,8 @@ UInt32 IntelWifi::outputPacket(mbuf_t m, void *param) {
 }
 
 
-bool IntelWifi::configureInterface(IONetworkInterface *netif) { 
+bool IntelWifi::configureInterface(IONetworkInterface *netif) {
+    TraceLog("Configure interface");
     if (!super::configureInterface(netif)) {
         return false;
     }
@@ -267,22 +317,5 @@ const OSString* IntelWifi::newModelString() const {
     const char    *model = "Centrino N-130";
     return OSString::withCString(model);
 }
-
-
-// MARK: iwl-io.c
-int IntelWifi::iwl_poll_bit(volatile void * base, UInt32 addr, UInt32 bits, UInt32 mask, int timeout) {
-    int t = 0;
-    do {
-        if ((OSReadLittleInt32(base, addr) & mask) == (bits & mask)) {
-            return t;
-        }
-        
-        IODelay(1);
-        t += 1;
-    } while (t < timeout);
-    
-    return -ETIMEDOUT;
-}
-
 
 
