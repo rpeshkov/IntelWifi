@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A60DDC051FF46EE200E81A4B /* IntelIO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A60DDC031FF46EE200E81A4B /* IntelIO.cpp */; };
+		A60DDC061FF46EE200E81A4B /* IntelIO.hpp in Headers */ = {isa = PBXBuildFile; fileRef = A60DDC041FF46EE200E81A4B /* IntelIO.hpp */; };
 		A61264FA1FF20162006A7AEA /* iwl-csr.h in Headers */ = {isa = PBXBuildFile; fileRef = A61264F91FF20162006A7AEA /* iwl-csr.h */; };
 		A6157B7A1FF3303E00DAC8CE /* IntelEeprom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A6157B781FF3303E00DAC8CE /* IntelEeprom.cpp */; };
 		A6157B7B1FF3303E00DAC8CE /* IntelEeprom.hpp in Headers */ = {isa = PBXBuildFile; fileRef = A6157B791FF3303E00DAC8CE /* IntelEeprom.hpp */; };
@@ -18,6 +20,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A60DDC031FF46EE200E81A4B /* IntelIO.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IntelIO.cpp; sourceTree = "<group>"; };
+		A60DDC041FF46EE200E81A4B /* IntelIO.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IntelIO.hpp; sourceTree = "<group>"; };
 		A611F3EA1FF33BCD001B5538 /* iwl-eeprom-parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "iwl-eeprom-parse.h"; sourceTree = "<group>"; };
 		A61264F91FF20162006A7AEA /* iwl-csr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-csr.h"; sourceTree = "<group>"; };
 		A6157B781FF3303E00DAC8CE /* IntelEeprom.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IntelEeprom.cpp; sourceTree = "<group>"; };
@@ -81,6 +85,8 @@
 				A65CD61E1FF1D2BB004AA810 /* Logging.h */,
 				A6157B781FF3303E00DAC8CE /* IntelEeprom.cpp */,
 				A6157B791FF3303E00DAC8CE /* IntelEeprom.hpp */,
+				A60DDC031FF46EE200E81A4B /* IntelIO.cpp */,
+				A60DDC041FF46EE200E81A4B /* IntelIO.hpp */,
 			);
 			path = IntelWifi;
 			sourceTree = "<group>";
@@ -93,6 +99,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A61264FA1FF20162006A7AEA /* iwl-csr.h in Headers */,
+				A60DDC061FF46EE200E81A4B /* IntelIO.hpp in Headers */,
 				A6E59FE41FF34BA600E86DC0 /* iwl-agn-hw.h in Headers */,
 				A636DA741FF421B7006AECC9 /* iwl-config.h in Headers */,
 				A65083781FEFB2DC001300AC /* IntelWifi.hpp in Headers */,
@@ -170,6 +177,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A6157B7A1FF3303E00DAC8CE /* IntelEeprom.cpp in Sources */,
+				A60DDC051FF46EE200E81A4B /* IntelIO.cpp in Sources */,
 				A650837A1FEFB2DC001300AC /* IntelWifi.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

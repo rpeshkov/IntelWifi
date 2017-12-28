@@ -92,8 +92,10 @@ bool IntelWifi::start(IOService *provider) {
     
         
     volatile void *baseAddr = reinterpret_cast<volatile void *>(fMemoryMap->getVirtualAddress());
+    
+    io = IntelIO::withAddress(baseAddr);
         
-    eeprom = IntelEeprom::withAddress(baseAddr);
+    eeprom = IntelEeprom::withIO(io);
     if (!eeprom) {
         TraceLog("EEPROM init failed!");
         if (fMemoryMap) {
@@ -142,7 +144,7 @@ bool IntelWifi::start(IOService *provider) {
              fNvmData->raw_temperature);
     
     // original: trans->hw_rev = iwl_read32(trans, CSR_HW_REV);
-    UInt32 hardwareRevisionId = eeprom->getHardwareRevisionId();
+    UInt32 hardwareRevisionId = io->iwl_read32(CSR_HW_REV);
     DebugLog("Hardware revision ID: %#010x", hardwareRevisionId);
     
     if (!createMediumDict()) {
@@ -204,6 +206,11 @@ void IntelWifi::stop(IOService *provider) {
     if (eeprom) {
         eeprom->release();
         eeprom = NULL;
+    }
+    
+    if (io) {
+        io->release();
+        io = NULL;
     }
     
     if (fMemoryMap) {
@@ -314,8 +321,7 @@ const OSString* IntelWifi::newVendorString() const {
 
 
 const OSString* IntelWifi::newModelString() const {
-    const char    *model = "Centrino N-130";
-    return OSString::withCString(model);
+    return OSString::withCString("Centrino N-130");
 }
 
 

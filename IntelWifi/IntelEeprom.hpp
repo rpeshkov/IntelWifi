@@ -18,9 +18,11 @@
 
 #include "iwlwifi/iwl-eeprom-parse.h"
 
+#include "IntelIO.hpp"
 
 
-#define IWL_POLL_INTERVAL 10    /* microseconds */
+
+
 
 #define OTP_LOW_IMAGE_SIZE        (2 * 512 * sizeof(UInt16)) /* 2 KB */
 
@@ -28,18 +30,12 @@ class IntelEeprom : public OSObject {
     OSDeclareDefaultStructors(IntelEeprom)
     
 public:
-    static IntelEeprom* withAddress(volatile void * p);
-    bool initWithAddress(volatile void * p);
+    static IntelEeprom* withIO(IntelIO *io);
+    bool initWithIO(IntelIO *io);
     void release();
     struct iwl_nvm_data* parse();
     
-    UInt32 getHardwareRevisionId();
-    
 private:
-    
-    int iwl_poll_bit(UInt32 addr, UInt32 bits, UInt32 mask, int timeout);
-    void iwl_write32(UInt32 ofs, UInt32 val);
-    UInt32 iwl_read32(UInt32 ofs);
     const UInt8 *iwl_eeprom_query_addr(UInt32 offset);
     UInt32 eeprom_indirect_address(UInt32 address);
     UInt16 iwl_eeprom_query16(int offset);
@@ -47,18 +43,9 @@ private:
     
     int iwl_eeprom_acquire_semaphore();
     void iwl_eeprom_release_semaphore();
-    void iwl_set_bit(UInt32 reg, UInt32 mask);
-    
-    void iwl_clear_bit(UInt32 reg, UInt32 mask);
-    
-    void iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value);
-    void __iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value);
-    
-    volatile void * baseHwAddr;
     UInt8* fEeprom;
     
-    IOLock *lock;
-   
+    IntelIO *fIO;
 };
 
 

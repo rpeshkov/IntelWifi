@@ -103,10 +103,10 @@ enum eeprom_sku_bits {
 
 
 
-IntelEeprom* IntelEeprom::withAddress(volatile void * p) {
+IntelEeprom* IntelEeprom::withIO(IntelIO *io) {
     IntelEeprom *eeprom = new IntelEeprom;
     
-    if (eeprom && !eeprom->initWithAddress(p)) {
+    if (eeprom && !eeprom->initWithIO(io)) {
         eeprom->release();
         return 0;
     }
@@ -115,14 +115,12 @@ IntelEeprom* IntelEeprom::withAddress(volatile void * p) {
 }
 
 
-bool IntelEeprom::initWithAddress(volatile void * p) {
+bool IntelEeprom::initWithIO(IntelIO *io) {
     if (!super::init()) {
         return false;
     }
     
-    lock = IOLockAlloc();
-    
-    baseHwAddr = p;
+    fIO = io;
     
     UInt16 *e = (UInt16*)IOMalloc(OTP_LOW_IMAGE_SIZE);
     
@@ -132,23 +130,21 @@ bool IntelEeprom::initWithAddress(volatile void * p) {
         IOFree(e, OTP_LOW_IMAGE_SIZE);
         return false;
     }
-
-
     
     for (UInt16 a = 0; a < OTP_LOW_IMAGE_SIZE; a += sizeof(UInt16)) {
-        iwl_write32(CSR_EEPROM_REG, CSR_EEPROM_REG_MSK_ADDR & (a << 1));
+        fIO->iwl_write32(CSR_EEPROM_REG, CSR_EEPROM_REG_MSK_ADDR & (a << 1));
         
-        int ret = iwl_poll_bit(CSR_EEPROM_REG,
-                               CSR_EEPROM_REG_READ_VALID_MSK,
-                               CSR_EEPROM_REG_READ_VALID_MSK,
-                               5000);
+        int ret = fIO->iwl_poll_bit(CSR_EEPROM_REG,
+                                   CSR_EEPROM_REG_READ_VALID_MSK,
+                                   CSR_EEPROM_REG_READ_VALID_MSK,
+                                   IWL_EEPROM_ACCESS_TIMEOUT);
         
         if (ret < 0) {
             return false;
         }
         
         
-        UInt32 r = iwl_read32(CSR_EEPROM_REG);
+        UInt32 r = fIO->iwl_read32(CSR_EEPROM_REG);
         
         e[a/2] = (r >> 16);
     }
@@ -163,17 +159,10 @@ bool IntelEeprom::initWithAddress(volatile void * p) {
 }
 
 void IntelEeprom::release() {
-    if (lock) {
-        IOLockFree(lock);
-        lock = NULL;
-    }
-    
     if (fEeprom) {
         IOFree(fEeprom, OTP_LOW_IMAGE_SIZE);
         fEeprom = NULL;
     }
-    
-    
     
     super::release();
 }
@@ -184,7 +173,7 @@ struct iwl_nvm_data* IntelEeprom::parse() {
         return NULL;
     }
     
-    const void *tmp = iwl_eeprom_query_addr(EEPROM_MAC_ADDRESS);;
+    const void *tmp = iwl_eeprom_query_addr(EEPROM_MAC_ADDRESS);
     
     if (!tmp) {
         IOFree(nvmData, sizeof(struct iwl_nvm_data));
@@ -244,30 +233,7 @@ struct iwl_nvm_data* IntelEeprom::parse() {
 
 }
 
-UInt32 IntelEeprom::getHardwareRevisionId()  { return iwl_read32(CSR_HW_REV); }
-
 // MARK: Private
-int IntelEeprom::iwl_poll_bit(UInt32 addr, UInt32 bits, UInt32 mask, int timeout) {
-    int t = 0;
-    do {
-        if ((OSReadLittleInt32(baseHwAddr, addr) & mask) == (bits & mask)) {
-            return t;
-        }
-        
-        IODelay(IWL_POLL_INTERVAL);
-        t += IWL_POLL_INTERVAL;
-    } while (t < timeout);
-    
-    return -ETIMEDOUT;
-}
-
-void IntelEeprom::iwl_write32(UInt32 ofs, UInt32 val) {
-    OSWriteLittleInt32(baseHwAddr, ofs, val);
-}
-
-UInt32 IntelEeprom::iwl_read32(UInt32 ofs) {
-    return OSReadLittleInt32(baseHwAddr, ofs);
-}
 
 const UInt8 *IntelEeprom::iwl_eeprom_query_addr(UInt32 offset)
 {
@@ -338,14 +304,14 @@ int IntelEeprom::iwl_eeprom_read_calib(struct iwl_nvm_data *data)
 int IntelEeprom::iwl_eeprom_acquire_semaphore()
 {
     UInt16 count;
-    int ret;
+    int ret = -1;
     
     for (count = 0; count < EEPROM_SEM_RETRY_LIMIT; count++) {
         /* Request semaphore */
-        iwl_set_bit(CSR_HW_IF_CONFIG_REG, CSR_HW_IF_CONFIG_REG_BIT_EEPROM_OWN_SEM);
+        fIO->iwl_set_bit(CSR_HW_IF_CONFIG_REG, CSR_HW_IF_CONFIG_REG_BIT_EEPROM_OWN_SEM);
         
         /* See if we got it */
-        ret = iwl_poll_bit(CSR_HW_IF_CONFIG_REG,
+        ret = fIO->iwl_poll_bit(CSR_HW_IF_CONFIG_REG,
                            CSR_HW_IF_CONFIG_REG_BIT_EEPROM_OWN_SEM,
                            CSR_HW_IF_CONFIG_REG_BIT_EEPROM_OWN_SEM,
                            EEPROM_SEM_TIMEOUT);
@@ -360,37 +326,5 @@ int IntelEeprom::iwl_eeprom_acquire_semaphore()
 
 void IntelEeprom::iwl_eeprom_release_semaphore()
 {
-    iwl_clear_bit(CSR_HW_IF_CONFIG_REG, CSR_HW_IF_CONFIG_REG_BIT_EEPROM_OWN_SEM);
+    fIO->iwl_clear_bit(CSR_HW_IF_CONFIG_REG, CSR_HW_IF_CONFIG_REG_BIT_EEPROM_OWN_SEM);
 }
-
-void IntelEeprom::iwl_set_bit(UInt32 reg, UInt32 mask)
-{
-    iwl_trans_pcie_set_bits_mask(reg, mask, mask);
-}
-
-void IntelEeprom::iwl_clear_bit(UInt32 reg, UInt32 mask)
-{
-    iwl_trans_pcie_set_bits_mask(reg, mask, 0);
-}
-
-void IntelEeprom::iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value)
-{
-    //spin_lock_irqsave(&trans_pcie->reg_lock, flags);
-    IOLockLock(lock);
-    __iwl_trans_pcie_set_bits_mask(reg, mask, value);
-    //spin_unlock_irqrestore(&trans_pcie->reg_lock, flags);
-    IOLockUnlock(lock);
-    
-}
-
-void IntelEeprom::__iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value)
-{
-    UInt32 v;
-    
-    v = iwl_read32(reg);
-    v &= ~mask;
-    v |= value;
-    iwl_write32(reg, v);
-}
-
-

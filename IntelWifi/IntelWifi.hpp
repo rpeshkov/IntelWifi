@@ -11,9 +11,6 @@
 
 #include "iwl-eeprom-parse.h"
 
-
-
-
 class IntelWifi : public IOEthernetController
 {
     OSDeclareDefaultStructors(IntelWifi)
@@ -56,6 +53,8 @@ protected:
     
     IONetworkStats *fNetworkStats;
     IOEthernetStats *fEthernetStats;
+    
+    IntelIO* io;
     
     IntelEeprom* eeprom;
     
