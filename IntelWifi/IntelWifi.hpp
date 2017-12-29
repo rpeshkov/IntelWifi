@@ -11,6 +11,7 @@
 #include "IntelEeprom.hpp"
 
 #include "iwl-eeprom-parse.h"
+#include "iwl-trans-pcie.h"
 
 class IntelWifi : public IOEthernetController
 {
@@ -64,6 +65,8 @@ protected:
     
     struct iwl_nvm_data *fNvmData;
     struct iwl_cfg* fConfiguration;
+    struct iwl_trans* trans;
+    struct iwl_trans_pcie* trans_pcie;
     
 private:
     struct iwl_cfg* getConfiguration(UInt16 deviceId, UInt16 subSystemId);

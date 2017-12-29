@@ -10,6 +10,9 @@
 
 #include <sys/errno.h>
 
+#include "iwl-csr.h"
+#include "Logging.h"
+
 // MARK: Defines
 
 #define IWL_POLL_INTERVAL 10    /* microseconds */
@@ -19,10 +22,10 @@
 #define super OSObject
 OSDefineMetaClassAndStructors( IntelIO, OSObject )
 
-IntelIO* IntelIO::withAddress(volatile void * p) {
+IntelIO* IntelIO::withTrans(struct iwl_trans_pcie* trans) {
     IntelIO *io = new IntelIO;
     
-    if (io && !io->initWithAddress(p)) {
+    if (io && !io->initWithTrans(trans)) {
         io->release();
         return NULL;
     }
@@ -30,18 +33,18 @@ IntelIO* IntelIO::withAddress(volatile void * p) {
     return io;
 }
 
-bool IntelIO::initWithAddress(volatile void * p) {
+bool IntelIO::initWithTrans(struct iwl_trans_pcie* trans) {
     if (!super::init()) {
         return false;
     }
     
-    fBaseAddr = p;
+    fTrans = trans;
     
     return true;
 }
 
 void IntelIO::release() {
-    fBaseAddr = NULL;
+    fTrans = NULL;
     super::release();
 }
 
@@ -61,11 +64,11 @@ int IntelIO::iwl_poll_bit(UInt32 addr, UInt32 bits, UInt32 mask, int timeout) {
 
 
 void IntelIO::iwl_write32(UInt32 ofs, UInt32 val) {
-    OSWriteLittleInt32(fBaseAddr, ofs, val);
+    OSWriteLittleInt32(fTrans->hw_base, ofs, val);
 }
 
 UInt32 IntelIO::iwl_read32(UInt32 ofs) {
-    return OSReadLittleInt32(fBaseAddr, ofs);
+    return OSReadLittleInt32(fTrans->hw_base, ofs);
 }
 
 void IntelIO::iwl_set_bit(UInt32 reg, UInt32 mask)
@@ -80,20 +83,130 @@ void IntelIO::iwl_clear_bit(UInt32 reg, UInt32 mask)
 
 void IntelIO::iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value)
 {
-    // TODO: Maybe here IOSimpleLockLockDisableInterrupt must be used?
-    //spin_lock_irqsave(&trans_pcie->reg_lock, flags);
+    IOInterruptState state = IOSimpleLockLockDisableInterrupt(fTrans->reg_lock);
     __iwl_trans_pcie_set_bits_mask(reg, mask, value);
-    //spin_unlock_irqrestore(&trans_pcie->reg_lock, flags);
+    IOSimpleLockUnlockEnableInterrupt(fTrans->reg_lock, state);
 }
 
 void IntelIO::__iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value)
 {
-    UInt32 v;
-    
-    v = iwl_read32(reg);
+    UInt32 v = iwl_read32(reg);
     v &= ~mask;
     v |= value;
     iwl_write32(reg, v);
 }
+
+bool IntelIO::iwl_grab_nic_access(IOInterruptState *state) {
+    *state = IOSimpleLockLockDisableInterrupt(fTrans->reg_lock);
+    
+    if (fTrans->cmd_hold_nic_awake) {
+        return true;
+    }
+
+    /* this bit wakes up the NIC */
+    __iwl_trans_pcie_set_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
+
+    // TODO: Implement
+//    if (trans->cfg->device_family >= IWL_DEVICE_FAMILY_8000)
+//        udelay(2);
+    
+    /*
+     * These bits say the device is running, and should keep running for
+     * at least a short while (at least as long as MAC_ACCESS_REQ stays 1),
+     * but they do not indicate that embedded SRAM is restored yet;
+     * HW with volatile SRAM must save/restore contents to/from
+     * host DRAM when sleeping/waking for power-saving.
+     * Each direction takes approximately 1/4 millisecond; with this
+     * overhead, it's a good idea to grab and hold MAC_ACCESS_REQUEST if a
+     * series of register accesses are expected (e.g. reading Event Log),
+     * to keep device from sleeping.
+     *
+     * CSR_UCODE_DRV_GP1 register bit MAC_SLEEP == 0 indicates that
+     * SRAM is okay/restored.  We don't check that here because this call
+     * is just for hardware register access; but GP1 MAC_SLEEP
+     * check is a good idea before accessing the SRAM of HW with
+     * volatile SRAM (e.g. reading Event Log).
+     *
+     * 5000 series and later (including 1000 series) have non-volatile SRAM,
+     * and do not save/restore SRAM when power cycling.
+     */
+    int ret = iwl_poll_bit(CSR_GP_CNTRL,
+                       CSR_GP_CNTRL_REG_VAL_MAC_ACCESS_EN,
+                       (CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY |
+                        CSR_GP_CNTRL_REG_FLAG_GOING_TO_SLEEP), 15000);
+    if (ret < 0) {
+        iwl_write32(CSR_RESET, CSR_RESET_REG_FLAG_FORCE_NMI);
+        
+        IWL_WARN(0, "Timeout waiting for hardware access (CSR_GP_CNTRL 0x%08x)\n",
+                  iwl_read32(CSR_GP_CNTRL));
+        
+        IOSimpleLockUnlockEnableInterrupt(fTrans->reg_lock, *state);
+        return false;
+    }
+    
+    return true;
+}
+
+void IntelIO::iwl_release_nic_access(IOInterruptState *state) {
+    if (fTrans->cmd_hold_nic_awake) {
+        IOSimpleLockUnlockEnableInterrupt(fTrans->reg_lock, *state);
+        return;
+    }
+   
+    __iwl_trans_pcie_clear_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
+    /*
+     * Above we read the CSR_GP_CNTRL register, which will flush
+     * any previous writes, but we need the write that clears the
+     * MAC_ACCESS_REQ bit to be performed before any other writes
+     * scheduled on different CPUs (after we drop reg_lock).
+     */
+    //mmiowb(); // TODO: Find out what is that...
+}
+
+void IntelIO::__iwl_trans_pcie_clear_bit(UInt32 reg, UInt32 mask)
+{
+    __iwl_trans_pcie_set_bits_mask(reg, mask, 0);
+}
+
+void IntelIO::__iwl_trans_pcie_set_bit(UInt32 reg, UInt32 mask)
+{
+    __iwl_trans_pcie_set_bits_mask(reg, mask, mask);
+}
+
+UInt32 IntelIO::iwl_read_prph_no_grab(UInt32 reg) { 
+    iwl_write32(HBUS_TARG_PRPH_RADDR, ((reg & 0x000FFFFF) | (3 << 24)));
+    return iwl_read32(HBUS_TARG_PRPH_RDAT);
+}
+
+void IntelIO::iwl_write_prph_no_grab(UInt32 addr, UInt32 val) { 
+    iwl_write32(HBUS_TARG_PRPH_WADDR, ((addr & 0x000FFFFF) | (3 << 24)));
+    iwl_write32(HBUS_TARG_PRPH_WDAT, val);
+}
+
+UInt32 IntelIO::iwl_read_prph(UInt32 ofs)
+{
+    IOInterruptState state;
+    UInt32 val = 0x5a5a5a5a;
+    
+    if (iwl_grab_nic_access(&state)) {
+        val = iwl_read_prph_no_grab(ofs);
+        iwl_release_nic_access(&state);
+    }
+    return val;
+}
+
+
+void IntelIO::iwl_write_prph(UInt32 ofs, UInt32 val)
+{
+    IOInterruptState state;
+    
+    if (iwl_grab_nic_access(&state)) {
+        iwl_write_prph_no_grab(ofs, val);
+        iwl_release_nic_access(&state);
+    }
+}
+
+
+
 
 

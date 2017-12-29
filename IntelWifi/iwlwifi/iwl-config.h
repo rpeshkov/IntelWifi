@@ -443,7 +443,7 @@ extern const struct iwl_cfg iwl105_bgn_cfg;
 extern const struct iwl_cfg iwl105_bgn_d_cfg;
 extern const struct iwl_cfg iwl135_bgn_cfg;
 
-#ifdef CONFIG_IWLMVM
+//#ifdef CONFIG_IWLMVM
 extern const struct iwl_cfg iwl7260_2ac_cfg;
 extern const struct iwl_cfg iwl7260_2ac_cfg_high_temp;
 extern const struct iwl_cfg iwl7260_2n_cfg;
@@ -483,6 +483,6 @@ extern const struct iwl_cfg iwla000_2ax_cfg_hr;
 extern const struct iwl_cfg iwla000_2ax_cfg_qnj_hr_f0;
 extern const struct iwl_cfg iwla000_2ax_cfg_qnj_jf_b0;
 extern const struct iwl_cfg iwla000_2ax_cfg_qnj_hr_a0;
-#endif /* CONFIG_IWLMVM */
+//#endif /* CONFIG_IWLMVM */
 
 #endif /* __IWL_CONFIG_H__ */

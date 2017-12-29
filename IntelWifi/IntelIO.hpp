@@ -14,11 +14,13 @@
 
 #include <IOKit/IOLib.h>
 
+#include "iwl-trans-pcie.h"
+
 class IntelIO : public OSObject {
     OSDeclareDefaultStructors(IntelIO);
 public:
-    static IntelIO* withAddress(volatile void * p);
-    bool initWithAddress(volatile void * p);
+    static IntelIO* withTrans(struct iwl_trans_pcie*);
+    bool initWithTrans(struct iwl_trans_pcie*);
     void release();
     
     int iwl_poll_bit(UInt32 addr, UInt32 bits, UInt32 mask, int timeout);
@@ -27,11 +29,21 @@ public:
     void iwl_set_bit(UInt32 reg, UInt32 mask);
     void iwl_clear_bit(UInt32 reg, UInt32 mask);
     
+    bool iwl_grab_nic_access(IOInterruptState*);
+    void iwl_release_nic_access(IOInterruptState*);
+    UInt32 iwl_read_prph_no_grab(UInt32 reg);
+    void iwl_write_prph_no_grab(UInt32 addr, UInt32 val);
+    UInt32 iwl_read_prph(UInt32 ofs);
+    void iwl_write_prph(UInt32 ofs, UInt32 val);
+    
 private:
-    volatile void *fBaseAddr;
+    struct iwl_trans_pcie* fTrans;
+    
     void iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value);
     void __iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value);
-    
+    void __iwl_trans_pcie_clear_bit(UInt32 reg, UInt32 mask);
+    void __iwl_trans_pcie_set_bit(UInt32 reg, UInt32 mask);
+   
 };
 
 #endif /* IntelIO_hpp */

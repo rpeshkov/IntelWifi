@@ -2,27 +2,14 @@
 
 #include "IntelWifi.hpp"
 
-#include "iwlwifi/iwl-csr.h"
-//#include "iwl-op-mode.h"
-//#include "iwl-prph.h"
-//#include "iwl-fh.h"
-//#include "iwl-modparams.h"
-//#include "iwl-context-info.h"
-//#include "iwl-trans.h"
-//
-//#include "iwlwifi/fw/file.h"
-//#include "iwlwifi/fw/img.h"
-//#include "iwlwifi/fw/error-dump.h"
-//
-//#include "iwlwifi/fw/api/cmdhdr.h"
-//#include "iwlwifi/fw/api/txq.h"
-
 extern "C" {
-#include "iwl-drv.h"
-#include "iwl-trans.h"
-#include "iwl-fh.h"
+    #include "iwlwifi/iwl-csr.h"
+    #include "iwl-drv.h"
+    #include "iwl-trans.h"
+    #include "iwl-fh.h"
+#include "iwl-prph.h"
+#include "iwl-config.h"
 }
-
 
 #include <sys/errno.h>
 
@@ -318,10 +305,11 @@ bool IntelWifi::start(IOService *provider) {
     }
     
     
-    
-    
-    struct iwl_trans* trans = iwl_trans_alloc(0, 0, fConfiguration, 0);
-    bool opmodeDown = true;
+    // Starting from here goes code that was taken from original iwl_trans_pcie_alloc
+    //
+    trans = iwl_trans_alloc(0, 0, fConfiguration, 0);
+    trans_pcie = iwl_trans_pcie_alloc();
+    trans_pcie->opmode_down = true;
     
     if (!fConfiguration->base_params->pcie_l1_allowed) {
         /*
@@ -336,17 +324,15 @@ bool IntelWifi::start(IOService *provider) {
     }
     
     int addr_size;
-    UInt8 max_tbs;
-    UInt16 tfd_size;
     
     if (fConfiguration->use_tfh) {
         addr_size = 64;
-        max_tbs = IWL_TFH_NUM_TBS;
-        tfd_size = sizeof(struct iwl_tfh_tfd);
+        trans_pcie->max_tbs = IWL_TFH_NUM_TBS;
+        trans_pcie->tfd_size = sizeof(struct iwl_tfh_tfd);
     } else {
         addr_size = 36;
-        max_tbs = IWL_NUM_OF_TBS;
-        tfd_size = sizeof(struct iwl_tfd);
+        trans_pcie->max_tbs = IWL_NUM_OF_TBS;
+        trans_pcie->tfd_size = sizeof(struct iwl_tfd);
     }
     
     // original code:     trans->max_skb_frags = IWL_PCIE_MAX_FRAGS(trans_pcie);
@@ -355,8 +341,7 @@ bool IntelWifi::start(IOService *provider) {
      * be used for frags.
      */
     // macro definition: #define IWL_PCIE_MAX_FRAGS(x) (x->max_tbs - 3)
-    UInt8 max_skb_frags = max_tbs - 3;
-    
+    trans->max_skb_frags = trans_pcie->max_tbs - 3;
     
     // original linux code: pci_set_master(pdev);
     pciDevice->setBusMasterEnable(true);
@@ -387,8 +372,8 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
-    volatile void* hw_addr = reinterpret_cast<volatile void *>(fMemoryMap->getVirtualAddress());
-    io = IntelIO::withAddress(hw_addr);
+    trans_pcie->hw_base = reinterpret_cast<volatile void *>(fMemoryMap->getVirtualAddress());
+    io = IntelIO::withTrans(trans_pcie);
     
     /* We disable the RETRY_TIMEOUT register (0x41) to keep
      * PCI Tx retries from interfering with C3 CPU state */
@@ -396,8 +381,8 @@ bool IntelWifi::start(IOService *provider) {
     pciDevice->configWrite8(PCI_CFG_RETRY_TIMEOUT, 0);
     
     // original: trans->hw_rev = iwl_read32(trans, CSR_HW_REV);
-    UInt32 hw_rev = io->iwl_read32(CSR_HW_REV);
-    DebugLog("Hardware revision ID: %#010x", hw_rev);
+    trans->hw_rev = io->iwl_read32(CSR_HW_REV);
+    DebugLog("Hardware revision ID: %#010x", trans->hw_rev);
     
     /*
      * In the 8000 HW family the format of the 4 bytes of CSR_HW_REV have
@@ -408,14 +393,15 @@ bool IntelWifi::start(IOService *provider) {
     if (fConfiguration->device_family >= IWL_DEVICE_FAMILY_8000) {
         unsigned long flags;
         
-        hw_rev = (hw_rev & 0xFFF0) | CSR_HW_REV_STEP(hw_rev << 2) << 2;
+        trans->hw_rev = (trans->hw_rev & 0xFFF0) | CSR_HW_REV_STEP(trans->hw_rev << 2) << 2;
         
         // TODO: Implement
-//        ret = iwl_pcie_prepare_card_hw(trans);
-//        if (ret) {
-//            IWL_WARN(trans, "Exit HW not ready\n");
+        int ret = iwl_pcie_prepare_card_hw();
+        if (ret) {
+            IWL_WARN(trans, "Exit HW not ready\n");
+            return false;
 //            goto out_no_pci;
-//        }
+        }
 
         /*
          * in-order to recognize C step driver should read chip version
@@ -425,62 +411,59 @@ bool IntelWifi::start(IOService *provider) {
         
         IODelay(2);
         
-        int ret = io->iwl_poll_bit(CSR_GP_CNTRL,
-                                   CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
-                                   CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
-                                   25000);
+        ret = io->iwl_poll_bit(CSR_GP_CNTRL,
+                               CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
+                               CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
+                               25000);
         
         if (ret < 0) {
             IWL_DEBUG_INFO(trans, "Failed to wake up the nic");
+            return false;
             //goto out_no_pci; // TODO: Implement
         }
 
-        // TODO: Implement
-//        if (iwl_trans_grab_nic_access(trans, &flags)) {
-//            u32 hw_step;
-//
-//            hw_step = iwl_read_prph_no_grab(trans, WFPM_CTRL_REG);
-//            hw_step |= ENABLE_WFPM;
-//            iwl_write_prph_no_grab(trans, WFPM_CTRL_REG, hw_step);
-//            hw_step = iwl_read_prph_no_grab(trans, AUX_MISC_REG);
-//            hw_step = (hw_step >> HW_STEP_LOCATION_BITS) & 0xF;
-//            if (hw_step == 0x3)
-//                trans->hw_rev = (trans->hw_rev & 0xFFFFFFF3) |
-//                (SILICON_C_STEP << 2);
-//            iwl_trans_release_nic_access(trans, &flags);
-//        }
+        IOInterruptState state;
+        if (io->iwl_grab_nic_access(&state)) {
+            u32 hw_step;
 
-
+            hw_step = io->iwl_read_prph_no_grab(WFPM_CTRL_REG);
+            hw_step |= ENABLE_WFPM;
+            io->iwl_write_prph_no_grab(WFPM_CTRL_REG, hw_step);
+            hw_step = io->iwl_read_prph_no_grab(AUX_MISC_REG);
+            hw_step = (hw_step >> HW_STEP_LOCATION_BITS) & 0xF;
+            if (hw_step == 0x3)
+                trans->hw_rev = (trans->hw_rev & 0xFFFFFFF3) |
+                (SILICON_C_STEP << 2);
+            io->iwl_release_nic_access(&state);
+        }
     }
     /*
      * 9000-series integrated A-step has a problem with suspend/resume
      * and sometimes even causes the whole platform to get stuck. This
      * workaround makes the hardware not go into the problematic state.
      */
-    if (fConfiguration->integrated && fConfiguration->device_family == IWL_DEVICE_FAMILY_9000 && CSR_HW_REV_STEP(hw_rev) == SILICON_A_STEP)
+    if (fConfiguration->integrated && fConfiguration->device_family == IWL_DEVICE_FAMILY_9000 && CSR_HW_REV_STEP(trans->hw_rev) == SILICON_A_STEP)
         io->iwl_set_bit(CSR_HOST_CHICKEN, CSR_HOST_CHICKEN_PM_IDLE_SRC_DIS_SB_PME);
     
-#ifdef CONFIG_IWLMVM
+//#ifdef CONFIG_IWLMVM
     UInt32 hw_rf_id = io->iwl_read32(CSR_HW_RF_ID);
     if (hw_rf_id == CSR_HW_RF_ID_TYPE_HR) {
         UInt32 hw_status;
         
-        hw_status = io->iwl_read_prph(trans, UMAG_GEN_HW_STATUS);
+        hw_status = io->iwl_read_prph(UMAG_GEN_HW_STATUS);
         if (hw_status & UMAG_GEN_HW_IS_FPGA)
-            fConfiguration = &iwla000_2ax_cfg_qnj_hr_f0;
+            fConfiguration = const_cast<struct iwl_cfg *>(&iwla000_2ax_cfg_qnj_hr_f0);
         else
-            fConfiguration = &iwla000_2ac_cfg_hr;
+            fConfiguration = const_cast<struct iwl_cfg *>(&iwla000_2ac_cfg_hr);
     }
-#endif
+//#endif
     
     // TODO: Implement
     // iwl_pcie_set_interrupt_capa(pdev, trans);
     
-    UInt32 hw_id = (deviceId << 16) + subsystemId;
-    
-    char hw_id_str[52];
-    snprintf(hw_id_str, sizeof(hw_id_str), "PCI ID: 0x%04X:0x%04X", deviceId, subsystemId);
-    DebugLog("%s", hw_id_str);
+    trans->hw_id = (deviceId << 16) + subsystemId;
+    snprintf(trans->hw_id_str, sizeof(trans->hw_id_str), "PCI ID: 0x%04X:0x%04X", deviceId, subsystemId);
+    DebugLog("%s", trans->hw_id_str);
     
     /* Initialize the wait queue for commands */
     // TODO: Implement
