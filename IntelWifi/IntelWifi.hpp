@@ -63,8 +63,11 @@ protected:
     IOMemoryMap *fMemoryMap;
     
     struct iwl_nvm_data *fNvmData;
+    struct iwl_cfg* fConfiguration;
     
 private:
+    struct iwl_cfg* getConfiguration(UInt16 deviceId, UInt16 subSystemId);
+    
     static void  interruptOccured(OSObject* owner, IOTimerEventSource* sender);
     
     // IWL stuff

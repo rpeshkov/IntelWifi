@@ -20,7 +20,7 @@
 extern "C" {
 #include "iwl-drv.h"
 #include "iwl-trans.h"
-
+#include "iwl-fh.h"
 }
 
 
@@ -249,6 +249,10 @@ OSDefineMetaClassAndStructors(IntelWifi, IOEthernetController)
 #define HW_READY_TIMEOUT (50)
 
 
+/* PCI registers */
+#define PCI_CFG_RETRY_TIMEOUT    0x041
+
+
 enum {
     kOffPowerState,
     kOnPowerState,
@@ -273,40 +277,25 @@ static struct MediumTable
 };
 
 bool IntelWifi::init(OSDictionary *properties) {
-    TraceLog("init()\n");
-    
+    TraceLog("Driver init()");
     return super::init(properties);
 }
 
-
-
 void IntelWifi::free() {
-    TraceLog("free()\n");
-    
-    if (eeprom) {
-        eeprom->release();
-        eeprom = NULL;
-    }
-    
+    TraceLog("Driver free()");
+    RELEASE(eeprom);
     super::free();
 }
 
 
 
 bool IntelWifi::start(IOService *provider) {
-    TraceLog("Start");
+    TraceLog("Driver start");
     
     if (!super::start(provider)) {
         TraceLog("Super start call failed!");
         return false;
     }
-    
-    
-    
-    
-    PMinit();
-    provider->joinPMtree(this);
-    
     
     pciDevice = OSDynamicCast(IOPCIDevice, provider);
     if (!pciDevice) {
@@ -315,36 +304,82 @@ bool IntelWifi::start(IOService *provider) {
     }
     pciDevice->retain();
 
-    //    pci_set_master(pdev);
-    pciDevice->setBusMasterEnable(true);
-    pciDevice->setMemoryEnable(true);
-    
     UInt16 vendorId = pciDevice->configRead16(kIOPCIConfigVendorID);
     UInt16 deviceId = pciDevice->configRead16(kIOPCIConfigDeviceID);
     UInt16 subsystemId = pciDevice->configRead16(kIOPCIConfigSubSystemID);
-    DebugLog("Device loaded. Vendor: %#06x, Device: %#06x, SubSystem: %#06x", vendorId, deviceId, subsystemId);
+    DebugLog("Device identity: Vendor: %#06x, Device: %#06x, SubSystem: %#06x", vendorId, deviceId, subsystemId);
     
-    struct iwl_cfg *cfg = 0;
+    fConfiguration = getConfiguration(deviceId, subsystemId);
     
-    for (int i = 0; i < ARRAY_SIZE(iwl_hw_card_ids); i++) {
-        if (iwl_hw_card_ids[i].device == deviceId && iwl_hw_card_ids[i].subdevice == subsystemId) {
-            cfg = (struct iwl_cfg *)iwl_hw_card_ids[i].driver_data;
-            break;
-        }
-    }
-    
-    if (!cfg) {
-        TraceLog("Config not loaded :(");
+    if (!fConfiguration) {
+        TraceLog("ERROR: Failed to match configuration!");
         RELEASE(pciDevice);
         return false;
     }
     
-    struct iwl_trans* trans = iwl_trans_alloc(0, 0, cfg, 0);
-    struct iwl_drv* drv = iwl_drv_start(trans);
     
     
     
+    struct iwl_trans* trans = iwl_trans_alloc(0, 0, fConfiguration, 0);
+    bool opmodeDown = true;
     
+    if (!fConfiguration->base_params->pcie_l1_allowed) {
+        /*
+         * W/A - seems to solve weird behavior. We need to remove this
+         * if we don't want to stay in L1 all the time. This wastes a
+         * lot of power.
+         */
+        // TODO: Find out what to call on OSX
+//        pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S |
+//                               PCIE_LINK_STATE_L1 |
+//                               PCIE_LINK_STATE_CLKPM);
+    }
+    
+    int addr_size;
+    UInt8 max_tbs;
+    UInt16 tfd_size;
+    
+    if (fConfiguration->use_tfh) {
+        addr_size = 64;
+        max_tbs = IWL_TFH_NUM_TBS;
+        tfd_size = sizeof(struct iwl_tfh_tfd);
+    } else {
+        addr_size = 36;
+        max_tbs = IWL_NUM_OF_TBS;
+        tfd_size = sizeof(struct iwl_tfd);
+    }
+    
+    // original code:     trans->max_skb_frags = IWL_PCIE_MAX_FRAGS(trans_pcie);
+    /* We need 2 entries for the TX command and header, and another one might
+     * be needed for potential data in the SKB's head. The remaining ones can
+     * be used for frags.
+     */
+    // macro definition: #define IWL_PCIE_MAX_FRAGS(x) (x->max_tbs - 3)
+    UInt8 max_skb_frags = max_tbs - 3;
+    
+    
+    // original linux code: pci_set_master(pdev);
+    pciDevice->setBusMasterEnable(true);
+    
+
+    // TODO: Find out what should be done in IOKit for the code below
+//    ret = pci_set_dma_mask(pdev, DMA_BIT_MASK(addr_size));
+//    if (!ret)
+//        ret = pci_set_consistent_dma_mask(pdev,
+//                                          DMA_BIT_MASK(addr_size));
+//    if (ret) {
+//        ret = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
+//        if (!ret)
+//            ret = pci_set_consistent_dma_mask(pdev,
+//                                              DMA_BIT_MASK(32));
+//        /* both attempts failed: */
+//        if (ret) {
+//            dev_err(&pdev->dev, "No suitable DMA available\n");
+//            goto out_no_pci;
+//        }
+//    }
+    
+    pciDevice->setMemoryEnable(true);
     fMemoryMap = pciDevice->mapDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0);
     if (!fMemoryMap) {
         TraceLog("MemoryMap failed!");
@@ -352,11 +387,166 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
-    pciDevice->configWrite8(0x41, 0);
-        
-    volatile void *baseAddr = reinterpret_cast<volatile void *>(fMemoryMap->getVirtualAddress());
+    volatile void* hw_addr = reinterpret_cast<volatile void *>(fMemoryMap->getVirtualAddress());
+    io = IntelIO::withAddress(hw_addr);
     
-    io = IntelIO::withAddress(baseAddr);
+    /* We disable the RETRY_TIMEOUT register (0x41) to keep
+     * PCI Tx retries from interfering with C3 CPU state */
+    // original code: pci_write_config_byte(pdev, PCI_CFG_RETRY_TIMEOUT, 0x00);
+    pciDevice->configWrite8(PCI_CFG_RETRY_TIMEOUT, 0);
+    
+    // original: trans->hw_rev = iwl_read32(trans, CSR_HW_REV);
+    UInt32 hw_rev = io->iwl_read32(CSR_HW_REV);
+    DebugLog("Hardware revision ID: %#010x", hw_rev);
+    
+    /*
+     * In the 8000 HW family the format of the 4 bytes of CSR_HW_REV have
+     * changed, and now the revision step also includes bit 0-1 (no more
+     * "dash" value). To keep hw_rev backwards compatible - we'll store it
+     * in the old format.
+     */
+    if (fConfiguration->device_family >= IWL_DEVICE_FAMILY_8000) {
+        unsigned long flags;
+        
+        hw_rev = (hw_rev & 0xFFF0) | CSR_HW_REV_STEP(hw_rev << 2) << 2;
+        
+        // TODO: Implement
+//        ret = iwl_pcie_prepare_card_hw(trans);
+//        if (ret) {
+//            IWL_WARN(trans, "Exit HW not ready\n");
+//            goto out_no_pci;
+//        }
+
+        /*
+         * in-order to recognize C step driver should read chip version
+         * id located at the AUX bus MISC address space.
+         */
+        io->iwl_set_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
+        
+        IODelay(2);
+        
+        int ret = io->iwl_poll_bit(CSR_GP_CNTRL,
+                                   CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
+                                   CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
+                                   25000);
+        
+        if (ret < 0) {
+            IWL_DEBUG_INFO(trans, "Failed to wake up the nic");
+            //goto out_no_pci; // TODO: Implement
+        }
+
+        // TODO: Implement
+//        if (iwl_trans_grab_nic_access(trans, &flags)) {
+//            u32 hw_step;
+//
+//            hw_step = iwl_read_prph_no_grab(trans, WFPM_CTRL_REG);
+//            hw_step |= ENABLE_WFPM;
+//            iwl_write_prph_no_grab(trans, WFPM_CTRL_REG, hw_step);
+//            hw_step = iwl_read_prph_no_grab(trans, AUX_MISC_REG);
+//            hw_step = (hw_step >> HW_STEP_LOCATION_BITS) & 0xF;
+//            if (hw_step == 0x3)
+//                trans->hw_rev = (trans->hw_rev & 0xFFFFFFF3) |
+//                (SILICON_C_STEP << 2);
+//            iwl_trans_release_nic_access(trans, &flags);
+//        }
+
+
+    }
+    /*
+     * 9000-series integrated A-step has a problem with suspend/resume
+     * and sometimes even causes the whole platform to get stuck. This
+     * workaround makes the hardware not go into the problematic state.
+     */
+    if (fConfiguration->integrated && fConfiguration->device_family == IWL_DEVICE_FAMILY_9000 && CSR_HW_REV_STEP(hw_rev) == SILICON_A_STEP)
+        io->iwl_set_bit(CSR_HOST_CHICKEN, CSR_HOST_CHICKEN_PM_IDLE_SRC_DIS_SB_PME);
+    
+#ifdef CONFIG_IWLMVM
+    UInt32 hw_rf_id = io->iwl_read32(CSR_HW_RF_ID);
+    if (hw_rf_id == CSR_HW_RF_ID_TYPE_HR) {
+        UInt32 hw_status;
+        
+        hw_status = io->iwl_read_prph(trans, UMAG_GEN_HW_STATUS);
+        if (hw_status & UMAG_GEN_HW_IS_FPGA)
+            fConfiguration = &iwla000_2ax_cfg_qnj_hr_f0;
+        else
+            fConfiguration = &iwla000_2ac_cfg_hr;
+    }
+#endif
+    
+    // TODO: Implement
+    // iwl_pcie_set_interrupt_capa(pdev, trans);
+    
+    UInt32 hw_id = (deviceId << 16) + subsystemId;
+    
+    char hw_id_str[52];
+    snprintf(hw_id_str, sizeof(hw_id_str), "PCI ID: 0x%04X:0x%04X", deviceId, subsystemId);
+    DebugLog("%s", hw_id_str);
+    
+    /* Initialize the wait queue for commands */
+    // TODO: Implement
+//    init_waitqueue_head(&trans_pcie->wait_command_queue);
+//    init_waitqueue_head(&trans_pcie->d0i3_waitq);
+    
+    // TODO: Implement
+    // msix_enabled is set in iwl_pcie_set_interrupt_capa
+//    if (trans_pcie->msix_enabled) {
+//        ret = iwl_pcie_init_msix_handler(pdev, trans_pcie);
+//        if (ret)
+//            goto out_no_pci;
+//    } else {
+//        ret = iwl_pcie_alloc_ict(trans);
+//        if (ret)
+//            goto out_no_pci;
+//
+//        ret = devm_request_threaded_irq(&pdev->dev, pdev->irq,
+//                                        iwl_pcie_isr,
+//                                        iwl_pcie_irq_handler,
+//                                        IRQF_SHARED, DRV_NAME, trans);
+//        if (ret) {
+//            IWL_ERR(trans, "Error allocating IRQ %d\n", pdev->irq);
+//            goto out_free_ict;
+//        }
+//        trans_pcie->inta_mask = CSR_INI_SET_MASK;
+//    }
+//
+//    trans_pcie->rba.alloc_wq = alloc_workqueue("rb_allocator",
+//                                               WQ_HIGHPRI | WQ_UNBOUND, 1);
+//    INIT_WORK(&trans_pcie->rba.rx_alloc, iwl_pcie_rx_allocator_work);
+//
+//#ifdef CONFIG_IWLWIFI_PCIE_RTPM
+//    trans->runtime_pm_mode = IWL_PLAT_PM_MODE_D0I3;
+//#else
+//    trans->runtime_pm_mode = IWL_PLAT_PM_MODE_DISABLED;
+//#endif /* CONFIG_IWLWIFI_PCIE_RTPM */
+    
+
+    
+    
+
+    
+
+
+    
+    struct iwl_drv* drv = iwl_drv_start(trans);
+    
+    
+    
+    
+    
+
+    
+    
+    
+    //    PMinit();
+    //    provider->joinPMtree(this);
+
+    
+    
+    
+    
+        
+    
+    
     
     int err = iwl_pcie_prepare_card_hw();
     if (err) {
@@ -412,9 +602,7 @@ bool IntelWifi::start(IOService *provider) {
              fNvmData->calib_version, fNvmData->calib_voltage,
              fNvmData->raw_temperature);
     
-    // original: trans->hw_rev = iwl_read32(trans, CSR_HW_REV);
-    UInt32 hardwareRevisionId = io->iwl_read32(CSR_HW_REV);
-    DebugLog("Hardware revision ID: %#010x", hardwareRevisionId);
+    
     
     if (!createMediumDict()) {
         TraceLog("MediumDict creation failed!");
@@ -579,7 +767,7 @@ const OSString* IntelWifi::newVendorString() const {
 
 
 const OSString* IntelWifi::newModelString() const {
-    return OSString::withCString("Centrino N-130");
+    return OSString::withCString(fConfiguration->name);
 }
 void IntelWifi::interruptOccured(OSObject* owner, IOTimerEventSource*
                                                       sender) {
@@ -589,6 +777,18 @@ void IntelWifi::interruptOccured(OSObject* owner, IOTimerEventSource*
     
     if (!me)
     return;
+}
+
+
+
+struct iwl_cfg* IntelWifi::getConfiguration(UInt16 deviceId, UInt16 subSystemId) {
+    for (int i = 0; i < ARRAY_SIZE(iwl_hw_card_ids); i++) {
+        if (iwl_hw_card_ids[i].device == deviceId && iwl_hw_card_ids[i].subdevice == subSystemId) {
+            return (struct iwl_cfg *)iwl_hw_card_ids[i].driver_data;
+        }
+    }
+    
+    return NULL;
 }
 
 
@@ -681,8 +881,7 @@ int IntelWifi::iwl_pcie_apm_init()
      */
     
     /* Disable L0S exit timer (platform NMI Work/Around) */
-    // TODO: Currently working only on Centrino 130 and that's family 6000
-    //if (trans->cfg->device_family < IWL_DEVICE_FAMILY_8000)
+    if (fConfiguration->device_family < IWL_DEVICE_FAMILY_8000)
         io->iwl_set_bit(CSR_GIO_CHICKEN_BITS,
                     CSR_GIO_CHICKEN_BITS_REG_BIT_DIS_L0S_EXIT_TIMER);
     
@@ -707,8 +906,8 @@ int IntelWifi::iwl_pcie_apm_init()
     
     /* Configure analog phase-lock-loop before activating to D0A */
     // TODO: Return back here
-//    if (trans->cfg->base_params->pll_cfg)
-//        iwl_set_bit(trans, CSR_ANA_PLL_CFG, CSR50_ANA_PLL_CFG_VAL);
+    if (fConfiguration->base_params->pll_cfg)
+        io->iwl_set_bit(CSR_ANA_PLL_CFG, CSR50_ANA_PLL_CFG_VAL);
     
     /*
      * Set "initialization complete" bit to move adapter from
@@ -793,7 +992,7 @@ void IntelWifi::iwl_pcie_apm_config()
      * If not (unlikely), enable L0S, so there is at least some
      *    power savings, even without L1.
      */
-    
+    // TODO: Implement
 //    UInt8 offset = 0;
 //    if (pciDevice->findPCICapability(kIOPCIPCIExpressCapability, &offset))
 //    {
@@ -810,10 +1009,6 @@ void IntelWifi::iwl_pcie_apm_config()
 //                        (lctl & PCI_EXP_LNKCTL_ASPM_L1) ? "En" : "Dis",
 //                        trans->ltr_enabled ? "En" : "Dis");
 //    }
-    
-    
-    
-
     
 }
 
