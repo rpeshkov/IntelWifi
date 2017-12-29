@@ -17,21 +17,17 @@
 #include <IOKit/IOLib.h>
 
 #include "iwlwifi/iwl-eeprom-parse.h"
+#include "iwl-config.h"
 
 #include "IntelIO.hpp"
 
-
-
-
-
-#define OTP_LOW_IMAGE_SIZE        (2 * 512 * sizeof(UInt16)) /* 2 KB */
 
 class IntelEeprom : public OSObject {
     OSDeclareDefaultStructors(IntelEeprom)
     
 public:
-    static IntelEeprom* withIO(IntelIO *io);
-    bool initWithIO(IntelIO *io);
+    static IntelEeprom* withIO(IntelIO *io, struct iwl_cfg *config, UInt32 hwRev);
+    bool initWithIO(IntelIO *io, struct iwl_cfg *config, UInt32 hwRev);
     void release();
     struct iwl_nvm_data* parse();
     
@@ -43,9 +39,22 @@ private:
     
     int iwl_eeprom_acquire_semaphore();
     void iwl_eeprom_release_semaphore();
+    
+    int iwl_nvm_is_otp();
+    int iwl_eeprom_verify_signature(bool nvm_is_otp);
+    int iwl_init_otp_access();
+    int iwl_find_otp_image(UInt16 *validblockaddr);
+    int iwl_read_otp_word(u16 addr, __le16 *eeprom_data);
+    void iwl_set_otp_access_absolute();
+    bool iwl_is_otp_empty();
+    
+    bool read();
+    
     UInt8* fEeprom;
     
     IntelIO *fIO;
+    struct iwl_cfg *fConfiguration;
+    UInt32 fHwRev;
 };
 
 

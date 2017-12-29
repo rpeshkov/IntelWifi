@@ -555,7 +555,7 @@ bool IntelWifi::start(IOService *provider) {
     registerPowerDriver(this, gPowerStates, kNumPowerStates);
     
         
-    eeprom = IntelEeprom::withIO(io);
+    eeprom = IntelEeprom::withIO(io, fConfiguration, trans->hw_rev);
     if (!eeprom) {
         TraceLog("EEPROM init failed!");
         RELEASE(fMemoryMap);

@@ -207,6 +207,52 @@ void IntelIO::iwl_write_prph(UInt32 ofs, UInt32 val)
 }
 
 
+int IntelIO::iwl_poll_prph_bit(UInt32 addr, UInt32 bits, UInt32 mask, int timeout)
+{
+    int t = 0;
+    
+    do {
+        if ((iwl_read_prph(addr) & mask) == (bits & mask))
+            return t;
+        IODelay(IWL_POLL_INTERVAL);
+        t += IWL_POLL_INTERVAL;
+    } while (t < timeout);
+    
+    return -ETIMEDOUT;
+}
+
+void IntelIO::iwl_set_bits_prph(UInt32 ofs, UInt32 mask)
+{
+    IOInterruptState state;
+    
+    if (iwl_grab_nic_access(&state)) {
+        iwl_write_prph_no_grab(ofs, iwl_read_prph_no_grab(ofs) | mask);
+        iwl_release_nic_access(&state);
+    }
+}
+
+void IntelIO::iwl_set_bits_mask_prph(UInt32 ofs, UInt32 bits, UInt32 mask)
+{
+    IOInterruptState state;
+    
+    if (iwl_grab_nic_access(&state)) {
+        iwl_write_prph_no_grab(ofs, (iwl_read_prph_no_grab(ofs) & mask) | bits);
+        iwl_release_nic_access(&state);
+    }
+}
+
+void IntelIO::iwl_clear_bits_prph(UInt32 ofs, UInt32 mask)
+{
+    IOInterruptState state;
+    
+    if (iwl_grab_nic_access(&state)) {
+        UInt32 val = iwl_read_prph_no_grab(ofs);
+        iwl_write_prph_no_grab(ofs, (val & ~mask));
+        iwl_release_nic_access(&state);
+    }
+}
+
+
 
 
 

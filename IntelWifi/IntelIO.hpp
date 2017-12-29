@@ -35,6 +35,11 @@ public:
     void iwl_write_prph_no_grab(UInt32 addr, UInt32 val);
     UInt32 iwl_read_prph(UInt32 ofs);
     void iwl_write_prph(UInt32 ofs, UInt32 val);
+    int iwl_poll_prph_bit(UInt32 addr, UInt32 bits, UInt32 mask, int timeout);
+    void iwl_set_bits_prph(UInt32 ofs, UInt32 mask);
+    
+    void iwl_set_bits_mask_prph(UInt32 ofs, UInt32 bits, UInt32 mask);
+    void iwl_clear_bits_prph(UInt32 ofs, UInt32 mask);
     
 private:
     struct iwl_trans_pcie* fTrans;
