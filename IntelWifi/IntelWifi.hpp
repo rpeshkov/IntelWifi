@@ -2,9 +2,13 @@
 
 #include <IOKit/IOLib.h>
 #include <IOKit/IOTimerEventSource.h>
+#include <IOKit/IOFilterInterruptEventSource.h>
 #include <IOKit/pci/IOPCIDevice.h>
 #include <IOKit/network/IOEthernetController.h>
 #include <IOKit/network/IOEthernetInterface.h>
+#include <IOKit/network/IOPacketQueue.h>
+
+#include <net/if.h>
 
 #include "Logging.h"
 
@@ -51,11 +55,11 @@ protected:
     IOPCIDevice *pciDevice;
     IOEthernetInterface *netif;
     IOWorkLoop *fWorkLoop;
-    IOTimerEventSource *fInterruptSource;
     OSDictionary *mediumDict;
     
     IONetworkStats *fNetworkStats;
     IOEthernetStats *fEthernetStats;
+    IOInterruptEventSource* fInterruptSource;
     
     IntelIO* io;
     
@@ -79,6 +83,8 @@ private:
     void iwl_pcie_sw_reset();
     int iwl_pcie_apm_init();
     void iwl_pcie_apm_config();
+    
+    ifnet_t fIfNet;
     
     
 };

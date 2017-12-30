@@ -528,8 +528,8 @@ bool IntelWifi::start(IOService *provider) {
 //    struct iwl_drv* drv = iwl_drv_start(trans);
     iwl_drv_start(trans);
     
-    //    PMinit();
-    //    provider->joinPMtree(this);
+        PMinit();
+        provider->joinPMtree(this);
 
     
     int err = iwl_pcie_prepare_card_hw();
@@ -683,9 +683,15 @@ bool IntelWifi::start(IOService *provider) {
     
     netif->registerService();
     
-    fInterruptSource = IOTimerEventSource::timerEventSource(this, interruptOccured);
-    if (!fInterruptSource)
+    fInterruptSource =  IOInterruptEventSource::interruptEventSource(this,
+                                                             (IOInterruptEventAction) &IntelWifi::interruptOccured,
+                                                      
+                                                             provider, 0);
+    if (!fInterruptSource) {
         return false;
+    }
+    
+
     if (fWorkLoop->addEventSource(fInterruptSource) != kIOReturnSuccess)
         return false;
     
@@ -700,6 +706,11 @@ bool IntelWifi::start(IOService *provider) {
 
 
 void IntelWifi::stop(IOService *provider) {
+    
+    if (fInterruptSource && fWorkLoop)
+        fWorkLoop->removeEventSource(fInterruptSource);
+    
+    
     
     if (fNvmData) {
         IOFree(fNvmData, sizeof(struct iwl_nvm_data));
@@ -768,7 +779,6 @@ IOReturn IntelWifi::enable(IONetworkInterface *netif) {
     
     IOMediumType mediumType = kIOMediumIEEE80211Auto;
     IONetworkMedium *medium = IONetworkMedium::getMediumWithType(mediumDict, mediumType);
-    
     setLinkStatus(kIONetworkLinkActive | kIONetworkLinkValid, medium);
     return kIOReturnSuccess;
 }
@@ -829,8 +839,7 @@ const OSString* IntelWifi::newVendorString() const {
 const OSString* IntelWifi::newModelString() const {
     return OSString::withCString(fConfiguration->name);
 }
-void IntelWifi::interruptOccured(OSObject* owner, IOTimerEventSource*
-                                                      sender) {
+void IntelWifi::interruptOccured(OSObject* owner, IOTimerEventSource* sender) {
 //    mbuf_t packet;
     DebugLog("Interrupt!");
     IntelWifi* me = (IntelWifi*)owner;
