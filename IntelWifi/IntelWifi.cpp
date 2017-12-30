@@ -496,13 +496,11 @@ bool IntelWifi::start(IOService *provider) {
 //    INIT_WORK(&trans_pcie->rba.rx_alloc, iwl_pcie_rx_allocator_work);
 //
     
-//    #ifdef CONFIG_IWLWIFI_PCIE_RTPM
-//        trans->runtime_pm_mode = IWL_PLAT_PM_MODE_D0I3;
-//    #else
-//        trans->runtime_pm_mode = IWL_PLAT_PM_MODE_DISABLED;
-//    #endif /* CONFIG_IWLWIFI_PCIE_RTPM */
-    trans->runtime_pm_mode = IWL_PLAT_PM_MODE_D0I3;
-    
+    #ifdef CONFIG_IWLWIFI_PCIE_RTPM
+        trans->runtime_pm_mode = IWL_PLAT_PM_MODE_D0I3;
+    #else
+        trans->runtime_pm_mode = IWL_PLAT_PM_MODE_DISABLED;
+    #endif /* CONFIG_IWLWIFI_PCIE_RTPM */
     
 //    struct iwl_drv* drv = iwl_drv_start(trans);
     iwl_drv_start(trans);
@@ -608,33 +606,6 @@ void IntelWifi::stop(IOService *provider) {
         netif = NULL;
     }
     
-    
-//
-//
-//
-//    if (fNvmData) {
-//        IOFree(fNvmData, sizeof(struct iwl_nvm_data));
-//        fNvmData = NULL;
-//    }
-//
-//
-
-//    RELEASE(fInterruptSource);
-//    RELEASE(fWorkLoop);
-//    RELEASE(mediumDict);
-//    RELEASE(eeprom);
-//    RELEASE(io);
-//    if (trans_pcie) {
-//        iwl_trans_pcie_free(trans_pcie);
-//        trans_pcie = NULL;
-//    }
-//    if (trans) {
-//        IOFree(trans, sizeof(struct iwl_trans));
-//        trans = NULL;
-//    }
-//    RELEASE(fMemoryMap);
-//    RELEASE(pciDevice);
-    
     PMstop();
     
     super::stop(provider);
@@ -671,7 +642,6 @@ bool IntelWifi::createMediumDict() {
 
 
 IOReturn IntelWifi::enable(IONetworkInterface *netif) {
-    
     TraceLog("enable");
     
     IOMediumType mediumType = kIOMediumIEEE80211Auto;
@@ -692,7 +662,6 @@ IOReturn IntelWifi::disable(IONetworkInterface *netif) {
 
 IOReturn IntelWifi::getHardwareAddress(IOEthernetAddress *addrP) {
     memcpy(addrP->bytes, fNvmData->hw_addr, 6);
-    
     return kIOReturnSuccess;
 }
 
@@ -736,6 +705,7 @@ const OSString* IntelWifi::newVendorString() const {
 const OSString* IntelWifi::newModelString() const {
     return OSString::withCString(fConfiguration->name);
 }
+
 void IntelWifi::interruptOccured(OSObject* owner, IOTimerEventSource* sender) {
 //    mbuf_t packet;
     DebugLog("Interrupt!");
@@ -871,7 +841,6 @@ int IntelWifi::iwl_pcie_apm_init()
     iwl_pcie_apm_config();
     
     /* Configure analog phase-lock-loop before activating to D0A */
-    // TODO: Return back here
     if (fConfiguration->base_params->pll_cfg)
         io->iwl_set_bit(CSR_ANA_PLL_CFG, CSR50_ANA_PLL_CFG_VAL);
     
@@ -917,8 +886,6 @@ int IntelWifi::iwl_pcie_apm_init()
         io->iwl_read_prph(OSC_CLK);
     }
 
-#if DISABLED_CODE
-    
     /*
      * Enable DMA clock and wait for it to stabilize.
      *
@@ -939,10 +906,8 @@ int IntelWifi::iwl_pcie_apm_init()
         io->iwl_write_prph(APMG_RTC_INT_STT_REG,
                        APMG_RTC_INT_STT_RFKILL);
     }
-#endif
     
-    
-//    set_bit(STATUS_DEVICE_ENABLED, &trans->status);
+    set_bit(STATUS_DEVICE_ENABLED, &trans->status);
     
     return 0;
 }
