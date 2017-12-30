@@ -2,14 +2,6 @@
 
 #include "IntelWifi.hpp"
 
-extern "C" {
-    #include "iwlwifi/iwl-csr.h"
-    #include "iwl-drv.h"
-    #include "iwl-trans.h"
-    #include "iwl-fh.h"
-#include "iwl-prph.h"
-#include "iwl-config.h"
-}
 
 #include <sys/errno.h>
 
@@ -228,7 +220,7 @@ static const struct pci_device_id iwl_hw_card_ids[] = {
 
 OSDefineMetaClassAndStructors(IntelWifi, IOEthernetController)
 
-#define    RELEASE(x)    if(x){(x)->release();(x)=NULL;}
+
 
 #define MAC_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
 #define MAC_BYTES(x) (x)[0],(x)[1],(x)[2],(x)[3],(x)[4],(x)[5]
@@ -270,7 +262,10 @@ bool IntelWifi::init(OSDictionary *properties) {
 
 void IntelWifi::free() {
     TraceLog("Driver free()");
-    RELEASE(eeprom);
+    
+    releaseAll();
+    
+    TraceLog("Fully finished");
     super::free();
 }
 
@@ -278,6 +273,10 @@ void IntelWifi::free() {
 
 bool IntelWifi::start(IOService *provider) {
     TraceLog("Driver start");
+    
+    int err;
+    UInt32 hw_rf_id;
+    UInt16 vendorId, deviceId, subsystemId;
     
     if (!super::start(provider)) {
         TraceLog("Super start call failed!");
@@ -291,16 +290,16 @@ bool IntelWifi::start(IOService *provider) {
     }
     pciDevice->retain();
 
-    UInt16 vendorId = pciDevice->configRead16(kIOPCIConfigVendorID);
-    UInt16 deviceId = pciDevice->configRead16(kIOPCIConfigDeviceID);
-    UInt16 subsystemId = pciDevice->configRead16(kIOPCIConfigSubSystemID);
+    vendorId = pciDevice->configRead16(kIOPCIConfigVendorID);
+    deviceId = pciDevice->configRead16(kIOPCIConfigDeviceID);
+    subsystemId = pciDevice->configRead16(kIOPCIConfigSubSystemID);
     DebugLog("Device identity: Vendor: %#06x, Device: %#06x, SubSystem: %#06x", vendorId, deviceId, subsystemId);
     
     fConfiguration = getConfiguration(deviceId, subsystemId);
     
     if (!fConfiguration) {
         TraceLog("ERROR: Failed to match configuration!");
-        RELEASE(pciDevice);
+        releaseAll();
         return false;
     }
     
@@ -346,38 +345,28 @@ bool IntelWifi::start(IOService *provider) {
     // original linux code: pci_set_master(pdev);
     pciDevice->setBusMasterEnable(true);
     
-
     // TODO: Find out what should be done in IOKit for the code below
-//    ret = pci_set_dma_mask(pdev, DMA_BIT_MASK(addr_size));
-//    if (!ret)
-//        ret = pci_set_consistent_dma_mask(pdev,
-//                                          DMA_BIT_MASK(addr_size));
-//    if (ret) {
-//        ret = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
-//        if (!ret)
-//            ret = pci_set_consistent_dma_mask(pdev,
-//                                              DMA_BIT_MASK(32));
-//        /* both attempts failed: */
-//        if (ret) {
-//            dev_err(&pdev->dev, "No suitable DMA available\n");
-//            goto out_no_pci;
-//        }
-//    }
+    //ret = pci_set_dma_mask(pdev, DMA_BIT_MASK(addr_size));
+    //if (!ret)
+    //    ret = pci_set_consistent_dma_mask(pdev,
+    //                                      DMA_BIT_MASK(addr_size));
+    //if (ret) {
+    //    ret = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
+    //    if (!ret)
+    //        ret = pci_set_consistent_dma_mask(pdev,
+    //                                          DMA_BIT_MASK(32));
+    //    /* both attempts failed: */
+    //    if (ret) {
+    //        dev_err(&pdev->dev, "No suitable DMA available\n");
+    //        goto out_no_pci;
+    //    }
+    //}
     
     pciDevice->setMemoryEnable(true);
     fMemoryMap = pciDevice->mapDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0);
     if (!fMemoryMap) {
         TraceLog("MemoryMap failed!");
-        if (trans_pcie) {
-            iwl_trans_pcie_free(trans_pcie);
-            trans_pcie = NULL;
-        }
-        if (trans) {
-            IOFree(trans, sizeof(struct iwl_trans));
-            trans = NULL;
-        }
-        
-        RELEASE(pciDevice);
+        releaseAll();
         return false;
     }
     
@@ -386,19 +375,9 @@ bool IntelWifi::start(IOService *provider) {
     
     if (!io) {
         TraceLog("MemoryMap failed!");
-        
-        if (trans_pcie) {
-            iwl_trans_pcie_free(trans_pcie);
-            trans_pcie = NULL;
-        }
-        if (trans) {
-            IOFree(trans, sizeof(struct iwl_trans));
-            trans = NULL;
-        }
-        RELEASE(fMemoryMap);
-        RELEASE(pciDevice);
+        releaseAll();
         return false;
-    }
+}
     
     /* We disable the RETRY_TIMEOUT register (0x41) to keep
      * PCI Tx retries from interfering with C3 CPU state */
@@ -418,12 +397,11 @@ bool IntelWifi::start(IOService *provider) {
     if (fConfiguration->device_family >= IWL_DEVICE_FAMILY_8000) {
         trans->hw_rev = (trans->hw_rev & 0xFFF0) | CSR_HW_REV_STEP(trans->hw_rev << 2) << 2;
         
-        // TODO: Implement
         int ret = iwl_pcie_prepare_card_hw();
         if (ret) {
             IWL_WARN(trans, "Exit HW not ready\n");
+            releaseAll();
             return false;
-//            goto out_no_pci;
         }
 
         /*
@@ -441,8 +419,8 @@ bool IntelWifi::start(IOService *provider) {
         
         if (ret < 0) {
             IWL_DEBUG_INFO(trans, "Failed to wake up the nic");
+            releaseAll();
             return false;
-            //goto out_no_pci; // TODO: Implement
         }
 
         IOInterruptState state;
@@ -455,8 +433,7 @@ bool IntelWifi::start(IOService *provider) {
             hw_step = io->iwl_read_prph_no_grab(AUX_MISC_REG);
             hw_step = (hw_step >> HW_STEP_LOCATION_BITS) & 0xF;
             if (hw_step == 0x3)
-                trans->hw_rev = (trans->hw_rev & 0xFFFFFFF3) |
-                (SILICON_C_STEP << 2);
+                trans->hw_rev = (trans->hw_rev & 0xFFFFFFF3) | (SILICON_C_STEP << 2);
             io->iwl_release_nic_access(&state);
         }
     }
@@ -468,8 +445,8 @@ bool IntelWifi::start(IOService *provider) {
     if (fConfiguration->integrated && fConfiguration->device_family == IWL_DEVICE_FAMILY_9000 && CSR_HW_REV_STEP(trans->hw_rev) == SILICON_A_STEP)
         io->iwl_set_bit(CSR_HOST_CHICKEN, CSR_HOST_CHICKEN_PM_IDLE_SRC_DIS_SB_PME);
     
-//#ifdef CONFIG_IWLMVM
-    UInt32 hw_rf_id = io->iwl_read32(CSR_HW_RF_ID);
+#ifdef CONFIG_IWLMVM
+    hw_rf_id = io->iwl_read32(CSR_HW_RF_ID);
     if (hw_rf_id == CSR_HW_RF_ID_TYPE_HR) {
         UInt32 hw_status;
         
@@ -479,7 +456,7 @@ bool IntelWifi::start(IOService *provider) {
         else
             fConfiguration = const_cast<struct iwl_cfg *>(&iwla000_2ac_cfg_hr);
     }
-//#endif
+#endif
     
     // TODO: Implement
     // iwl_pcie_set_interrupt_capa(pdev, trans);
@@ -518,26 +495,26 @@ bool IntelWifi::start(IOService *provider) {
 //                                               WQ_HIGHPRI | WQ_UNBOUND, 1);
 //    INIT_WORK(&trans_pcie->rba.rx_alloc, iwl_pcie_rx_allocator_work);
 //
-//#ifdef CONFIG_IWLWIFI_PCIE_RTPM
-//    trans->runtime_pm_mode = IWL_PLAT_PM_MODE_D0I3;
-//#else
-//    trans->runtime_pm_mode = IWL_PLAT_PM_MODE_DISABLED;
-//#endif /* CONFIG_IWLWIFI_PCIE_RTPM */
+    
+//    #ifdef CONFIG_IWLWIFI_PCIE_RTPM
+//        trans->runtime_pm_mode = IWL_PLAT_PM_MODE_D0I3;
+//    #else
+//        trans->runtime_pm_mode = IWL_PLAT_PM_MODE_DISABLED;
+//    #endif /* CONFIG_IWLWIFI_PCIE_RTPM */
+    trans->runtime_pm_mode = IWL_PLAT_PM_MODE_D0I3;
     
     
 //    struct iwl_drv* drv = iwl_drv_start(trans);
     iwl_drv_start(trans);
     
-        PMinit();
-        provider->joinPMtree(this);
+    PMinit();
+    provider->joinPMtree(this);
 
     
-    int err = iwl_pcie_prepare_card_hw();
+    err = iwl_pcie_prepare_card_hw();
     if (err) {
         TraceLog("ERROR: Error while preparing HW: %d", err);
-        RELEASE(io);
-        RELEASE(pciDevice);
-        
+        releaseAll();
         return false;
     }
     
@@ -545,9 +522,7 @@ bool IntelWifi::start(IOService *provider) {
     err = iwl_pcie_apm_init();
     if (err) {
         TraceLog("ERROR: PCIE APM Init error: %d", err);
-        RELEASE(io);
-        RELEASE(pciDevice);
-        
+        releaseAll();
         return false;
     }
     
@@ -555,44 +530,17 @@ bool IntelWifi::start(IOService *provider) {
 //    changePowerStateTo(kOffPowerState);// Set the public power state to the lowest level
     registerPowerDriver(this, gPowerStates, kNumPowerStates);
     
-        
     eeprom = IntelEeprom::withIO(io, fConfiguration, trans->hw_rev);
     if (!eeprom) {
         TraceLog("EEPROM init failed!");
-        
-        
-        RELEASE(io);
-        if (trans_pcie) {
-            iwl_trans_pcie_free(trans_pcie);
-            trans_pcie = NULL;
-        }
-        if (trans) {
-            IOFree(trans, sizeof(struct iwl_trans));
-            trans = NULL;
-        }
-        RELEASE(fMemoryMap);
-        
-        RELEASE(pciDevice);
-        
+        releaseAll();
         return false;
     }
     
     fNvmData = eeprom->parse();
     if (!fNvmData) {
         TraceLog("EEPROM parse failed!");
-        RELEASE(eeprom);
-        RELEASE(io);
-        if (trans_pcie) {
-            iwl_trans_pcie_free(trans_pcie);
-            trans_pcie = NULL;
-        }
-        if (trans) {
-            IOFree(trans, sizeof(struct iwl_trans));
-            trans = NULL;
-        }
-        RELEASE(fMemoryMap);
-        RELEASE(pciDevice);
-        
+        releaseAll();
         return false;
     }
     
@@ -600,57 +548,21 @@ bool IntelWifi::start(IOService *provider) {
              "Num addr: %d\n"
              "Calib: version - %d, voltage - %d\n"
              "Raw temperature: %u",
-             
              MAC_BYTES(fNvmData->hw_addr),
              fNvmData->n_hw_addrs,
              fNvmData->calib_version, fNvmData->calib_voltage,
              fNvmData->raw_temperature);
     
-    
-    
     if (!createMediumDict()) {
         TraceLog("MediumDict creation failed!");
-        if (fNvmData) {
-            IOFree(fNvmData, sizeof(struct iwl_nvm_data));
-            fNvmData = NULL;
-        }
-        RELEASE(eeprom);
-        RELEASE(io);
-        if (trans_pcie) {
-            iwl_trans_pcie_free(trans_pcie);
-            trans_pcie = NULL;
-        }
-        if (trans) {
-            IOFree(trans, sizeof(struct iwl_trans));
-            trans = NULL;
-        }
-        RELEASE(fMemoryMap);
-        RELEASE(pciDevice);
+        releaseAll();
         return false;
     }
     
     fWorkLoop = getWorkLoop();
     if (!fWorkLoop) {
         TraceLog("getWorkLoop failed!");
-        RELEASE(mediumDict);
-        
-        if (fNvmData) {
-            IOFree(fNvmData, sizeof(struct iwl_nvm_data));
-            fNvmData = NULL;
-        }
-        
-        RELEASE(eeprom);
-        RELEASE(io);
-        if (trans_pcie) {
-            iwl_trans_pcie_free(trans_pcie);
-            trans_pcie = NULL;
-        }
-        if (trans) {
-            IOFree(trans, sizeof(struct iwl_trans));
-            trans = NULL;
-        }
-        RELEASE(fMemoryMap);
-        RELEASE(pciDevice);
+        releaseAll();
         return false;
     }
     
@@ -658,48 +570,29 @@ bool IntelWifi::start(IOService *provider) {
     
     if (!attachInterface((IONetworkInterface**)&netif)) {
         TraceLog("Interface attach failed!");
-        RELEASE(fWorkLoop);
-        RELEASE(mediumDict);
-        
-        if (fNvmData) {
-            IOFree(fNvmData, sizeof(struct iwl_nvm_data));
-            fNvmData = NULL;
-        }
-        
-        RELEASE(eeprom);
-        RELEASE(io);
-        if (trans_pcie) {
-            iwl_trans_pcie_free(trans_pcie);
-            trans_pcie = NULL;
-        }
-        if (trans) {
-            IOFree(trans, sizeof(struct iwl_trans));
-            trans = NULL;
-        }
-        RELEASE(fMemoryMap);
-        RELEASE(pciDevice);
+        releaseAll();
         return false;
     }
     
     netif->registerService();
     
-    fInterruptSource =  IOInterruptEventSource::interruptEventSource(this,
-                                                             (IOInterruptEventAction) &IntelWifi::interruptOccured,
-                                                      
-                                                             provider, 0);
+    fInterruptSource = IOInterruptEventSource::interruptEventSource(this,
+                                                                    (IOInterruptEventAction) &IntelWifi::interruptOccured,
+                                                                    provider, 0);
     if (!fInterruptSource) {
+        TraceLog("InterruptSource init failed!");
+        releaseAll();
         return false;
     }
     
-
-    if (fWorkLoop->addEventSource(fInterruptSource) != kIOReturnSuccess)
+    if (fWorkLoop->addEventSource(fInterruptSource) != kIOReturnSuccess) {
+        TraceLog("EventSource registration failed");
+        releaseAll();
         return false;
+    }
     
     fInterruptSource->enable();
-    
-    
     registerService();
-    
     return true;
 }
 
@@ -710,33 +603,37 @@ void IntelWifi::stop(IOService *provider) {
     if (fInterruptSource && fWorkLoop)
         fWorkLoop->removeEventSource(fInterruptSource);
     
-    
-    
-    if (fNvmData) {
-        IOFree(fNvmData, sizeof(struct iwl_nvm_data));
-        fNvmData = NULL;
-    }
-    
-    
     if (netif) {
         detachInterface(netif);
         netif = NULL;
     }
-    RELEASE(fInterruptSource);
-    RELEASE(fWorkLoop);
-    RELEASE(mediumDict);
-    RELEASE(eeprom);
-    RELEASE(io);
-    if (trans_pcie) {
-        iwl_trans_pcie_free(trans_pcie);
-        trans_pcie = NULL;
-    }
-    if (trans) {
-        IOFree(trans, sizeof(struct iwl_trans));
-        trans = NULL;
-    }
-    RELEASE(fMemoryMap);
-    RELEASE(pciDevice);
+    
+    
+//
+//
+//
+//    if (fNvmData) {
+//        IOFree(fNvmData, sizeof(struct iwl_nvm_data));
+//        fNvmData = NULL;
+//    }
+//
+//
+
+//    RELEASE(fInterruptSource);
+//    RELEASE(fWorkLoop);
+//    RELEASE(mediumDict);
+//    RELEASE(eeprom);
+//    RELEASE(io);
+//    if (trans_pcie) {
+//        iwl_trans_pcie_free(trans_pcie);
+//        trans_pcie = NULL;
+//    }
+//    if (trans) {
+//        IOFree(trans, sizeof(struct iwl_trans));
+//        trans = NULL;
+//    }
+//    RELEASE(fMemoryMap);
+//    RELEASE(pciDevice);
     
     PMstop();
     
@@ -997,8 +894,7 @@ int IntelWifi::iwl_pcie_apm_init()
         return ret;
     }
     
-#if DISABLED_CODE
-    
+
     if (trans->cfg->host_interrupt_operation_mode) {
         /*
          * This is a bit of an abuse - This is needed for 7260 / 3160
@@ -1014,13 +910,14 @@ int IntelWifi::iwl_pcie_apm_init()
          * just to discard the value. But that's the way the hardware
          * seems to like it.
          */
-        iwl_read_prph(trans, OSC_CLK);
-        iwl_read_prph(trans, OSC_CLK);
-        iwl_set_bits_prph(trans, OSC_CLK, OSC_CLK_FORCE_CONTROL);
-        iwl_read_prph(trans, OSC_CLK);
-        iwl_read_prph(trans, OSC_CLK);
+        io->iwl_read_prph(OSC_CLK);
+        io->iwl_read_prph(OSC_CLK);
+        io->iwl_set_bits_prph(OSC_CLK, OSC_CLK_FORCE_CONTROL);
+        io->iwl_read_prph(OSC_CLK);
+        io->iwl_read_prph(OSC_CLK);
     }
-#endif
+
+#if DISABLED_CODE
     
     /*
      * Enable DMA clock and wait for it to stabilize.
@@ -1029,21 +926,21 @@ int IntelWifi::iwl_pcie_apm_init()
      * bits do not disable clocks.  This preserves any hardware
      * bits already set by default in "CLK_CTRL_REG" after reset.
      */
-#if DISABLED_CODE
     if (!trans->cfg->apmg_not_supported) {
-        iwl_write_prph(trans, APMG_CLK_EN_REG,
+        io->iwl_write_prph(APMG_CLK_EN_REG,
                        APMG_CLK_VAL_DMA_CLK_RQT);
-        udelay(20);
+        IODelay(20);
         
         /* Disable L1-Active */
-        iwl_set_bits_prph(trans, APMG_PCIDEV_STT_REG,
+        io->iwl_set_bits_prph(APMG_PCIDEV_STT_REG,
                           APMG_PCIDEV_STT_VAL_L1_ACT_DIS);
         
         /* Clear the interrupt in APMG if the NIC is in RFKILL */
-        iwl_write_prph(trans, APMG_RTC_INT_STT_REG,
+        io->iwl_write_prph(APMG_RTC_INT_STT_REG,
                        APMG_RTC_INT_STT_RFKILL);
     }
 #endif
+    
     
 //    set_bit(STATUS_DEVICE_ENABLED, &trans->status);
     
@@ -1063,20 +960,26 @@ void IntelWifi::iwl_pcie_apm_config()
      */
     // TODO: Implement
 //    UInt8 offset = 0;
-//    if (pciDevice->findPCICapability(kIOPCIPCIExpressCapability, &offset))
+//    OSObject *obj = pciDevice->getProperty(kIOPCIExpressLinkCapabilitiesKey);
+//    
+//    if (pciDevice->findPCICapability(kIOPCIPCIXCapability, &offset))
 //    {
 //        UInt16 lctl = pciDevice->configRead16(offset);
 //        if (lctl & PCI_EXP_LNKCTL_ASPM_L1)
 //            io->iwl_set_bit(CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
 //        else
 //            io->iwl_clear_bit(CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
-////        trans->pm_support = !(lctl & PCI_EXP_LNKCTL_ASPM_L0S);
+//        trans->pm_support = !(lctl & PCI_EXP_LNKCTL_ASPM_L0S);
 //
-//        pcie_capability_read_word(trans_pcie->pci_dev, PCI_EXP_DEVCTL2, &cap);
-//        trans->ltr_enabled = cap & PCI_EXP_DEVCTL2_LTR_EN;
-//        IWL_DEBUG_POWER(trans, "L1 %sabled - LTR %sabled\n",
-//                        (lctl & PCI_EXP_LNKCTL_ASPM_L1) ? "En" : "Dis",
-//                        trans->ltr_enabled ? "En" : "Dis");
+//        if (pciDevice->findPCICapability(PCI_EXP_DEVCTL2, &offset)) {
+//            UInt16 cap = pciDevice->configRead16(offset);
+//            trans->ltr_enabled = cap & PCI_EXP_DEVCTL2_LTR_EN;
+//            IWL_DEBUG_POWER(trans, "L1 %sabled - LTR %sabled\n",
+//                            (lctl & PCI_EXP_LNKCTL_ASPM_L1) ? "En" : "Dis",
+//                            trans->ltr_enabled ? "En" : "Dis");
+//        }
+//        
+//        
 //    }
     
 }

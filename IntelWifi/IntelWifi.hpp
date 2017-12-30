@@ -10,12 +10,38 @@
 
 #include <net/if.h>
 
+extern "C" {
+#include "iwlwifi/iwl-csr.h"
+#include "iwl-drv.h"
+#include "iwl-trans.h"
+#include "iwl-fh.h"
+#include "iwl-prph.h"
+#include "iwl-config.h"
+#include "iwl-eeprom-parse.h"
+#include "iwl-trans-pcie.h"
+}
+
+
 #include "Logging.h"
 
 #include "IntelEeprom.hpp"
 
-#include "iwl-eeprom-parse.h"
-#include "iwl-trans-pcie.h"
+
+
+
+// Configuration
+#define CONFIG_IWLMVM // Need NVM mode at least to see that code is compiling
+#define CONFIG_IWLWIFI_PCIE_RTPM // Powerman
+
+
+
+
+
+
+
+
+
+#define    RELEASE(x)    if(x){(x)->release();(x)=NULL;}
 
 class IntelWifi : public IOEthernetController
 {
@@ -73,6 +99,28 @@ protected:
     struct iwl_trans_pcie* trans_pcie;
     
 private:
+    inline void releaseAll() {
+        RELEASE(fInterruptSource);
+        RELEASE(fWorkLoop);
+        RELEASE(mediumDict);
+        if (fNvmData) {
+            IOFree(fNvmData, sizeof(struct iwl_nvm_data));
+            fNvmData = NULL;
+        }
+        RELEASE(eeprom);
+        RELEASE(io);
+        RELEASE(fMemoryMap);
+        if (trans_pcie) {
+            iwl_trans_pcie_free(trans_pcie);
+            trans_pcie = NULL;
+        }
+        if (trans) {
+            IOFree(trans, sizeof(struct iwl_trans));
+            trans = NULL;
+        }
+        RELEASE(pciDevice);
+    }
+    
     struct iwl_cfg* getConfiguration(UInt16 deviceId, UInt16 subSystemId);
     
     static void  interruptOccured(OSObject* owner, IOTimerEventSource* sender);

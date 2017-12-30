@@ -148,19 +148,24 @@ bool IntelIO::iwl_grab_nic_access(IOInterruptState *state) {
 }
 
 void IntelIO::iwl_release_nic_access(IOInterruptState *state) {
+    
     if (fTrans->cmd_hold_nic_awake) {
         IOSimpleLockUnlockEnableInterrupt(fTrans->reg_lock, *state);
         return;
     }
-   
+    
     __iwl_trans_pcie_clear_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
+    
     /*
      * Above we read the CSR_GP_CNTRL register, which will flush
      * any previous writes, but we need the write that clears the
      * MAC_ACCESS_REQ bit to be performed before any other writes
      * scheduled on different CPUs (after we drop reg_lock).
      */
-    //mmiowb(); // TODO: Find out what is that...
+    // original linux code: mmiowb();
+    os_compiler_barrier();
+
+    IOSimpleLockUnlockEnableInterrupt(fTrans->reg_lock, *state);
 }
 
 void IntelIO::__iwl_trans_pcie_clear_bit(UInt32 reg, UInt32 mask)
@@ -192,6 +197,7 @@ UInt32 IntelIO::iwl_read_prph(UInt32 ofs)
         val = iwl_read_prph_no_grab(ofs);
         iwl_release_nic_access(&state);
     }
+    
     return val;
 }
 
