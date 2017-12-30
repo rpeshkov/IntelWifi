@@ -1689,7 +1689,7 @@ err_free_drv:
 	//kfree(drv);
     IOFree(drv, sizeof(*drv));
 err:
-	return (void *)ret;
+	return ERR_PTR(ret);
 }
 
 void iwl_drv_stop(struct iwl_drv *drv)
@@ -1785,7 +1785,7 @@ void iwl_opmode_deregister(const char *name)
 }
 IWL_EXPORT_SYMBOL(iwl_opmode_deregister);
 
-static int __init iwl_drv_init(void)
+static int __unused iwl_drv_init(void)
 {
 	int i;
 
@@ -1810,7 +1810,7 @@ static int __init iwl_drv_init(void)
 }
 module_init(iwl_drv_init);
 
-static void __exit iwl_drv_exit(void)
+static void __unused iwl_drv_exit(void)
 {
     IOLockFree(iwlwifi_opmode_table_mtx);
     

@@ -80,6 +80,10 @@
 #include "fw/api/cmdhdr.h"
 #include "fw/api/txq.h"
 
+// TODO: Remove stubs
+struct sk_buff { int something; };
+struct sk_buff_head{int something;};
+
 /**
  * DOC: Transport layer - what is it ?
  *
@@ -362,7 +366,7 @@ iwl_trans_get_rb_size_order(enum iwl_amsdu_size rb_size)
 	case IWL_AMSDU_12K:
             return 12; // get_order(12 * 1024);
 	default:
-		WARN_ON(1);
+		//WARN_ON(1);
 		return -1;
 	}
 }
@@ -831,7 +835,7 @@ static inline int iwl_trans_start_fw(struct iwl_trans *trans,
 {
 	might_sleep();
 
-	WARN_ON_ONCE(!trans->rx_mpdu_cmd);
+	//WARN_ON_ONCE(!trans->rx_mpdu_cmd);
 
 	clear_bit(STATUS_FW_ERROR, &trans->status);
 	return trans->ops->start_fw(trans, fw, run_in_rfkill);

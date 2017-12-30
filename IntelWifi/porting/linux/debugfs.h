@@ -9,8 +9,9 @@
 #ifndef debugfs_h
 #define debugfs_h
 
+// TODO: remove stub
 struct dentry {
-    
+    int something;
 };
 
 

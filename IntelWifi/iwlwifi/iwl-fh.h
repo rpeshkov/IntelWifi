@@ -131,14 +131,14 @@ static inline unsigned int FH_MEM_CBBC_QUEUE(struct iwl_trans *trans,
 					     unsigned int chnl)
 {
 	if (trans->cfg->use_tfh) {
-		WARN_ON_ONCE(chnl >= 64);
+		//WARN_ON_ONCE(chnl >= 64);
 		return TFH_TFDQ_CBB_TABLE + 8 * chnl;
 	}
 	if (chnl < 16)
 		return FH_MEM_CBBC_0_15_LOWER_BOUND + 4 * chnl;
 	if (chnl < 20)
 		return FH_MEM_CBBC_16_19_LOWER_BOUND + 4 * (chnl - 16);
-	WARN_ON_ONCE(chnl >= 32);
+	//WARN_ON_ONCE(chnl >= 32);
 	return FH_MEM_CBBC_20_31_LOWER_BOUND + 4 * (chnl - 20);
 }
 
@@ -640,7 +640,7 @@ struct iwl_rb_status {
 	__le16 closed_fr_num;
 	__le16 finished_rb_num;
 	__le16 finished_fr_nam;
-	__le32 __unused;
+    __le32 _unused_1;  //__unused;
 } __packed;
 
 

@@ -33,6 +33,7 @@
 
 
 #define WARN_ON(x) (x)
+#define STR(x) #x
 #define WARN_ON_ONCE(x) (x)
 
 #define unlikely(x) (x)
@@ -108,6 +109,12 @@ __get_order(n)                        \
 )
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
+static inline void * ERR_PTR(long error)
+{
+    return (void *) error;
+}
+
 
 
 

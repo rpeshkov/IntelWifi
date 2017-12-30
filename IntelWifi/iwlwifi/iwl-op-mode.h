@@ -70,6 +70,11 @@
 #include <linux/netdevice.h>
 #include <linux/debugfs.h>
 
+// TODO: Remove stub after everything is done
+struct napi_struct {
+    int something;
+};
+
 struct iwl_op_mode;
 struct iwl_trans;
 struct sk_buff;

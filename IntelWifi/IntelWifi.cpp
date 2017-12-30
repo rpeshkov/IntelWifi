@@ -391,8 +391,6 @@ bool IntelWifi::start(IOService *provider) {
      * in the old format.
      */
     if (fConfiguration->device_family >= IWL_DEVICE_FAMILY_8000) {
-        unsigned long flags;
-        
         trans->hw_rev = (trans->hw_rev & 0xFFF0) | CSR_HW_REV_STEP(trans->hw_rev << 2) << 2;
         
         // TODO: Implement
@@ -510,7 +508,8 @@ bool IntelWifi::start(IOService *provider) {
 
 
     
-    struct iwl_drv* drv = iwl_drv_start(trans);
+//    struct iwl_drv* drv = iwl_drv_start(trans);
+    iwl_drv_start(trans);
     
     
     
