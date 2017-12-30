@@ -368,12 +368,37 @@ bool IntelWifi::start(IOService *provider) {
     fMemoryMap = pciDevice->mapDeviceMemoryWithRegister(kIOPCIConfigBaseAddress0);
     if (!fMemoryMap) {
         TraceLog("MemoryMap failed!");
+        if (trans_pcie) {
+            iwl_trans_pcie_free(trans_pcie);
+            trans_pcie = NULL;
+        }
+        if (trans) {
+            IOFree(trans, sizeof(struct iwl_trans));
+            trans = NULL;
+        }
+        
         RELEASE(pciDevice);
         return false;
     }
     
     trans_pcie->hw_base = reinterpret_cast<volatile void *>(fMemoryMap->getVirtualAddress());
     io = IntelIO::withTrans(trans_pcie);
+    
+    if (!io) {
+        TraceLog("MemoryMap failed!");
+        
+        if (trans_pcie) {
+            iwl_trans_pcie_free(trans_pcie);
+            trans_pcie = NULL;
+        }
+        if (trans) {
+            IOFree(trans, sizeof(struct iwl_trans));
+            trans = NULL;
+        }
+        RELEASE(fMemoryMap);
+        RELEASE(pciDevice);
+        return false;
+    }
     
     /* We disable the RETRY_TIMEOUT register (0x41) to keep
      * PCI Tx retries from interfering with C3 CPU state */
@@ -458,7 +483,6 @@ bool IntelWifi::start(IOService *provider) {
     
     // TODO: Implement
     // iwl_pcie_set_interrupt_capa(pdev, trans);
-    
     trans->hw_id = (deviceId << 16) + subsystemId;
     snprintf(trans->hw_id_str, sizeof(trans->hw_id_str), "PCI ID: 0x%04X:0x%04X", deviceId, subsystemId);
     DebugLog("%s", trans->hw_id_str);
@@ -500,35 +524,13 @@ bool IntelWifi::start(IOService *provider) {
 //    trans->runtime_pm_mode = IWL_PLAT_PM_MODE_DISABLED;
 //#endif /* CONFIG_IWLWIFI_PCIE_RTPM */
     
-
-    
-    
-
-    
-
-
     
 //    struct iwl_drv* drv = iwl_drv_start(trans);
     iwl_drv_start(trans);
     
-    
-    
-    
-    
-
-    
-    
-    
     //    PMinit();
     //    provider->joinPMtree(this);
 
-    
-    
-    
-    
-        
-    
-    
     
     int err = iwl_pcie_prepare_card_hw();
     if (err) {
@@ -557,7 +559,19 @@ bool IntelWifi::start(IOService *provider) {
     eeprom = IntelEeprom::withIO(io, fConfiguration, trans->hw_rev);
     if (!eeprom) {
         TraceLog("EEPROM init failed!");
+        
+        
+        RELEASE(io);
+        if (trans_pcie) {
+            iwl_trans_pcie_free(trans_pcie);
+            trans_pcie = NULL;
+        }
+        if (trans) {
+            IOFree(trans, sizeof(struct iwl_trans));
+            trans = NULL;
+        }
         RELEASE(fMemoryMap);
+        
         RELEASE(pciDevice);
         
         return false;
@@ -568,6 +582,14 @@ bool IntelWifi::start(IOService *provider) {
         TraceLog("EEPROM parse failed!");
         RELEASE(eeprom);
         RELEASE(io);
+        if (trans_pcie) {
+            iwl_trans_pcie_free(trans_pcie);
+            trans_pcie = NULL;
+        }
+        if (trans) {
+            IOFree(trans, sizeof(struct iwl_trans));
+            trans = NULL;
+        }
         RELEASE(fMemoryMap);
         RELEASE(pciDevice);
         
@@ -588,8 +610,20 @@ bool IntelWifi::start(IOService *provider) {
     
     if (!createMediumDict()) {
         TraceLog("MediumDict creation failed!");
+        if (fNvmData) {
+            IOFree(fNvmData, sizeof(struct iwl_nvm_data));
+            fNvmData = NULL;
+        }
         RELEASE(eeprom);
         RELEASE(io);
+        if (trans_pcie) {
+            iwl_trans_pcie_free(trans_pcie);
+            trans_pcie = NULL;
+        }
+        if (trans) {
+            IOFree(trans, sizeof(struct iwl_trans));
+            trans = NULL;
+        }
         RELEASE(fMemoryMap);
         RELEASE(pciDevice);
         return false;
@@ -598,8 +632,23 @@ bool IntelWifi::start(IOService *provider) {
     fWorkLoop = getWorkLoop();
     if (!fWorkLoop) {
         TraceLog("getWorkLoop failed!");
+        RELEASE(mediumDict);
+        
+        if (fNvmData) {
+            IOFree(fNvmData, sizeof(struct iwl_nvm_data));
+            fNvmData = NULL;
+        }
+        
         RELEASE(eeprom);
         RELEASE(io);
+        if (trans_pcie) {
+            iwl_trans_pcie_free(trans_pcie);
+            trans_pcie = NULL;
+        }
+        if (trans) {
+            IOFree(trans, sizeof(struct iwl_trans));
+            trans = NULL;
+        }
         RELEASE(fMemoryMap);
         RELEASE(pciDevice);
         return false;
@@ -611,8 +660,22 @@ bool IntelWifi::start(IOService *provider) {
         TraceLog("Interface attach failed!");
         RELEASE(fWorkLoop);
         RELEASE(mediumDict);
+        
+        if (fNvmData) {
+            IOFree(fNvmData, sizeof(struct iwl_nvm_data));
+            fNvmData = NULL;
+        }
+        
         RELEASE(eeprom);
         RELEASE(io);
+        if (trans_pcie) {
+            iwl_trans_pcie_free(trans_pcie);
+            trans_pcie = NULL;
+        }
+        if (trans) {
+            IOFree(trans, sizeof(struct iwl_trans));
+            trans = NULL;
+        }
         RELEASE(fMemoryMap);
         RELEASE(pciDevice);
         return false;
@@ -637,6 +700,13 @@ bool IntelWifi::start(IOService *provider) {
 
 
 void IntelWifi::stop(IOService *provider) {
+    
+    if (fNvmData) {
+        IOFree(fNvmData, sizeof(struct iwl_nvm_data));
+        fNvmData = NULL;
+    }
+    
+    
     if (netif) {
         detachInterface(netif);
         netif = NULL;
@@ -646,6 +716,14 @@ void IntelWifi::stop(IOService *provider) {
     RELEASE(mediumDict);
     RELEASE(eeprom);
     RELEASE(io);
+    if (trans_pcie) {
+        iwl_trans_pcie_free(trans_pcie);
+        trans_pcie = NULL;
+    }
+    if (trans) {
+        IOFree(trans, sizeof(struct iwl_trans));
+        trans = NULL;
+    }
     RELEASE(fMemoryMap);
     RELEASE(pciDevice);
     

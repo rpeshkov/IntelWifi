@@ -21,6 +21,7 @@
 
 #define IWL_DEBUG_INFO(trans, args...) DebugLog("DEBUG INFO: " args)
 #define IWL_ERR(trans, args...) TraceLog("ERROR: " args)
+#define IWL_ERR_DEV(dev, args...) TraceLog("ERROR DEV: " args)
 #define IWL_INFO(trans, args...) TraceLog("INFO: " args)
 #define IWL_DEBUG_FW(drv, args...) DebugLog("DEBUG FW: " args)
 #define IWL_WARN(drv, args...) TraceLog("WARN: " args)

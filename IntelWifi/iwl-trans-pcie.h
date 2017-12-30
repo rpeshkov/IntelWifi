@@ -29,4 +29,9 @@ static inline struct iwl_trans_pcie* iwl_trans_pcie_alloc() {
     return trans;
 }
 
+static inline void iwl_trans_pcie_free(struct iwl_trans_pcie *trans) {
+    IOSimpleLockFree(trans->reg_lock);
+    IOFree(trans, sizeof(struct iwl_trans_pcie));
+}
+
 #endif /* iwl_trans_pcie_h */

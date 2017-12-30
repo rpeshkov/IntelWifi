@@ -64,6 +64,8 @@
 #ifndef __iwl_eeprom_parse_h__
 #define __iwl_eeprom_parse_h__
 
+#include <net/cfg80211.h>
+
 #define ETH_ALEN 6
 
 struct iwl_nvm_data {
@@ -97,8 +99,8 @@ struct iwl_nvm_data {
     
     bool lar_enabled;
     bool vht160_supported;
-//    struct ieee80211_supported_band bands[NUM_NL80211_BANDS];
-//    struct ieee80211_channel channels[];
+    struct ieee80211_supported_band bands[NUM_NL80211_BANDS];
+    struct ieee80211_channel channels[];
 };
 
 /* calibration */

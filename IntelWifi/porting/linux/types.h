@@ -91,12 +91,19 @@ typedef u64 dma_addr_t;
 #define __be16_to_cpu(x) __swab16((__force __u16)(__be16)(x))
 
 #define le32_to_cpup __le32_to_cpup
+#define le16_to_cpup __le16_to_cpup
 
 
 static inline __u32 __le32_to_cpup(const __le32 *p)
 {
     return (__force __u32)*p;
 }
+
+static inline __u16 __le16_to_cpup(const __le16 *p)
+{
+    return (__force __u16)*p;
+}
+
 
 
 
