@@ -128,6 +128,10 @@ private:
     void iwl_pcie_sw_reset();
     int iwl_pcie_apm_init();
     void iwl_pcie_apm_config();
+    void iwl_pcie_apm_stop(bool op_mode_leave);
+    void iwl_pcie_apm_stop_master();
+    void iwl_trans_pcie_stop_device(bool low_power);
+    void _iwl_trans_pcie_stop_device(bool low_power);
     
     ifnet_t fIfNet;
     

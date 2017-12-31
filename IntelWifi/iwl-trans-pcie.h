@@ -21,15 +21,19 @@ struct iwl_trans_pcie {
     bool cmd_hold_nic_awake;
     
     IOSimpleLock* reg_lock;
+    IOLock *mutex;
+    bool is_down;
 };
 
 static inline struct iwl_trans_pcie* iwl_trans_pcie_alloc() {
     struct iwl_trans_pcie* trans = (struct iwl_trans_pcie *)IOMalloc(sizeof(struct iwl_trans_pcie));
     trans->reg_lock = IOSimpleLockAlloc();
+    trans->mutex = IOLockAlloc();
     return trans;
 }
 
 static inline void iwl_trans_pcie_free(struct iwl_trans_pcie *trans) {
+    IOLockFree(trans->mutex);
     IOSimpleLockFree(trans->reg_lock);
     IOFree(trans, sizeof(struct iwl_trans_pcie));
 }

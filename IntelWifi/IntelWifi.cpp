@@ -526,6 +526,9 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
+    /* Set is_down to false here so that...*/
+    trans_pcie->is_down = false;
+    
     makeUsable();
 //    changePowerStateTo(kOffPowerState);// Set the public power state to the lowest level
     registerPowerDriver(this, gPowerStates, kNumPowerStates);
@@ -599,6 +602,8 @@ bool IntelWifi::start(IOService *provider) {
 
 
 void IntelWifi::stop(IOService *provider) {
+    
+    iwl_trans_pcie_stop_device(true);
     
     if (netif) {
         detachInterface(netif);
@@ -818,8 +823,6 @@ void IntelWifi::iwl_pcie_sw_reset()
  */
 int IntelWifi::iwl_pcie_apm_init()
 {
-    int ret;
-    
     IWL_DEBUG_INFO(trans, "Init card's basic functions\n");
     
     /*
@@ -866,7 +869,7 @@ int IntelWifi::iwl_pcie_apm_init()
      * device-internal resources is supported, e.g. iwl_write_prph()
      * and accesses to uCode SRAM.
      */
-    ret = io->iwl_poll_bit(CSR_GP_CNTRL,
+    int ret = io->iwl_poll_bit(CSR_GP_CNTRL,
                        CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
                        CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY, 25000);
     if (ret < 0) {
@@ -933,34 +936,188 @@ void IntelWifi::iwl_pcie_apm_config()
      * If not (unlikely), enable L0S, so there is at least some
      *    power savings, even without L1.
      */
-    // TODO: Implement
-//    OSNumber *pciLinkCapabilities = OSDynamicCast(OSNumber, pciDevice->getProperty(kIOPCIExpressLinkCapabilitiesKey));
-//    UInt8 offset = 0;
-//    OSObject *obj = pciDevice->getProperty(kIOPCIExpressLinkCapabilitiesKey);
-//    
-//    if (pciDevice->findPCICapability(kIOPCIPCIXCapability, &offset))
-//    {
-//        UInt16 lctl = pciDevice->configRead16(offset);
-//        if (lctl & PCI_EXP_LNKCTL_ASPM_L1)
-//            io->iwl_set_bit(CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
-//        else
-//            io->iwl_clear_bit(CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
-//        trans->pm_support = !(lctl & PCI_EXP_LNKCTL_ASPM_L0S);
-//
-//        if (pciDevice->findPCICapability(PCI_EXP_DEVCTL2, &offset)) {
-//            UInt16 cap = pciDevice->configRead16(offset);
-//            trans->ltr_enabled = cap & PCI_EXP_DEVCTL2_LTR_EN;
-//            IWL_DEBUG_POWER(trans, "L1 %sabled - LTR %sabled\n",
-//                            (lctl & PCI_EXP_LNKCTL_ASPM_L1) ? "En" : "Dis",
-//                            trans->ltr_enabled ? "En" : "Dis");
-//        }
-//        
-//        
-//    }
+    // TODO: Implement. Check implementation. May be wrong
+    OSNumber *pciLinkCapabilities = OSDynamicCast(OSNumber, pciDevice->getProperty(kIOPCIExpressLinkCapabilitiesKey));
+    if (pciLinkCapabilities) {
+        UInt32 linkCaps = pciLinkCapabilities->unsigned32BitValue();
+        IWL_DEBUG_INFO(trans, "ASPM State: %#10x", linkCaps);
+        if (linkCaps & 0x800) {
+            io->iwl_set_bit(CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
+        } else {
+            io->iwl_clear_bit(CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
+        }
+        trans->pm_support = !(linkCaps & 0x400);
+    }
+    
+ 
+    //pcie_capability_read_word(trans_pcie->pci_dev, PCI_EXP_LNKCTL, &lctl);
+    //if (lctl & PCI_EXP_LNKCTL_ASPM_L1)
+    //    iwl_set_bit(trans, CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
+    //else
+    //    iwl_clear_bit(trans, CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
+    //trans->pm_support = !(lctl & PCI_EXP_LNKCTL_ASPM_L0S);
+    //
+    //pcie_capability_read_word(trans_pcie->pci_dev, PCI_EXP_DEVCTL2, &cap);
+    //trans->ltr_enabled = cap & PCI_EXP_DEVCTL2_LTR_EN;
+    //IWL_DEBUG_POWER(trans, "L1 %sabled - LTR %sabled\n",
+    //                (lctl & PCI_EXP_LNKCTL_ASPM_L1) ? "En" : "Dis",
+    //                trans->ltr_enabled ? "En" : "Dis");
+
     
 }
 
+void IntelWifi::iwl_pcie_apm_stop(bool op_mode_leave)
+{
+    IWL_DEBUG_INFO(trans, "Stop card, put in low power state\n");
+    
+    if (op_mode_leave) {
+        if (!test_bit(STATUS_DEVICE_ENABLED, &trans->status))
+            iwl_pcie_apm_init();
+        
+        /* inform ME that we are leaving */
+        if (trans->cfg->device_family == IWL_DEVICE_FAMILY_7000)
+            io->iwl_set_bits_prph(APMG_PCIDEV_STT_REG,
+                              APMG_PCIDEV_STT_VAL_WAKE_ME);
+        else if (trans->cfg->device_family >= IWL_DEVICE_FAMILY_8000) {
+            io->iwl_set_bit(CSR_DBG_LINK_PWR_MGMT_REG,
+                        CSR_RESET_LINK_PWR_MGMT_DISABLED);
+            io->iwl_set_bit(CSR_HW_IF_CONFIG_REG,
+                        CSR_HW_IF_CONFIG_REG_PREPARE |
+                        CSR_HW_IF_CONFIG_REG_ENABLE_PME);
+            IODelay(1);
+            io->iwl_clear_bit(CSR_DBG_LINK_PWR_MGMT_REG,
+                          CSR_RESET_LINK_PWR_MGMT_DISABLED);
+        }
+        IODelay(5);
+    }
+    
+    clear_bit(STATUS_DEVICE_ENABLED, &trans->status);
+    
+    /* Stop device's DMA activity */
+    iwl_pcie_apm_stop_master();
+    
+    // TODO: Implement
+//    if (trans->cfg->lp_xtal_workaround) {
+//        iwl_pcie_apm_lp_xtal_enable(trans);
+//        return;
+//    }
+    
+    iwl_pcie_sw_reset();
+    
+    /*
+     * Clear "initialization complete" bit to move adapter from
+     * D0A* (powered-up Active) --> D0U* (Uninitialized) state.
+     */
+    io->iwl_clear_bit(CSR_GP_CNTRL,
+                  CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
+}
 
+void IntelWifi::iwl_pcie_apm_stop_master()
+{
+    int ret;
+    
+    /* stop device's busmaster DMA activity */
+    io->iwl_set_bit(CSR_RESET, CSR_RESET_REG_FLAG_STOP_MASTER);
+    
+    ret = io->iwl_poll_bit(CSR_RESET,
+                       CSR_RESET_REG_FLAG_MASTER_DISABLED,
+                       CSR_RESET_REG_FLAG_MASTER_DISABLED, 100);
+    if (ret < 0)
+        IWL_WARN(trans, "Master Disable Timed Out, 100 usec\n");
+    
+    IWL_DEBUG_INFO(trans, "stop master\n");
+}
 
+void IntelWifi::iwl_trans_pcie_stop_device(bool low_power)
+{
+    bool was_in_rfkill;
+    
+    IOLockLock(trans_pcie->mutex);
+    trans_pcie->opmode_down = true;
+    was_in_rfkill = test_bit(STATUS_RFKILL_OPMODE, &trans->status);
+    _iwl_trans_pcie_stop_device(low_power);
+//    iwl_trans_pcie_handle_stop_rfkill(was_in_rfkill);
+    IOLockUnlock(trans_pcie->mutex);
+}
+
+void IntelWifi::_iwl_trans_pcie_stop_device(bool low_power)
+{
+//    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+//    lockdep_assert_held(&trans_pcie->mutex);
+    
+    if (trans_pcie->is_down)
+        return;
+    
+    trans_pcie->is_down = true;
+    
+    /* tell the device to stop sending interrupts */
+//    iwl_disable_interrupts(trans);
+    
+    /* device going down, Stop using ICT table */
+//    iwl_pcie_disable_ict(trans);
+    
+    /*
+     * If a HW restart happens during firmware loading,
+     * then the firmware loading might call this function
+     * and later it might be called again due to the
+     * restart. So don't process again if the device is
+     * already dead.
+     */
+    if (test_and_clear_bit(STATUS_DEVICE_ENABLED, &trans->status)) {
+        IWL_DEBUG_INFO(trans,
+                       "DEVICE_ENABLED bit was set and is now cleared\n");
+//        iwl_pcie_tx_stop(trans);
+//        iwl_pcie_rx_stop(trans);
+        
+        /* Power-down device's busmaster DMA clocks */
+        if (!trans->cfg->apmg_not_supported) {
+            io->iwl_write_prph(APMG_CLK_DIS_REG,
+                           APMG_CLK_VAL_DMA_CLK_RQT);
+            IODelay(5);
+        }
+    }
+    
+    /* Make sure (redundant) we've released our request to stay awake */
+    io->iwl_clear_bit(CSR_GP_CNTRL,
+                  CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
+    
+    /* Stop the device, and put it in low power state */
+    iwl_pcie_apm_stop(false);
+    
+    iwl_pcie_sw_reset();
+    
+    /*
+     * Upon stop, the IVAR table gets erased, so msi-x won't
+     * work. This causes a bug in RF-KILL flows, since the interrupt
+     * that enables radio won't fire on the correct irq, and the
+     * driver won't be able to handle the interrupt.
+     * Configure the IVAR table again after reset.
+     */
+//    iwl_pcie_conf_msix_hw(trans_pcie);
+    
+    /*
+     * Upon stop, the APM issues an interrupt if HW RF kill is set.
+     * This is a bug in certain verions of the hardware.
+     * Certain devices also keep sending HW RF kill interrupt all
+     * the time, unless the interrupt is ACKed even if the interrupt
+     * should be masked. Re-ACK all the interrupts here.
+     */
+//    iwl_disable_interrupts(trans);
+    
+    /* clear all status bits */
+    clear_bit(STATUS_SYNC_HCMD_ACTIVE, &trans->status);
+    clear_bit(STATUS_INT_ENABLED, &trans->status);
+    clear_bit(STATUS_TPOWER_PMI, &trans->status);
+    
+    /*
+     * Even if we stop the HW, we still want the RF kill
+     * interrupt
+     */
+//    iwl_enable_rfkill_int(trans);
+    
+    /* re-take ownership to prevent other users from stealing the device */
+    iwl_pcie_prepare_card_hw();
+}
 
 

@@ -244,7 +244,7 @@ bool IntelEeprom::read() {
     
     ret = iwl_eeprom_acquire_semaphore();
     if (ret < 0) {
-        TraceLog("Failed to acquire EEPROM semaphore.\n");
+        IWL_ERR(trans, "Failed to acquire EEPROM semaphore.\n");
         IOFree(e, sz);
         return false;
     }
@@ -633,7 +633,10 @@ int IntelEeprom::iwl_eeprom_acquire_semaphore()
                                 CSR_HW_IF_CONFIG_REG_BIT_EEPROM_OWN_SEM,
                                 EEPROM_SEM_TIMEOUT);
         if (ret >= 0) {
-            TraceLog("Acquired semaphore after %d tries.\n", count+1);
+            IWL_DEBUG_EEPROM(trans->dev,
+                             "Acquired semaphore after %d tries.\n",
+                             count+1);
+
             return ret;
         }
     }
