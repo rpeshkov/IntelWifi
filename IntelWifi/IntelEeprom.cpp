@@ -198,13 +198,18 @@ bool IntelEeprom::initWithIO(IntelIO *io, struct iwl_cfg *cfg, UInt32 hwRev) {
     return read();
 }
 
-void IntelEeprom::release() {
+void IntelEeprom::free() {
+    if (nvmData) {
+        IOFree(nvmData, sizeof(struct iwl_nvm_data) + sizeof(struct ieee80211_channel) * IWL_NUM_CHANNELS);
+        nvmData = NULL;
+    }
+    
     if (fEeprom) {
         IOFree(fEeprom, fEepromSize);
         fEeprom = NULL;
     }
     
-    super::release();
+    super::free();
 }
 
 bool IntelEeprom::read() {
@@ -297,7 +302,7 @@ bool IntelEeprom::read() {
             if (ret < 0) {
                 IWL_ERR(trans, "Time out reading EEPROM[%d]\n", a);
                 iwl_eeprom_release_semaphore();
-
+                IOFree(e, sz);
                 return false;
             }
             
@@ -319,7 +324,8 @@ bool IntelEeprom::read() {
 }
 
 struct iwl_nvm_data* IntelEeprom::parse() {
-    struct iwl_nvm_data* nvmData = (struct iwl_nvm_data*)IOMalloc(sizeof(struct iwl_nvm_data));
+    // I WILL ALWAYS REMEMBER TO ALLOCATE ENOUGH MEMORY!
+    nvmData = (struct iwl_nvm_data*)IOMalloc(sizeof(struct iwl_nvm_data) + sizeof(struct ieee80211_channel) * IWL_NUM_CHANNELS);
     if (!nvmData) {
         return NULL;
     }

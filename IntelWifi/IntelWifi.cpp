@@ -274,10 +274,6 @@ void IntelWifi::free() {
 bool IntelWifi::start(IOService *provider) {
     TraceLog("Driver start");
     
-    int err;
-    UInt32 hw_rf_id;
-    UInt16 vendorId, deviceId, subsystemId;
-    
     if (!super::start(provider)) {
         TraceLog("Super start call failed!");
         return false;
@@ -290,9 +286,9 @@ bool IntelWifi::start(IOService *provider) {
     }
     pciDevice->retain();
 
-    vendorId = pciDevice->configRead16(kIOPCIConfigVendorID);
-    deviceId = pciDevice->configRead16(kIOPCIConfigDeviceID);
-    subsystemId = pciDevice->configRead16(kIOPCIConfigSubSystemID);
+    UInt16 vendorId = pciDevice->configRead16(kIOPCIConfigVendorID);
+    UInt16 deviceId = pciDevice->configRead16(kIOPCIConfigDeviceID);
+    UInt16 subsystemId = pciDevice->configRead16(kIOPCIConfigSubSystemID);
     DebugLog("Device identity: Vendor: %#06x, Device: %#06x, SubSystem: %#06x", vendorId, deviceId, subsystemId);
     
     fConfiguration = getConfiguration(deviceId, subsystemId);
@@ -317,9 +313,9 @@ bool IntelWifi::start(IOService *provider) {
          * lot of power.
          */
         // TODO: Find out what to call on OSX
-//        pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S |
-//                               PCIE_LINK_STATE_L1 |
-//                               PCIE_LINK_STATE_CLKPM);
+        //pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S |
+        //                       PCIE_LINK_STATE_L1 |
+        //                       PCIE_LINK_STATE_CLKPM);
     }
     
     int addr_size;
@@ -334,11 +330,12 @@ bool IntelWifi::start(IOService *provider) {
         trans_pcie->tfd_size = sizeof(struct iwl_tfd);
     }
     
-    // original code:     trans->max_skb_frags = IWL_PCIE_MAX_FRAGS(trans_pcie);
+    
     /* We need 2 entries for the TX command and header, and another one might
      * be needed for potential data in the SKB's head. The remaining ones can
      * be used for frags.
      */
+    // original code:     trans->max_skb_frags = IWL_PCIE_MAX_FRAGS(trans_pcie);
     // macro definition: #define IWL_PCIE_MAX_FRAGS(x) (x->max_tbs - 3)
     trans->max_skb_frags = trans_pcie->max_tbs - 3;
     
@@ -377,7 +374,7 @@ bool IntelWifi::start(IOService *provider) {
         TraceLog("MemoryMap failed!");
         releaseAll();
         return false;
-}
+    }
     
     /* We disable the RETRY_TIMEOUT register (0x41) to keep
      * PCI Tx retries from interfering with C3 CPU state */
@@ -437,6 +434,7 @@ bool IntelWifi::start(IOService *provider) {
             io->iwl_release_nic_access(&state);
         }
     }
+
     /*
      * 9000-series integrated A-step has a problem with suspend/resume
      * and sometimes even causes the whole platform to get stuck. This
@@ -446,8 +444,8 @@ bool IntelWifi::start(IOService *provider) {
         io->iwl_set_bit(CSR_HOST_CHICKEN, CSR_HOST_CHICKEN_PM_IDLE_SRC_DIS_SB_PME);
     
 #ifdef CONFIG_IWLMVM
-    hw_rf_id = io->iwl_read32(CSR_HW_RF_ID);
-    if (hw_rf_id == CSR_HW_RF_ID_TYPE_HR) {
+    trans->hw_rf_id = io->iwl_read32(CSR_HW_RF_ID);
+    if (trans->hw_rf_id == CSR_HW_RF_ID_TYPE_HR) {
         UInt32 hw_status;
         
         hw_status = io->iwl_read_prph(UMAG_GEN_HW_STATUS);
@@ -502,14 +500,18 @@ bool IntelWifi::start(IOService *provider) {
         trans->runtime_pm_mode = IWL_PLAT_PM_MODE_DISABLED;
     #endif /* CONFIG_IWLWIFI_PCIE_RTPM */
     
-//    struct iwl_drv* drv = iwl_drv_start(trans);
-    iwl_drv_start(trans);
+    drv = iwl_drv_start(trans);
+    
+    if (!drv) {
+        TraceLog("DRV init failed!");
+        releaseAll();
+        return false;
+    }
     
     PMinit();
     provider->joinPMtree(this);
-
     
-    err = iwl_pcie_prepare_card_hw();
+    int err = iwl_pcie_prepare_card_hw();
     if (err) {
         TraceLog("ERROR: Error while preparing HW: %d", err);
         releaseAll();
@@ -527,7 +529,7 @@ bool IntelWifi::start(IOService *provider) {
     makeUsable();
 //    changePowerStateTo(kOffPowerState);// Set the public power state to the lowest level
     registerPowerDriver(this, gPowerStates, kNumPowerStates);
-    
+
     eeprom = IntelEeprom::withIO(io, fConfiguration, trans->hw_rev);
     if (!eeprom) {
         TraceLog("EEPROM init failed!");
@@ -598,12 +600,21 @@ bool IntelWifi::start(IOService *provider) {
 
 void IntelWifi::stop(IOService *provider) {
     
-    if (fInterruptSource && fWorkLoop)
-        fWorkLoop->removeEventSource(fInterruptSource);
-    
     if (netif) {
         detachInterface(netif);
         netif = NULL;
+    }
+    
+    if (fWorkLoop) {
+        if (fInterruptSource) {
+            fInterruptSource->disable();
+            fWorkLoop->removeEventSource(fInterruptSource);
+        }
+    }
+    
+    if (drv) {
+        iwl_drv_stop(drv);
+        drv = NULL;
     }
     
     PMstop();
@@ -638,7 +649,6 @@ bool IntelWifi::createMediumDict() {
     setSelectedMedium(m);
     return true;
 }
-
 
 
 IOReturn IntelWifi::enable(IONetworkInterface *netif) {
@@ -739,7 +749,7 @@ int IntelWifi::iwl_pcie_prepare_card_hw()
     int t = 0;
     int iter;
     
-    DebugLog("iwl_trans_prepare_card_hw enter\n");
+    IWL_DEBUG_INFO(trans, "iwl_trans_prepare_card_hw enter\n");
     
     ret = iwl_pcie_set_hw_ready();
     /* If the card is ready, exit 0 */
@@ -767,7 +777,7 @@ int IntelWifi::iwl_pcie_prepare_card_hw()
         IOSleep(25);
     }
     
-    DebugLog("ERROR: Couldn't prepare the card\n");
+    IWL_ERR(trans, "Couldn't prepare the card\n");
     
     return ret;
 }
@@ -789,7 +799,8 @@ int IntelWifi::iwl_pcie_set_hw_ready()
     if (ret >= 0)
         io->iwl_set_bit(CSR_MBOX_SET_REG, CSR_MBOX_SET_REG_OS_ALIVE);
     
-    DebugLog("hardware%s ready\n", ret < 0 ? " not" : "");
+    IWL_DEBUG_INFO(trans, "hardware%s ready\n", ret < 0 ? " not" : "");
+
     return ret;
 }
 
@@ -863,7 +874,6 @@ int IntelWifi::iwl_pcie_apm_init()
         return ret;
     }
     
-
     if (trans->cfg->host_interrupt_operation_mode) {
         /*
          * This is a bit of an abuse - This is needed for 7260 / 3160
@@ -906,7 +916,7 @@ int IntelWifi::iwl_pcie_apm_init()
         io->iwl_write_prph(APMG_RTC_INT_STT_REG,
                        APMG_RTC_INT_STT_RFKILL);
     }
-    
+
     set_bit(STATUS_DEVICE_ENABLED, &trans->status);
     
     return 0;
@@ -924,6 +934,7 @@ void IntelWifi::iwl_pcie_apm_config()
      *    power savings, even without L1.
      */
     // TODO: Implement
+//    OSNumber *pciLinkCapabilities = OSDynamicCast(OSNumber, pciDevice->getProperty(kIOPCIExpressLinkCapabilitiesKey));
 //    UInt8 offset = 0;
 //    OSObject *obj = pciDevice->getProperty(kIOPCIExpressLinkCapabilitiesKey);
 //    

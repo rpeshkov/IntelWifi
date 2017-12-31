@@ -1715,6 +1715,8 @@ void iwl_drv_stop(struct iwl_drv *drv)
 #ifdef CONFIG_IWLWIFI_DEBUGFS
 	debugfs_remove_recursive(drv->dbgfs_drv);
 #endif
+    
+    IOLockFree(iwlwifi_opmode_table_mtx);
 
 	//kfree(drv);
     IOFree(drv, sizeof(*drv));

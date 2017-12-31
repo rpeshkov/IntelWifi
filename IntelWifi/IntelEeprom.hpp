@@ -36,7 +36,7 @@ class IntelEeprom : public OSObject {
 public:
     static IntelEeprom* withIO(IntelIO *io, struct iwl_cfg *config, UInt32 hwRev);
     bool initWithIO(IntelIO *io, struct iwl_cfg *config, UInt32 hwRev);
-    void release();
+    virtual void free() override;
     struct iwl_nvm_data* parse();
     
 private:
@@ -102,6 +102,7 @@ private:
     struct iwl_cfg *fConfiguration;
     UInt32 fHwRev;
     int fEepromSize;
+    struct iwl_nvm_data* nvmData;
 };
 
 /**

@@ -21,7 +21,7 @@ class IntelIO : public OSObject {
 public:
     static IntelIO* withTrans(struct iwl_trans_pcie*);
     bool initWithTrans(struct iwl_trans_pcie*);
-    void release();
+    virtual void free() override;
     
     int iwl_poll_bit(UInt32 addr, UInt32 bits, UInt32 mask, int timeout);
     void iwl_write32(UInt32 ofs, UInt32 val);

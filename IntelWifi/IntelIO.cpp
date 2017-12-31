@@ -43,9 +43,9 @@ bool IntelIO::initWithTrans(struct iwl_trans_pcie* trans) {
     return true;
 }
 
-void IntelIO::release() {
+void IntelIO::free() {
     fTrans = NULL;
-    super::release();
+    super::free();
 }
 
 int IntelIO::iwl_poll_bit(UInt32 addr, UInt32 bits, UInt32 mask, int timeout) {
@@ -148,7 +148,6 @@ bool IntelIO::iwl_grab_nic_access(IOInterruptState *state) {
 }
 
 void IntelIO::iwl_release_nic_access(IOInterruptState *state) {
-    
     if (fTrans->cmd_hold_nic_awake) {
         IOSimpleLockUnlockEnableInterrupt(fTrans->reg_lock, *state);
         return;

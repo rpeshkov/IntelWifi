@@ -97,16 +97,13 @@ protected:
     struct iwl_cfg* fConfiguration;
     struct iwl_trans* trans;
     struct iwl_trans_pcie* trans_pcie;
+    struct iwl_drv *drv;
     
 private:
     inline void releaseAll() {
         RELEASE(fInterruptSource);
         RELEASE(fWorkLoop);
         RELEASE(mediumDict);
-        if (fNvmData) {
-            IOFree(fNvmData, sizeof(struct iwl_nvm_data));
-            fNvmData = NULL;
-        }
         RELEASE(eeprom);
         RELEASE(io);
         RELEASE(fMemoryMap);
