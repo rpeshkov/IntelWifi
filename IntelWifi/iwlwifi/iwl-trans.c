@@ -111,6 +111,10 @@ struct iwl_trans *iwl_trans_alloc(unsigned int priv_size,
     trans = (struct iwl_trans *)IOMalloc(sizeof(*trans) + priv_size);
 	if (!trans)
 		return NULL;
+    
+    memset(trans, 0, sizeof(*trans) + priv_size);
+    
+    trans->priv_size = priv_size;
 
 #ifdef CONFIG_LOCKDEP
 	lockdep_init_map(&trans->sync_cmd_lockdep_map, "sync_cmd_lockdep_map",
@@ -146,6 +150,8 @@ void iwl_trans_free(struct iwl_trans *trans)
 #if DISABLED_CODE
 	kmem_cache_destroy(trans->dev_cmd_pool);
 #endif
+    
+    IOFree(trans, sizeof(*trans) + trans->priv_size);
 }
 
 int iwl_trans_send_cmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd)

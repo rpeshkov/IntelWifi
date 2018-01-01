@@ -94,10 +94,9 @@ protected:
     IOMemoryMap *fMemoryMap;
     
     struct iwl_nvm_data *fNvmData;
-    struct iwl_cfg* fConfiguration;
-    struct iwl_trans* trans;
-    struct iwl_trans_pcie* trans_pcie;
-    struct iwl_drv *drv;
+    const struct iwl_cfg* fConfiguration;
+    struct iwl_trans* fTrans;
+    
     
 private:
     inline void releaseAll() {
@@ -107,14 +106,11 @@ private:
         RELEASE(eeprom);
         RELEASE(io);
         RELEASE(fMemoryMap);
-        if (trans_pcie) {
-            iwl_trans_pcie_free(trans_pcie);
-            trans_pcie = NULL;
+        if (fTrans) {
+            iwl_trans_pcie_free(fTrans);
+            fTrans = NULL;
         }
-        if (trans) {
-            IOFree(trans, sizeof(struct iwl_trans));
-            trans = NULL;
-        }
+        
         RELEASE(pciDevice);
     }
     
@@ -123,17 +119,40 @@ private:
     static void  interruptOccured(OSObject* owner, IOTimerEventSource* sender);
     
     // IWL stuff
-    int iwl_pcie_prepare_card_hw();
-    int iwl_pcie_set_hw_ready();
-    void iwl_pcie_sw_reset();
-    int iwl_pcie_apm_init();
-    void iwl_pcie_apm_config();
-    void iwl_pcie_apm_stop(bool op_mode_leave);
-    void iwl_pcie_apm_stop_master();
-    void iwl_trans_pcie_stop_device(bool low_power);
-    void _iwl_trans_pcie_stop_device(bool low_power);
+    int iwl_pcie_prepare_card_hw(struct iwl_trans *trans);
+    int iwl_pcie_set_hw_ready(struct iwl_trans *trans);
+    
+    int iwl_pcie_apm_init(struct iwl_trans *trans);
+    void iwl_pcie_apm_config(struct iwl_trans *trans);
+    void iwl_pcie_apm_stop(struct iwl_trans *trans, bool op_mode_leave);
+    void iwl_pcie_apm_stop_master(struct iwl_trans *trans);
+    void iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power);
+    void _iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power);
+    
+    struct iwl_trans* iwl_trans_pcie_alloc(const struct iwl_cfg *cfg);
+    void iwl_trans_pcie_free(struct iwl_trans* trans);
+    
+    
+    void _iwl_disable_interrupts(struct iwl_trans *trans);
+    void iwl_disable_interrupts(struct iwl_trans *trans);
+    
+    // trans.c
+    int _iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power);
+    int iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power);
+    void iwl_pcie_sw_reset(struct iwl_trans *trans);
+
     
     ifnet_t fIfNet;
     
+    UInt16 fDeviceId;
+    UInt16 fSubsystemId;
+    
     
 };
+
+static inline struct iwl_trans_pcie *
+IWL_TRANS_GET_PCIE_TRANS(struct iwl_trans *trans)
+{
+    return (struct iwl_trans_pcie *)trans->trans_specific;
+}
+

@@ -26,6 +26,7 @@
 #define IWL_DEBUG_FW(drv, args...) DebugLog("DEBUG FW: " args)
 #define IWL_WARN(drv, args...) TraceLog("WARN: " args)
 #define IWL_DEBUG_EEPROM(dev, args...) DebugLog("DEBUG EEPROM: " args)
+#define IWL_DEBUG_ISR(trans, args...) DebugLog("DEBUG ISR: " args)
 
 
 #endif /* Logging_h */
