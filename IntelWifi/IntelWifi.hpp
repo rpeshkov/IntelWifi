@@ -114,8 +114,6 @@ private:
         RELEASE(pciDevice);
     }
     
-    struct iwl_cfg* getConfiguration(UInt16 deviceId, UInt16 subSystemId);
-    
     static void  interruptOccured(OSObject* owner, IOTimerEventSource* sender);
     
     // IWL stuff
