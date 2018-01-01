@@ -257,6 +257,21 @@ void IntelIO::iwl_clear_bits_prph(UInt32 ofs, UInt32 mask)
     }
 }
 
+u32 IntelIO::iwl_trans_pcie_read_shr(u32 reg)
+{
+    iwl_write32(HEEP_CTRL_WRD_PCIEX_CTRL_REG,
+                ((reg & 0x0000ffff) | (2 << 28)));
+    return iwl_read32(HEEP_CTRL_WRD_PCIEX_DATA_REG);
+}
+
+void IntelIO::iwl_trans_pcie_write_shr(u32 reg, u32 val)
+{
+    iwl_write32(HEEP_CTRL_WRD_PCIEX_DATA_REG, val);
+    iwl_write32(HEEP_CTRL_WRD_PCIEX_CTRL_REG,
+                ((reg & 0x0000ffff) | (3 << 28)));
+}
+
+
 
 
 

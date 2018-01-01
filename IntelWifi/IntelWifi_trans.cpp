@@ -296,7 +296,7 @@ int IntelWifi::_iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power)
     //iwl_pcie_init_msix(trans_pcie);
     
     /* From now on, the op_mode will be kept updated about RF kill state */
-    //iwl_enable_rfkill_int(trans);
+    iwl_enable_rfkill_int(trans);
     
     trans_pcie->opmode_down = false;
     
@@ -304,7 +304,7 @@ int IntelWifi::_iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power)
     trans_pcie->is_down = false;
     
     /* ...rfkill can call stop_device and set it false if needed */
-    //iwl_pcie_check_hw_rf_kill(trans);
+    iwl_pcie_check_hw_rf_kill(trans);
     
     /* Make sure we sync here, because we'll need full access later */
 //    if (low_power)
@@ -486,7 +486,6 @@ int IntelWifi::iwl_pcie_prepare_card_hw(struct iwl_trans *trans)
 
 void IntelWifi::iwl_pcie_apm_config(struct iwl_trans *trans)
 {
-    
     /*
      * HW bug W/A for instability in PCIe bus L0S->L1 transition.
      * Check if BIOS (or OS) enabled L1-ASPM on this device.
@@ -507,8 +506,7 @@ void IntelWifi::iwl_pcie_apm_config(struct iwl_trans *trans)
         }
         trans->pm_support = !(linkCaps & 0x400);
     }
-    
-    
+   
     //pcie_capability_read_word(trans_pcie->pci_dev, PCI_EXP_LNKCTL, &lctl);
     //if (lctl & PCI_EXP_LNKCTL_ASPM_L1)
     //    iwl_set_bit(trans, CSR_GIO_REG, CSR_GIO_REG_VAL_L0S_ENABLED);
@@ -521,8 +519,6 @@ void IntelWifi::iwl_pcie_apm_config(struct iwl_trans *trans)
     //IWL_DEBUG_POWER(trans, "L1 %sabled - LTR %sabled\n",
     //                (lctl & PCI_EXP_LNKCTL_ASPM_L1) ? "En" : "Dis",
     //                trans->ltr_enabled ? "En" : "Dis");
-    
-    
 }
 
 void IntelWifi::iwl_pcie_apm_stop(struct iwl_trans *trans, bool op_mode_leave)
@@ -555,11 +551,11 @@ void IntelWifi::iwl_pcie_apm_stop(struct iwl_trans *trans, bool op_mode_leave)
     /* Stop device's DMA activity */
     iwl_pcie_apm_stop_master(trans);
     
-    // TODO: Implement
-    //    if (trans->cfg->lp_xtal_workaround) {
-    //        iwl_pcie_apm_lp_xtal_enable(trans);
-    //        return;
-    //    }
+
+    if (trans->cfg->lp_xtal_workaround) {
+        iwl_pcie_apm_lp_xtal_enable(trans);
+        return;
+    }
     
     iwl_pcie_sw_reset(trans);
     
@@ -675,7 +671,7 @@ void IntelWifi::_iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_po
      * Even if we stop the HW, we still want the RF kill
      * interrupt
      */
-    //    iwl_enable_rfkill_int(trans);
+    iwl_enable_rfkill_int(trans);
     
     /* re-take ownership to prevent other users from stealing the device */
     iwl_pcie_prepare_card_hw(trans);
@@ -736,4 +732,198 @@ void IntelWifi::iwl_disable_interrupts(struct iwl_trans *trans)
     //spin_unlock(&trans_pcie->irq_lock);
     IOSimpleLockUnlock(trans_pcie->irq_lock);
 }
+
+void IntelWifi::iwl_enable_rfkill_int(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    IWL_DEBUG_ISR(trans, "Enabling rfkill interrupt\n");
+    if (!trans_pcie->msix_enabled) {
+        trans_pcie->inta_mask = CSR_INT_BIT_RF_KILL;
+        io->iwl_write32(CSR_INT_MASK, trans_pcie->inta_mask);
+    } else {
+        io->iwl_write32(CSR_MSIX_FH_INT_MASK_AD,
+                    trans_pcie->fh_init_mask);
+        iwl_enable_hw_int_msk_msix(trans,
+                                   MSIX_HW_INT_CAUSES_REG_RF_KILL);
+    }
+    
+    if (trans->cfg->device_family == IWL_DEVICE_FAMILY_9000) {
+        /*
+         * On 9000-series devices this bit isn't enabled by default, so
+         * when we power down the device we need set the bit to allow it
+         * to wake up the PCI-E bus for RF-kill interrupts.
+         */
+        io->iwl_set_bit(CSR_GP_CNTRL,
+                    CSR_GP_CNTRL_REG_FLAG_RFKILL_WAKE_L1A_EN);
+    }
+}
+
+void IntelWifi::iwl_enable_hw_int_msk_msix(struct iwl_trans *trans, u32 msk)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    io->iwl_write32(CSR_MSIX_HW_INT_MASK_AD, ~msk);
+    trans_pcie->hw_mask = msk;
+}
+
+bool IntelWifi::iwl_pcie_check_hw_rf_kill(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie =  IWL_TRANS_GET_PCIE_TRANS(trans);
+    bool hw_rfkill = iwl_is_rfkill_set(trans);
+    bool prev = test_bit(STATUS_RFKILL_OPMODE, &trans->status);
+    bool report;
+    
+    if (hw_rfkill) {
+        set_bit(STATUS_RFKILL_HW, &trans->status);
+        set_bit(STATUS_RFKILL_OPMODE, &trans->status);
+    } else {
+        clear_bit(STATUS_RFKILL_HW, &trans->status);
+        if (trans_pcie->opmode_down)
+            clear_bit(STATUS_RFKILL_OPMODE, &trans->status);
+    }
+    
+    report = test_bit(STATUS_RFKILL_OPMODE, &trans->status);
+    
+    if (prev != report)
+        iwl_trans_pcie_rf_kill(trans, report);
+    
+    return hw_rfkill;
+}
+
+bool IntelWifi::iwl_is_rfkill_set(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    //lockdep_assert_held(&trans_pcie->mutex);
+    
+    if (trans_pcie->debug_rfkill)
+        return true;
+    
+    return !(io->iwl_read32(CSR_GP_CNTRL) &
+             CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
+}
+
+void IntelWifi::iwl_trans_pcie_rf_kill(struct iwl_trans *trans, bool state)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    //lockdep_assert_held(&trans_pcie->mutex);
+    
+    IWL_WARN(trans, "reporting RF_KILL (radio %s)\n",
+             state ? "disabled" : "enabled");
+    
+    // TODO: implement
+//    if (iwl_op_mode_hw_rf_kill(trans->op_mode, state)) {
+//        if (trans->cfg->gen2)
+//            _iwl_trans_pcie_gen2_stop_device(trans, true);
+//        else
+//            _iwl_trans_pcie_stop_device(trans, true);
+//    }
+}
+
+/*
+ * Enable LP XTAL to avoid HW bug where device may consume much power if
+ * FW is not loaded after device reset. LP XTAL is disabled by default
+ * after device HW reset. Do it only if XTAL is fed by internal source.
+ * Configure device's "persistence" mode to avoid resetting XTAL again when
+ * SHRD_HW_RST occurs in S3.
+ */
+void IntelWifi::iwl_pcie_apm_lp_xtal_enable(struct iwl_trans *trans)
+{
+    int ret;
+    u32 apmg_gp1_reg;
+    u32 apmg_xtal_cfg_reg;
+    u32 dl_cfg_reg;
+    
+    /* Force XTAL ON */
+    // TODO: Double check here. In original code you see that no lock is acquired. Weird... Below there are some lines with lock acquiring
+    //__iwl_trans_pcie_set_bit(trans, CSR_GP_CNTRL,
+    //                         CSR_GP_CNTRL_REG_FLAG_XTAL_ON);
+    io->iwl_set_bit(CSR_GP_CNTRL,
+                             CSR_GP_CNTRL_REG_FLAG_XTAL_ON);
+    
+    iwl_pcie_sw_reset(trans);
+    
+    /*
+     * Set "initialization complete" bit to move adapter from
+     * D0U* --> D0A* (powered-up active) state.
+     */
+    io->iwl_set_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
+    
+    /*
+     * Wait for clock stabilization; once stabilized, access to
+     * device-internal resources is possible.
+     */
+    ret = io->iwl_poll_bit(CSR_GP_CNTRL,
+                       CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
+                       CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
+                       25000);
+    if (WARN_ON(ret < 0)) {
+        IWL_ERR(trans, "Access time out - failed to enable LP XTAL\n");
+        /* Release XTAL ON request */
+        io->iwl_clear_bit(CSR_GP_CNTRL,
+                                   CSR_GP_CNTRL_REG_FLAG_XTAL_ON);
+        return;
+    }
+    
+    /*
+     * Clear "disable persistence" to avoid LP XTAL resetting when
+     * SHRD_HW_RST is applied in S3.
+     */
+    io->iwl_clear_bits_prph(APMG_PCIDEV_STT_REG,
+                        APMG_PCIDEV_STT_VAL_PERSIST_DIS);
+    
+    /*
+     * Force APMG XTAL to be active to prevent its disabling by HW
+     * caused by APMG idle state.
+     */
+    apmg_xtal_cfg_reg = io->iwl_trans_pcie_read_shr(SHR_APMG_XTAL_CFG_REG);
+    io->iwl_trans_pcie_write_shr(SHR_APMG_XTAL_CFG_REG,
+                             apmg_xtal_cfg_reg |
+                             SHR_APMG_XTAL_CFG_XTAL_ON_REQ);
+    
+    iwl_pcie_sw_reset(trans);
+    
+    /* Enable LP XTAL by indirect access through CSR */
+    apmg_gp1_reg = io->iwl_trans_pcie_read_shr(SHR_APMG_GP1_REG);
+    io->iwl_trans_pcie_write_shr(SHR_APMG_GP1_REG, apmg_gp1_reg |
+                             SHR_APMG_GP1_WF_XTAL_LP_EN |
+                             SHR_APMG_GP1_CHICKEN_BIT_SELECT);
+    
+    /* Clear delay line clock power up */
+    dl_cfg_reg = io->iwl_trans_pcie_read_shr(SHR_APMG_DL_CFG_REG);
+    io->iwl_trans_pcie_write_shr(SHR_APMG_DL_CFG_REG, dl_cfg_reg &
+                             ~SHR_APMG_DL_CFG_DL_CLOCK_POWER_UP);
+    
+    /*
+     * Enable persistence mode to avoid LP XTAL resetting when
+     * SHRD_HW_RST is applied in S3.
+     */
+    io->iwl_set_bit(CSR_HW_IF_CONFIG_REG,
+                CSR_HW_IF_CONFIG_REG_PERSIST_MODE);
+    
+    /*
+     * Clear "initialization complete" bit to move adapter from
+     * D0A* (powered-up Active) --> D0U* (Uninitialized) state.
+     */
+    io->iwl_clear_bit(CSR_GP_CNTRL,
+                  CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
+    
+    /* Activates XTAL resources monitor */
+    io->iwl_set_bit(CSR_MONITOR_CFG_REG,
+                             CSR_MONITOR_XTAL_RESOURCES);
+    
+    /* Release XTAL ON request */
+    io->iwl_clear_bit(CSR_GP_CNTRL,
+                               CSR_GP_CNTRL_REG_FLAG_XTAL_ON);
+    IODelay(10);
+    
+    /* Release APMG XTAL */
+    io->iwl_trans_pcie_write_shr(SHR_APMG_XTAL_CFG_REG,
+                             apmg_xtal_cfg_reg &
+                             ~SHR_APMG_XTAL_CFG_XTAL_ON_REQ);
+}
+
+
 

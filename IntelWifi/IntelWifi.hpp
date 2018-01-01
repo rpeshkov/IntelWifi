@@ -138,6 +138,12 @@ private:
     int _iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power);
     int iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power);
     void iwl_pcie_sw_reset(struct iwl_trans *trans);
+    void iwl_enable_rfkill_int(struct iwl_trans *trans);
+    void iwl_enable_hw_int_msk_msix(struct iwl_trans *trans, u32 msk);
+    bool iwl_pcie_check_hw_rf_kill(struct iwl_trans *trans);
+    bool iwl_is_rfkill_set(struct iwl_trans *trans);
+    void iwl_trans_pcie_rf_kill(struct iwl_trans *trans, bool state);
+    void iwl_pcie_apm_lp_xtal_enable(struct iwl_trans *trans);
 
     
     ifnet_t fIfNet;

@@ -31,9 +31,13 @@ struct iwl_trans_pcie {
     UInt32 hw_rev;
     bool cmd_hold_nic_awake;
     
+    bool debug_rfkill;
+    
     IOSimpleLock* reg_lock;
     IOSimpleLock* irq_lock;
     IOLock *mutex;
+    u32 inta_mask;
+
     bool is_down;
     
     bool msix_enabled;

@@ -40,6 +40,8 @@ public:
     
     void iwl_set_bits_mask_prph(UInt32 ofs, UInt32 bits, UInt32 mask);
     void iwl_clear_bits_prph(UInt32 ofs, UInt32 mask);
+    u32 iwl_trans_pcie_read_shr(u32 reg);
+    void iwl_trans_pcie_write_shr(u32 reg, u32 val);
     
 private:
     struct iwl_trans_pcie* fTrans;
