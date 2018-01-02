@@ -51,7 +51,12 @@ struct iwl_trans_pcie {
     bool debug_rfkill;
     struct isr_statistics isr_stats;
     
+    /* PCI bus related data */
     volatile void* hw_base;
+    
+    bool ucode_write_complete;
+
+    
     UInt8 max_tbs;
     UInt16 tfd_size;
     UInt8 max_skb_frags;

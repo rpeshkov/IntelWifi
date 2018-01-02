@@ -221,10 +221,13 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
-    netif->registerService();
+    iwl_enable_interrupts(fTrans);
     
+    netif->registerService();
+
     fInterruptSource = IOInterruptEventSource::interruptEventSource(this,
                                                                     (IOInterruptEventAction) &IntelWifi::interruptOccured,
+                                                                    
                                                                     provider, 0);
     if (!fInterruptSource) {
         TraceLog("InterruptSource init failed!");
@@ -240,6 +243,7 @@ bool IntelWifi::start(IOService *provider) {
     
     fInterruptSource->enable();
     registerService();
+    
     return true;
 }
 
@@ -360,11 +364,19 @@ const OSString* IntelWifi::newModelString() const {
     return OSString::withCString(fConfiguration->name);
 }
 
-void IntelWifi::interruptOccured(OSObject* owner, IOTimerEventSource* sender) {
-//    mbuf_t packet;
-    DebugLog("Interrupt!");
+bool IntelWifi::interruptFilter(OSObject* owner, IOFilterInterruptEventSource * src) {
+    src->signalInterrupt();
+    return false;
+}
+
+void IntelWifi::interruptOccured(OSObject* owner, IOInterruptEventSource* sender, int count) {
+    DebugLog("Interrupt");
     IntelWifi* me = (IntelWifi*)owner;
     
-    if (!me)
-    return;
+    if (me == 0) {
+        return;
+    }
+    
+    me->iwl_pcie_irq_handler(0, me->fTrans);
+    
 }

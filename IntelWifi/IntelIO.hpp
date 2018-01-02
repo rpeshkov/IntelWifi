@@ -24,6 +24,8 @@ public:
     virtual void free() override;
     
     int iwl_poll_bit(UInt32 addr, UInt32 bits, UInt32 mask, int timeout);
+    void iwl_write8(u32 ofs, u8 val);
+    
     void iwl_write32(UInt32 ofs, UInt32 val);
     UInt32 iwl_read32(UInt32 ofs);
     void iwl_set_bit(UInt32 reg, UInt32 mask);

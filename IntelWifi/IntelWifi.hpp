@@ -114,7 +114,8 @@ private:
         RELEASE(pciDevice);
     }
     
-    static void  interruptOccured(OSObject* owner, IOTimerEventSource* sender);
+    static void interruptOccured(OSObject* owner, IOInterruptEventSource* sender, int count);
+    static bool interruptFilter(OSObject* owner, IOFilterInterruptEventSource * src);
     
     // trans.c
     void _iwl_disable_interrupts(struct iwl_trans *trans);
@@ -138,11 +139,16 @@ private:
     void _iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power);
     int iwl_pcie_prepare_card_hw(struct iwl_trans *trans);
     int iwl_pcie_set_hw_ready(struct iwl_trans *trans);
+    void iwl_enable_interrupts(struct iwl_trans *trans);
+    void _iwl_enable_interrupts(struct iwl_trans *trans);
     
     // rx.c
     int iwl_pcie_alloc_ict(struct iwl_trans *trans);
     void iwl_pcie_disable_ict(struct iwl_trans *trans);
     void iwl_pcie_free_ict(struct iwl_trans *trans);
+    irqreturn_t iwl_pcie_irq_handler(int irq, void *dev_id);
+    u32 iwl_pcie_int_cause_non_ict(struct iwl_trans *trans);
+    void iwl_pcie_handle_rfkill_irq(struct iwl_trans *trans);
 
     
     ifnet_t fIfNet;

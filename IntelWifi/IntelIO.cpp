@@ -307,6 +307,22 @@ int IntelIO::iwl_trans_pcie_write_mem(u32 addr, const void *buf, int dwords)
 }
 
 
+OS_INLINE
+void
+_OSWriteInt8(
+              volatile void               * base,
+              uintptr_t                     byteOffset,
+              uint8_t                      data
+              )
+{
+    *(volatile uint8_t *)((uintptr_t)base + byteOffset) = data;
+}
+
+void IntelIO::iwl_write8(u32 ofs, u8 val)
+{
+    _OSWriteInt8(fTrans->hw_base, ofs, val);
+}
+
 
 
 

@@ -56,6 +56,7 @@
 		A614367C1FFAF8FD00852FEC /* Configuration.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = Configuration.c; sourceTree = "<group>"; };
 		A614367D1FFAF8FD00852FEC /* Configuration.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Configuration.h; sourceTree = "<group>"; };
 		A61436801FFC063900852FEC /* IntelWifi_rx.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IntelWifi_rx.cpp; sourceTree = "<group>"; };
+		A61436821FFC193C00852FEC /* irqreturn.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = irqreturn.h; sourceTree = "<group>"; };
 		A61525981FF4B6F80094A282 /* 8000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = 8000.c; sourceTree = "<group>"; };
 		A61525991FF4B6F80094A282 /* 6000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = 6000.c; sourceTree = "<group>"; };
 		A615259A1FF4B6F80094A282 /* 9000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = 9000.c; sourceTree = "<group>"; };
@@ -189,6 +190,7 @@
 				A61525AB1FF4B79C0094A282 /* stringify.h */,
 				A61525AC1FF4B86E0094A282 /* types.h */,
 				A61525D91FF4E3F70094A282 /* vmalloc.h */,
+				A61436821FFC193C00852FEC /* irqreturn.h */,
 			);
 			path = linux;
 			sourceTree = "<group>";

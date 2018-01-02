@@ -924,6 +924,42 @@ void IntelWifi::iwl_pcie_apm_lp_xtal_enable(struct iwl_trans *trans)
                              ~SHR_APMG_XTAL_CFG_XTAL_ON_REQ);
 }
 
+void IntelWifi::_iwl_enable_interrupts(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    IWL_DEBUG_ISR(trans, "Enabling interrupts\n");
+    set_bit(STATUS_INT_ENABLED, &trans->status);
+    // TODO: Implement msix
+    //if (!trans_pcie->msix_enabled) {
+    if (1 == 1) {
+        trans_pcie->inta_mask = CSR_INI_SET_MASK;
+        io->iwl_write32(CSR_INT_MASK, trans_pcie->inta_mask);
+    } else {
+        /*
+         * fh/hw_mask keeps all the unmasked causes.
+         * Unlike msi, in msix cause is enabled when it is unset.
+         */
+        trans_pcie->hw_mask = trans_pcie->hw_init_mask;
+        trans_pcie->fh_mask = trans_pcie->fh_init_mask;
+        io->iwl_write32(CSR_MSIX_FH_INT_MASK_AD,
+                    ~trans_pcie->fh_mask);
+        io->iwl_write32(CSR_MSIX_HW_INT_MASK_AD,
+                    ~trans_pcie->hw_mask);
+    }
+}
+
+void IntelWifi::iwl_enable_interrupts(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    //spin_lock(&trans_pcie->irq_lock);
+    IOSimpleLockLock(trans_pcie->irq_lock);
+    _iwl_enable_interrupts(trans);
+    //spin_unlock(&trans_pcie->irq_lock);
+    IOSimpleLockUnlock(trans_pcie->irq_lock);
+}
+
 
 
 

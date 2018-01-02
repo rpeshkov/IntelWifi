@@ -9,6 +9,8 @@
 #ifndef kernel_h
 #define kernel_h
 
+#include "irqreturn.h"
+
 #include <sys/errno.h>
 #include <libkern/OSTypes.h>
 #include <IOKit/IOLib.h>
@@ -36,7 +38,8 @@
 #define STR(x) #x
 #define WARN_ON_ONCE(x) (x)
 
-#define unlikely(x) (x)
+#define likely(x)       __builtin_expect(!!(x), 1)
+#define unlikely(x)     __builtin_expect(!!(x), 0)
 
 # define __acquires(x)
 # define __releases(x)
