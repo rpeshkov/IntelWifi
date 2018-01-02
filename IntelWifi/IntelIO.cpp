@@ -271,6 +271,40 @@ void IntelIO::iwl_trans_pcie_write_shr(u32 reg, u32 val)
                 ((reg & 0x0000ffff) | (3 << 28)));
 }
 
+int IntelIO::iwl_trans_pcie_read_mem(u32 addr, void *buf, int dwords)
+{
+    IOInterruptState state;
+    int offs, ret = 0;
+    u32 *vals = (u32*)buf;
+    
+    if (iwl_grab_nic_access(&state)) {
+        iwl_write32(HBUS_TARG_MEM_RADDR, addr);
+        for (offs = 0; offs < dwords; offs++)
+            vals[offs] = iwl_read32(HBUS_TARG_MEM_RDAT);
+        iwl_release_nic_access(&state);
+    } else {
+        ret = -EBUSY;
+    }
+    return ret;
+}
+
+int IntelIO::iwl_trans_pcie_write_mem(u32 addr, const void *buf, int dwords)
+{
+    IOInterruptState state;
+    int offs, ret = 0;
+    const u32 *vals = (u32*)buf;
+    
+    if (iwl_grab_nic_access(&state)) {
+        iwl_write32(HBUS_TARG_MEM_WADDR, addr);
+        for (offs = 0; offs < dwords; offs++)
+            iwl_write32(HBUS_TARG_MEM_WDAT,
+                        vals ? vals[offs] : 0);
+        iwl_release_nic_access(&state);
+    } else {
+        ret = -EBUSY;
+    }
+    return ret;
+}
 
 
 

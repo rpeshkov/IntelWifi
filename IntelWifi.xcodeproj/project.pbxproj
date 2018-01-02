@@ -13,6 +13,7 @@
 		A614367B1FFAEA5B00852FEC /* IntelWifi_trans.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A614367A1FFAEA5B00852FEC /* IntelWifi_trans.cpp */; };
 		A614367E1FFAF8FD00852FEC /* Configuration.c in Sources */ = {isa = PBXBuildFile; fileRef = A614367C1FFAF8FD00852FEC /* Configuration.c */; };
 		A614367F1FFAF8FD00852FEC /* Configuration.h in Headers */ = {isa = PBXBuildFile; fileRef = A614367D1FFAF8FD00852FEC /* Configuration.h */; };
+		A61436811FFC063900852FEC /* IntelWifi_rx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A61436801FFC063900852FEC /* IntelWifi_rx.cpp */; };
 		A61525A01FF4B6F90094A282 /* 8000.c in Sources */ = {isa = PBXBuildFile; fileRef = A61525981FF4B6F80094A282 /* 8000.c */; };
 		A61525A11FF4B6F90094A282 /* 6000.c in Sources */ = {isa = PBXBuildFile; fileRef = A61525991FF4B6F80094A282 /* 6000.c */; };
 		A61525A21FF4B6F90094A282 /* 9000.c in Sources */ = {isa = PBXBuildFile; fileRef = A615259A1FF4B6F80094A282 /* 9000.c */; };
@@ -54,6 +55,7 @@
 		A614367A1FFAEA5B00852FEC /* IntelWifi_trans.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IntelWifi_trans.cpp; sourceTree = "<group>"; };
 		A614367C1FFAF8FD00852FEC /* Configuration.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = Configuration.c; sourceTree = "<group>"; };
 		A614367D1FFAF8FD00852FEC /* Configuration.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Configuration.h; sourceTree = "<group>"; };
+		A61436801FFC063900852FEC /* IntelWifi_rx.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IntelWifi_rx.cpp; sourceTree = "<group>"; };
 		A61525981FF4B6F80094A282 /* 8000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = 8000.c; sourceTree = "<group>"; };
 		A61525991FF4B6F80094A282 /* 6000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = 6000.c; sourceTree = "<group>"; };
 		A615259A1FF4B6F80094A282 /* 9000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = 9000.c; sourceTree = "<group>"; };
@@ -245,6 +247,7 @@
 				A614367A1FFAEA5B00852FEC /* IntelWifi_trans.cpp */,
 				A614367C1FFAF8FD00852FEC /* Configuration.c */,
 				A614367D1FFAF8FD00852FEC /* Configuration.h */,
+				A61436801FFC063900852FEC /* IntelWifi_rx.cpp */,
 			);
 			path = IntelWifi;
 			sourceTree = "<group>";
@@ -375,6 +378,7 @@
 				A650837A1FEFB2DC001300AC /* IntelWifi.cpp in Sources */,
 				A614367E1FFAF8FD00852FEC /* Configuration.c in Sources */,
 				A61525A41FF4B6F90094A282 /* 5000.c in Sources */,
+				A61436811FFC063900852FEC /* IntelWifi_rx.cpp in Sources */,
 				A6F3F8971FF78DA400F1582E /* util.c in Sources */,
 				A61525A21FF4B6F90094A282 /* 9000.c in Sources */,
 				A614367B1FFAEA5B00852FEC /* IntelWifi_trans.cpp in Sources */,

@@ -42,6 +42,8 @@ public:
     void iwl_clear_bits_prph(UInt32 ofs, UInt32 mask);
     u32 iwl_trans_pcie_read_shr(u32 reg);
     void iwl_trans_pcie_write_shr(u32 reg, u32 val);
+    int iwl_trans_pcie_read_mem(u32 addr, void *buf, int dwords);
+    int iwl_trans_pcie_write_mem(u32 addr, const void *buf, int dwords);
     
 private:
     struct iwl_trans_pcie* fTrans;

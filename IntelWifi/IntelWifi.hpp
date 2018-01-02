@@ -116,25 +116,11 @@ private:
     
     static void  interruptOccured(OSObject* owner, IOTimerEventSource* sender);
     
-    // IWL stuff
-    int iwl_pcie_prepare_card_hw(struct iwl_trans *trans);
-    int iwl_pcie_set_hw_ready(struct iwl_trans *trans);
-    
-    int iwl_pcie_apm_init(struct iwl_trans *trans);
-    void iwl_pcie_apm_config(struct iwl_trans *trans);
-    void iwl_pcie_apm_stop(struct iwl_trans *trans, bool op_mode_leave);
-    void iwl_pcie_apm_stop_master(struct iwl_trans *trans);
-    void iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power);
-    void _iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power);
-    
-    struct iwl_trans* iwl_trans_pcie_alloc(const struct iwl_cfg *cfg);
-    void iwl_trans_pcie_free(struct iwl_trans* trans);
-    
-    
+    // trans.c
     void _iwl_disable_interrupts(struct iwl_trans *trans);
     void iwl_disable_interrupts(struct iwl_trans *trans);
-    
-    // trans.c
+    struct iwl_trans* iwl_trans_pcie_alloc(const struct iwl_cfg *cfg);
+    void iwl_trans_pcie_free(struct iwl_trans* trans);
     int _iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power);
     int iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power);
     void iwl_pcie_sw_reset(struct iwl_trans *trans);
@@ -144,6 +130,19 @@ private:
     bool iwl_is_rfkill_set(struct iwl_trans *trans);
     void iwl_trans_pcie_rf_kill(struct iwl_trans *trans, bool state);
     void iwl_pcie_apm_lp_xtal_enable(struct iwl_trans *trans);
+    int iwl_pcie_apm_init(struct iwl_trans *trans);
+    void iwl_pcie_apm_config(struct iwl_trans *trans);
+    void iwl_pcie_apm_stop(struct iwl_trans *trans, bool op_mode_leave);
+    void iwl_pcie_apm_stop_master(struct iwl_trans *trans);
+    void iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power);
+    void _iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power);
+    int iwl_pcie_prepare_card_hw(struct iwl_trans *trans);
+    int iwl_pcie_set_hw_ready(struct iwl_trans *trans);
+    
+    // rx.c
+    int iwl_pcie_alloc_ict(struct iwl_trans *trans);
+    void iwl_pcie_disable_ict(struct iwl_trans *trans);
+    void iwl_pcie_free_ict(struct iwl_trans *trans);
 
     
     ifnet_t fIfNet;

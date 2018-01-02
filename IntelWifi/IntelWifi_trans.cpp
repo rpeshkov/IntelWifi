@@ -186,6 +186,7 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
     snprintf(trans->hw_id_str, sizeof(trans->hw_id_str), "PCI ID: 0x%04X:0x%04X", fDeviceId, fSubsystemId);
     DebugLog("%s", trans->hw_id_str);
     
+    
     /* Initialize the wait queue for commands */
     // TODO: Implement
     //    init_waitqueue_head(&trans_pcie->wait_command_queue);
@@ -551,7 +552,6 @@ void IntelWifi::iwl_pcie_apm_stop(struct iwl_trans *trans, bool op_mode_leave)
     /* Stop device's DMA activity */
     iwl_pcie_apm_stop_master(trans);
     
-
     if (trans->cfg->lp_xtal_workaround) {
         iwl_pcie_apm_lp_xtal_enable(trans);
         return;
@@ -612,7 +612,7 @@ void IntelWifi::_iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_po
     iwl_disable_interrupts(trans);
     
     /* device going down, Stop using ICT table */
-    //    iwl_pcie_disable_ict(trans);
+    iwl_pcie_disable_ict(trans);
     
     /*
      * If a HW restart happens during firmware loading,
@@ -622,8 +622,7 @@ void IntelWifi::_iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_po
      * already dead.
      */
     if (test_and_clear_bit(STATUS_DEVICE_ENABLED, &trans->status)) {
-        IWL_DEBUG_INFO(trans,
-                       "DEVICE_ENABLED bit was set and is now cleared\n");
+        IWL_DEBUG_INFO(trans, "DEVICE_ENABLED bit was set and is now cleared\n");
         //        iwl_pcie_tx_stop(trans);
         //        iwl_pcie_rx_stop(trans);
         
@@ -924,6 +923,7 @@ void IntelWifi::iwl_pcie_apm_lp_xtal_enable(struct iwl_trans *trans)
                              apmg_xtal_cfg_reg &
                              ~SHR_APMG_XTAL_CFG_XTAL_ON_REQ);
 }
+
 
 
 

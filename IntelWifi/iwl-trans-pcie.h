@@ -19,26 +19,50 @@
  */
 #define IWL_PCIE_MAX_FRAGS(x) (x->max_tbs - 3)
 
+/**
+ * struct isr_statistics - interrupt statistics
+ *
+ */
+struct isr_statistics {
+    u32 hw;
+    u32 sw;
+    u32 err_code;
+    u32 sch;
+    u32 alive;
+    u32 rfkill;
+    u32 ctkill;
+    u32 wakeup;
+    u32 rx;
+    u32 tx;
+    u32 unhandled;
+};
+
+
 
 struct iwl_trans_pcie {
     struct iwl_trans *trans;
     
+    /* INT ICT Table */
+    __le32 *ict_tbl;
+    dma_addr_t ict_tbl_dma;
+    int ict_index;
+    bool use_ict;
+    bool is_down, opmode_down;
+    bool debug_rfkill;
+    struct isr_statistics isr_stats;
+    
     volatile void* hw_base;
-    bool opmode_down;
     UInt8 max_tbs;
     UInt16 tfd_size;
     UInt8 max_skb_frags;
     UInt32 hw_rev;
     bool cmd_hold_nic_awake;
     
-    bool debug_rfkill;
-    
     IOSimpleLock* reg_lock;
     IOSimpleLock* irq_lock;
     IOLock *mutex;
     u32 inta_mask;
 
-    bool is_down;
     
     bool msix_enabled;
     u8 shared_vec_mask;
