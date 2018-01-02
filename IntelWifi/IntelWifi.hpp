@@ -141,6 +141,26 @@ private:
     int iwl_pcie_set_hw_ready(struct iwl_trans *trans);
     void iwl_enable_interrupts(struct iwl_trans *trans);
     void _iwl_enable_interrupts(struct iwl_trans *trans);
+    int iwl_trans_pcie_start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill);
+    int iwl_pcie_nic_init(struct iwl_trans *trans);
+    void iwl_enable_fw_load_int(struct iwl_trans *trans);
+    int iwl_pcie_load_given_ucode(struct iwl_trans *trans, const struct fw_img *image);
+    int iwl_pcie_load_given_ucode_8000(struct iwl_trans *trans, const struct fw_img *image);
+    int iwl_pcie_load_cpu_sections(struct iwl_trans *trans,
+                                              const struct fw_img *image,
+                                              int cpu,
+                                   int *first_ucode_section);
+    void iwl_pcie_apply_destination(struct iwl_trans *trans);
+    int iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
+                                         const struct fw_desc *section);
+    void iwl_pcie_load_firmware_chunk_fh(struct iwl_trans *trans,
+                                                    u32 dst_addr, dma_addr_t phy_addr,
+                                                    u32 byte_cnt);
+    int iwl_pcie_load_firmware_chunk(struct iwl_trans *trans,
+                                                u32 dst_addr, dma_addr_t phy_addr,
+                                                u32 byte_cnt);
+    
+
     
     // rx.c
     int iwl_pcie_alloc_ict(struct iwl_trans *trans);

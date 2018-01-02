@@ -30,5 +30,7 @@
 
 #define IWL_DEBUG_RF_KILL(trans, args...) DebugLog("DEBUG RFKILL: " args)
 
+#define IWL_DEBUG_POWER(trans, args...) DebugLog("DEBUG POWER: " args)
+
 
 #endif /* Logging_h */

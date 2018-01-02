@@ -8,10 +8,18 @@
 
 #include <IntelWifi.hpp>
 
+#include <IOKit/IOBufferMemoryDescriptor.h>
+#include <IOKit/IODMACommand.h>
+
 /* PCI registers */
 #define PCI_CFG_RETRY_TIMEOUT    0x041
 
 #define HW_READY_TIMEOUT (50)
+
+/* extended range in FW SRAM */
+#define IWL_FW_MEM_EXTENDED_START    0x40000
+#define IWL_FW_MEM_EXTENDED_END        0x57FFF
+
 
 struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
     
@@ -959,6 +967,487 @@ void IntelWifi::iwl_enable_interrupts(struct iwl_trans *trans)
     //spin_unlock(&trans_pcie->irq_lock);
     IOSimpleLockUnlock(trans_pcie->irq_lock);
 }
+
+int IntelWifi::iwl_trans_pcie_start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    bool hw_rfkill;
+    int ret;
+    
+    /* This may fail if AMT took ownership of the device */
+    if (iwl_pcie_prepare_card_hw(trans)) {
+        IWL_WARN(trans, "Exit HW not ready\n");
+        ret = -EIO;
+        goto out;
+    }
+    
+    iwl_enable_rfkill_int(trans);
+    
+    io->iwl_write32(CSR_INT, 0xFFFFFFFF);
+    
+    /*
+     * We enabled the RF-Kill interrupt and the handler may very
+     * well be running. Disable the interrupts to make sure no other
+     * interrupt can be fired.
+     */
+    iwl_disable_interrupts(trans);
+    
+    /* Make sure it finished running */
+    // TODO: Implement
+    //iwl_pcie_synchronize_irqs(trans);
+    
+    //mutex_lock(&trans_pcie->mutex);
+    IOLockLock(trans_pcie->mutex);
+    
+    /* If platform's RF_KILL switch is NOT set to KILL */
+    hw_rfkill = iwl_pcie_check_hw_rf_kill(trans);
+    if (hw_rfkill && !run_in_rfkill) {
+        ret = -ERFKILL;
+        goto out;
+    }
+    
+    /* Someone called stop_device, don't try to start_fw */
+    if (trans_pcie->is_down) {
+        IWL_WARN(trans,
+                 "Can't start_fw since the HW hasn't been started\n");
+        ret = -EIO;
+        goto out;
+    }
+    
+    /* make sure rfkill handshake bits are cleared */
+    io->iwl_write32(CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
+    io->iwl_write32(CSR_UCODE_DRV_GP1_CLR,
+                CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
+    
+    /* clear (again), then enable host interrupts */
+    io->iwl_write32(CSR_INT, 0xFFFFFFFF);
+    
+    ret = iwl_pcie_nic_init(trans);
+    if (ret) {
+        IWL_ERR(trans, "Unable to init nic\n");
+        goto out;
+    }
+    
+    /*
+     * Now, we load the firmware and don't want to be interrupted, even
+     * by the RF-Kill interrupt (hence mask all the interrupt besides the
+     * FH_TX interrupt which is needed to load the firmware). If the
+     * RF-Kill switch is toggled, we will find out after having loaded
+     * the firmware and return the proper value to the caller.
+     */
+    iwl_enable_fw_load_int(trans);
+    
+    /* really make sure rfkill handshake bits are cleared */
+    io->iwl_write32(CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
+    io->iwl_write32(CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
+    
+    /* Load the given image to the HW */
+    if (trans->cfg->device_family >= IWL_DEVICE_FAMILY_8000)
+        ret = iwl_pcie_load_given_ucode_8000(trans, fw);
+    else
+        ret = iwl_pcie_load_given_ucode(trans, fw);
+    
+    /* re-check RF-Kill state since we may have missed the interrupt */
+    hw_rfkill = iwl_pcie_check_hw_rf_kill(trans);
+    if (hw_rfkill && !run_in_rfkill)
+        ret = -ERFKILL;
+    
+out:
+    //mutex_unlock(&trans_pcie->mutex);
+    IOLockUnlock(trans_pcie->mutex);
+    return ret;
+}
+
+int IntelWifi::iwl_pcie_nic_init(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    int ret;
+    
+    /* nic_init */
+    //spin_lock(&trans_pcie->irq_lock);
+    IOSimpleLockLock(trans_pcie->irq_lock);
+    ret = iwl_pcie_apm_init(trans);
+    //spin_unlock(&trans_pcie->irq_lock);
+    IOSimpleLockUnlock(trans_pcie->irq_lock);
+    
+    if (ret)
+        return ret;
+    
+    //iwl_pcie_set_pwr(trans, false);
+    
+    // TODO: Deal with this. I'm not setting up op_mode functions mapping
+    //iwl_op_mode_nic_config(trans->op_mode);
+    
+    /* Allocate the RX queue, or reset if it is already allocated */
+    //iwl_pcie_rx_init(trans);
+    
+    /* Allocate or reset and init all Tx and Command queues */
+//    if (iwl_pcie_tx_init(trans))
+//        return -ENOMEM;
+    
+    if (trans->cfg->base_params->shadow_reg_enable) {
+        /* enable shadow regs in HW */
+        io->iwl_set_bit(CSR_MAC_SHADOW_REG_CTRL, 0x800FFFFF);
+        IWL_DEBUG_INFO(trans, "Enabling shadow registers in device\n");
+    }
+    
+    return 0;
+}
+
+void IntelWifi::iwl_enable_fw_load_int(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    IWL_DEBUG_ISR(trans, "Enabling FW load interrupt\n");
+    // TODO: Implement msix
+    //if (!trans_pcie->msix_enabled) {
+    if (1 == 1) {
+        trans_pcie->inta_mask = CSR_INT_BIT_FH_TX;
+        io->iwl_write32(CSR_INT_MASK, trans_pcie->inta_mask);
+    } else {
+        io->iwl_write32(CSR_MSIX_HW_INT_MASK_AD,
+                    trans_pcie->hw_init_mask);
+//        iwl_enable_fh_int_msk_msix(trans,
+//                                   MSIX_FH_INT_CAUSES_D2S_CH0_NUM);
+    }
+}
+
+int IntelWifi::iwl_pcie_load_given_ucode(struct iwl_trans *trans,
+                                     const struct fw_img *image)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    int ret = 0;
+    int first_ucode_section;
+    
+    IWL_DEBUG_FW(trans, "working with %s CPU\n",
+                 image->is_dual_cpus ? "Dual" : "Single");
+    
+    /* load to FW the binary non secured sections of CPU1 */
+    ret = iwl_pcie_load_cpu_sections(trans, image, 1, &first_ucode_section);
+    if (ret)
+        return ret;
+    
+    if (image->is_dual_cpus) {
+        /* set CPU2 header address */
+        io->iwl_write_prph(
+                       LMPM_SECURE_UCODE_LOAD_CPU2_HDR_ADDR,
+                       LMPM_SECURE_CPU2_HDR_MEM_SPACE);
+        
+        /* load to FW the binary sections of CPU2 */
+        ret = iwl_pcie_load_cpu_sections(trans, image, 2,
+                                         &first_ucode_section);
+        if (ret)
+            return ret;
+    }
+    
+    /* supported for 7000 only for the moment */
+    // TODO: Implement
+//    if (iwlwifi_mod_params.fw_monitor &&
+//        trans->cfg->device_family == IWL_DEVICE_FAMILY_7000) {
+//        iwl_pcie_alloc_fw_monitor(trans, 0);
+//
+//        if (trans_pcie->fw_mon_size) {
+//            iwl_write_prph(trans, MON_BUFF_BASE_ADDR,
+//                           trans_pcie->fw_mon_phys >> 4);
+//            iwl_write_prph(trans, MON_BUFF_END_ADDR,
+//                           (trans_pcie->fw_mon_phys +
+//                            trans_pcie->fw_mon_size) >> 4);
+//        }
+//    } else
+    if (trans->dbg_dest_tlv) {
+        iwl_pcie_apply_destination(trans);
+    }
+    
+    iwl_enable_interrupts(trans);
+    
+    /* release CPU reset */
+    io->iwl_write32(CSR_RESET, 0);
+    
+    return 0;
+}
+
+int IntelWifi::iwl_pcie_load_given_ucode_8000(struct iwl_trans *trans,
+                                          const struct fw_img *image)
+{
+    int ret = 0;
+    int first_ucode_section;
+    
+    IWL_DEBUG_FW(trans, "working with %s CPU\n",
+                 image->is_dual_cpus ? "Dual" : "Single");
+    
+    if (trans->dbg_dest_tlv)
+        iwl_pcie_apply_destination(trans);
+    
+    IWL_DEBUG_POWER(trans, "Original WFPM value = 0x%08X\n",
+                    io->iwl_read_prph(WFPM_GP2));
+    
+    /*
+     * Set default value. On resume reading the values that were
+     * zeored can provide debug data on the resume flow.
+     * This is for debugging only and has no functional impact.
+     */
+    io->iwl_write_prph(WFPM_GP2, 0x01010101);
+    
+    /* configure the ucode to be ready to get the secured image */
+    /* release CPU reset */
+    io->iwl_write_prph(RELEASE_CPU_RESET, RELEASE_CPU_RESET_BIT);
+
+    return 0;
+    
+    // TODO: Implement
+//    /* load to FW the binary Secured sections of CPU1 */
+//    ret = iwl_pcie_load_cpu_sections_8000(trans, image, 1,
+//                                          &first_ucode_section);
+//    if (ret)
+//        return ret;
+//
+//    /* load to FW the binary sections of CPU2 */
+//    return iwl_pcie_load_cpu_sections_8000(trans, image, 2,
+//                                           &first_ucode_section);
+}
+
+int IntelWifi::iwl_pcie_load_cpu_sections(struct iwl_trans *trans,
+                                      const struct fw_img *image,
+                                      int cpu,
+                                      int *first_ucode_section)
+{
+    int i, ret = 0;
+    u32 last_read_idx = 0;
+    
+    if (cpu == 1)
+        *first_ucode_section = 0;
+    else
+        (*first_ucode_section)++;
+    
+    for (i = *first_ucode_section; i < image->num_sec; i++) {
+        last_read_idx = i;
+        
+        /*
+         * CPU1_CPU2_SEPARATOR_SECTION delimiter - separate between
+         * CPU1 to CPU2.
+         * PAGING_SEPARATOR_SECTION delimiter - separate between
+         * CPU2 non paged to CPU2 paging sec.
+         */
+        if (!image->sec[i].data ||
+            image->sec[i].offset == CPU1_CPU2_SEPARATOR_SECTION ||
+            image->sec[i].offset == PAGING_SEPARATOR_SECTION) {
+            IWL_DEBUG_FW(trans,
+                         "Break since Data not valid or Empty section, sec = %d\n",
+                         i);
+            break;
+        }
+        
+        ret = iwl_pcie_load_section(trans, i, &image->sec[i]);
+        if (ret)
+            return ret;
+    }
+    IODMACommand
+    *first_ucode_section = last_read_idx;
+    
+    return 0;
+}
+
+void IntelWifi::iwl_pcie_apply_destination(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    const struct iwl_fw_dbg_dest_tlv *dest = trans->dbg_dest_tlv;
+    int i;
+    
+    if (dest->version)
+        IWL_ERR(trans,
+                "DBG DEST version is %d - expect issues\n",
+                dest->version);
+    
+    IWL_INFO(trans, "Applying debug destination %s\n",
+             get_fw_dbg_mode_string(dest->monitor_mode));
+
+    // TODO: Implement
+//    if (dest->monitor_mode == EXTERNAL_MODE)
+//        iwl_pcie_alloc_fw_monitor(trans, dest->size_power);
+//    else
+//        IWL_WARN(trans, "PCI should have external buffer debug\n");
+    
+    for (i = 0; i < trans->dbg_dest_reg_num; i++) {
+        u32 addr = le32_to_cpu(dest->reg_ops[i].addr);
+        u32 val = le32_to_cpu(dest->reg_ops[i].val);
+        
+        switch (dest->reg_ops[i].op) {
+            case CSR_ASSIGN:
+                io->iwl_write32(addr, val);
+                break;
+            case CSR_SETBIT:
+                io->iwl_set_bit(addr, BIT(val));
+                break;
+            case CSR_CLEARBIT:
+                io->iwl_clear_bit(addr, BIT(val));
+                break;
+            case PRPH_ASSIGN:
+                io->iwl_write_prph(addr, val);
+                break;
+            case PRPH_SETBIT:
+                io->iwl_set_bits_prph(addr, BIT(val));
+                break;
+            case PRPH_CLEARBIT:
+                io->iwl_clear_bits_prph(addr, BIT(val));
+                break;
+            case PRPH_BLOCKBIT:
+                if (io->iwl_read_prph(addr) & BIT(val)) {
+                    IWL_ERR(trans,
+                            "BIT(%u) in address 0x%x is 1, stopping FW configuration\n",
+                            val, addr);
+                    //goto monitor;
+                }
+                break;
+            default:
+                IWL_ERR(trans, "FW debug - unknown OP %d\n",
+                        dest->reg_ops[i].op);
+                break;
+        }
+    }
+
+    // TODO: Implement
+//monitor:
+//    if (dest->monitor_mode == EXTERNAL_MODE && trans_pcie->fw_mon_size) {
+//        iwl_write_prph(trans, le32_to_cpu(dest->base_reg),
+//                       trans_pcie->fw_mon_phys >> dest->base_shift);
+//        if (trans->cfg->device_family >= IWL_DEVICE_FAMILY_8000)
+//            iwl_write_prph(trans, le32_to_cpu(dest->end_reg),
+//                           (trans_pcie->fw_mon_phys +
+//                            trans_pcie->fw_mon_size - 256) >>
+//                           dest->end_shift);
+//        else
+//            iwl_write_prph(trans, le32_to_cpu(dest->end_reg),
+//                           (trans_pcie->fw_mon_phys +
+//                            trans_pcie->fw_mon_size) >>
+//                           dest->end_shift);
+//    }
+}
+
+int IntelWifi::iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
+                                 const struct fw_desc *section)
+{
+    u8 *v_addr;
+    dma_addr_t p_addr;
+    u32 offset, chunk_sz = min(FH_MEM_TB_MAX_LENGTH, section->len);
+    int ret = 0;
+    
+    IWL_DEBUG_FW(trans, "[%d] uCode section being loaded...\n",
+                 section_num);
+    
+    IOBufferMemoryDescriptor *bmd =
+    IOBufferMemoryDescriptor::inTaskWithPhysicalMask(
+                                                     // task to hold the memory
+                                                     kernel_task,
+                                                     // options
+                                                     kIOMemoryPhysicallyContiguous,
+                                                     // size
+                                                     64*1024,
+                                                     // physicalMask - 32 bit addressable and page aligned
+                                                     0x00000000FFFFF000ULL);
+    
+    v_addr = dma_alloc_coherent(trans->dev, chunk_sz, &p_addr,
+                                GFP_KERNEL | __GFP_NOWARN);
+    if (!v_addr) {
+        IWL_DEBUG_INFO(trans, "Falling back to small chunks of DMA\n");
+        chunk_sz = PAGE_SIZE;
+        v_addr = dma_alloc_coherent(trans->dev, chunk_sz,
+                                    &p_addr, GFP_KERNEL);
+        if (!v_addr)
+            return -ENOMEM;
+    }
+    
+    for (offset = 0; offset < section->len; offset += chunk_sz) {
+        u32 copy_size, dst_addr;
+        bool extended_addr = false;
+        
+        copy_size = min(chunk_sz, section->len - offset);
+        dst_addr = section->offset + offset;
+        
+        if (dst_addr >= IWL_FW_MEM_EXTENDED_START &&
+            dst_addr <= IWL_FW_MEM_EXTENDED_END)
+            extended_addr = true;
+        
+        if (extended_addr)
+            io->iwl_set_bits_prph(LMPM_CHICK,
+                              LMPM_CHICK_EXTENDED_ADDR_SPACE);
+        
+        memcpy(v_addr, (u8 *)section->data + offset, copy_size);
+        ret = iwl_pcie_load_firmware_chunk(trans, dst_addr, p_addr,
+                                           copy_size);
+        
+        if (extended_addr)
+            io->iwl_clear_bits_prph(LMPM_CHICK,
+                                LMPM_CHICK_EXTENDED_ADDR_SPACE);
+        
+        if (ret) {
+            IWL_ERR(trans,
+                    "Could not load the [%d] uCode section\n",
+                    section_num);
+            break;
+        }
+    }
+    
+    dma_free_coherent(trans->dev, chunk_sz, v_addr, p_addr);
+    return ret;
+}
+
+void IntelWifi::iwl_pcie_load_firmware_chunk_fh(struct iwl_trans *trans,
+                                            u32 dst_addr, dma_addr_t phy_addr,
+                                            u32 byte_cnt)
+{
+    io->iwl_write32(FH_TCSR_CHNL_TX_CONFIG_REG(FH_SRVC_CHNL),
+                FH_TCSR_TX_CONFIG_REG_VAL_DMA_CHNL_PAUSE);
+    
+    io->iwl_write32(FH_SRVC_CHNL_SRAM_ADDR_REG(FH_SRVC_CHNL),
+                dst_addr);
+    
+    io->iwl_write32(FH_TFDIB_CTRL0_REG(FH_SRVC_CHNL),
+                phy_addr & FH_MEM_TFDIB_DRAM_ADDR_LSB_MSK);
+    
+    io->iwl_write32(FH_TFDIB_CTRL1_REG(FH_SRVC_CHNL),
+                (iwl_get_dma_hi_addr(phy_addr)
+                 << FH_MEM_TFDIB_REG1_ADDR_BITSHIFT) | byte_cnt);
+    
+    io->iwl_write32(FH_TCSR_CHNL_TX_BUF_STS_REG(FH_SRVC_CHNL),
+                BIT(FH_TCSR_CHNL_TX_BUF_STS_REG_POS_TB_NUM) |
+                BIT(FH_TCSR_CHNL_TX_BUF_STS_REG_POS_TB_IDX) |
+                FH_TCSR_CHNL_TX_BUF_STS_REG_VAL_TFDB_VALID);
+    
+    io->iwl_write32(FH_TCSR_CHNL_TX_CONFIG_REG(FH_SRVC_CHNL),
+                FH_TCSR_TX_CONFIG_REG_VAL_DMA_CHNL_ENABLE |
+                FH_TCSR_TX_CONFIG_REG_VAL_DMA_CREDIT_DISABLE |
+                FH_TCSR_TX_CONFIG_REG_VAL_CIRQ_HOST_ENDTFD);
+}
+
+int IntelWifi::iwl_pcie_load_firmware_chunk(struct iwl_trans *trans,
+                                        u32 dst_addr, dma_addr_t phy_addr,
+                                        u32 byte_cnt)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    IOInterruptState state;
+    int ret;
+    
+    trans_pcie->ucode_write_complete = false;
+    
+    if (!io->iwl_grab_nic_access(&state))
+        return -EIO;
+    
+    iwl_pcie_load_firmware_chunk_fh(trans, dst_addr, phy_addr,
+                                    byte_cnt);
+    io->iwl_release_nic_access(&state);
+
+    // TODO: Implement
+//    ret = wait_event_timeout(trans_pcie->ucode_write_waitq,
+//                             trans_pcie->ucode_write_complete, 5 * HZ);
+    if (!ret) {
+        IWL_ERR(trans, "Failed to load firmware chunk!\n");
+        return -ETIMEDOUT;
+    }
+    
+    return 0;
+}
+
+
 
 
 
