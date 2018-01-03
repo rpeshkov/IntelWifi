@@ -11,6 +11,8 @@
 #include <IOKit/IOBufferMemoryDescriptor.h>
 #include <IOKit/IODMACommand.h>
 
+#include <kern/task.h>
+
 /* PCI registers */
 #define PCI_CFG_RETRY_TIMEOUT    0x041
 
@@ -1241,7 +1243,7 @@ int IntelWifi::iwl_pcie_load_cpu_sections(struct iwl_trans *trans,
         if (ret)
             return ret;
     }
-    IODMACommand
+    
     *first_ucode_section = last_read_idx;
     
     return 0;
@@ -1330,10 +1332,13 @@ int IntelWifi::iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
     dma_addr_t p_addr;
     u32 offset, chunk_sz = min(FH_MEM_TB_MAX_LENGTH, section->len);
     int ret = 0;
-    
+
     IWL_DEBUG_FW(trans, "[%d] uCode section being loaded...\n",
                  section_num);
-    
+
+//    v_addr = dma_alloc_coherent(trans->dev, chunk_sz, &p_addr,
+//                                GFP_KERNEL | __GFP_NOWARN);
+
     IOBufferMemoryDescriptor *bmd =
     IOBufferMemoryDescriptor::inTaskWithPhysicalMask(
                                                      // task to hold the memory
@@ -1341,44 +1346,55 @@ int IntelWifi::iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
                                                      // options
                                                      kIOMemoryPhysicallyContiguous,
                                                      // size
-                                                     64*1024,
+                                                     chunk_sz,
                                                      // physicalMask - 32 bit addressable and page aligned
-                                                     0x00000000FFFFF000ULL);
+                                                     0x00000000FFFFFFFFULL);
+
+    IODMACommand *cmd = IODMACommand::withSpecification(kIODMACommandOutputHost64, 64, 0, IODMACommand::kMapped, 0, 1);
+    cmd->setMemoryDescriptor(bmd);
+    cmd->prepare();
     
-    v_addr = dma_alloc_coherent(trans->dev, chunk_sz, &p_addr,
-                                GFP_KERNEL | __GFP_NOWARN);
-    if (!v_addr) {
-        IWL_DEBUG_INFO(trans, "Falling back to small chunks of DMA\n");
-        chunk_sz = PAGE_SIZE;
-        v_addr = dma_alloc_coherent(trans->dev, chunk_sz,
-                                    &p_addr, GFP_KERNEL);
-        if (!v_addr)
-            return -ENOMEM;
+
+    IODMACommand::Segment64 seg;
+    UInt64 ofs = 0;
+    UInt32 numSegs = 1;
+
+    if (cmd->gen64IOVMSegments(&ofs, &seg, &numSegs) != kIOReturnSuccess) {
+        TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
+        return -1;
     }
-    
+//    if (!v_addr) {
+//        IWL_DEBUG_INFO(trans, "Falling back to small chunks of DMA\n");
+//        chunk_sz = PAGE_SIZE;
+//        v_addr = dma_alloc_coherent(trans->dev, chunk_sz,
+//                                    &p_addr, GFP_KERNEL);
+//        if (!v_addr)
+//            return -ENOMEM;
+//    }
+
     for (offset = 0; offset < section->len; offset += chunk_sz) {
         u32 copy_size, dst_addr;
         bool extended_addr = false;
-        
+
         copy_size = min(chunk_sz, section->len - offset);
         dst_addr = section->offset + offset;
-        
+
         if (dst_addr >= IWL_FW_MEM_EXTENDED_START &&
             dst_addr <= IWL_FW_MEM_EXTENDED_END)
             extended_addr = true;
-        
+
         if (extended_addr)
             io->iwl_set_bits_prph(LMPM_CHICK,
                               LMPM_CHICK_EXTENDED_ADDR_SPACE);
-        
-        memcpy(v_addr, (u8 *)section->data + offset, copy_size);
-        ret = iwl_pcie_load_firmware_chunk(trans, dst_addr, p_addr,
+        cmd->writeBytes(0, (u8 *)section->data + offset, copy_size);
+//        memcpy((void *)seg.fIOVMAddr, (u8 *)section->data + offset, copy_size);
+        ret = iwl_pcie_load_firmware_chunk(trans, dst_addr, bmd->getPhysicalAddress(),
                                            copy_size);
-        
+
         if (extended_addr)
             io->iwl_clear_bits_prph(LMPM_CHICK,
                                 LMPM_CHICK_EXTENDED_ADDR_SPACE);
-        
+
         if (ret) {
             IWL_ERR(trans,
                     "Could not load the [%d] uCode section\n",
@@ -1386,8 +1402,11 @@ int IntelWifi::iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
             break;
         }
     }
-    
-    dma_free_coherent(trans->dev, chunk_sz, v_addr, p_addr);
+    cmd->complete();
+    cmd->clearMemoryDescriptor();
+
+    cmd->release();
+//    dma_free_coherent(trans->dev, chunk_sz, v_addr, p_addr);
     return ret;
 }
 

@@ -947,7 +947,7 @@ static inline int iwl_trans_tx(struct iwl_trans *trans, struct sk_buff *skb,
 		return -EIO;
 
 	if (WARN_ON_ONCE(trans->state != IWL_TRANS_FW_ALIVE)) {
-		//IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
+		IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
 		return -EIO;
 	}
 
@@ -958,7 +958,7 @@ static inline void iwl_trans_reclaim(struct iwl_trans *trans, int queue,
 				     int ssn, struct sk_buff_head *skbs)
 {
 	if (WARN_ON_ONCE(trans->state != IWL_TRANS_FW_ALIVE)) {
-		//IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
+		IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
 		return;
 	}
 
@@ -979,7 +979,7 @@ iwl_trans_txq_enable_cfg(struct iwl_trans *trans, int queue, u16 ssn,
 	might_sleep();
 
 	if (WARN_ON_ONCE(trans->state != IWL_TRANS_FW_ALIVE)) {
-		//IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
+		IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
 		return false;
 	}
 
@@ -1008,7 +1008,7 @@ iwl_trans_txq_alloc(struct iwl_trans *trans,
 		return -ENOTSUPP;
 
 	if (WARN_ON_ONCE(trans->state != IWL_TRANS_FW_ALIVE)) {
-		//IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
+		IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
 		return -EIO;
 	}
 
@@ -1058,7 +1058,7 @@ static inline void iwl_trans_freeze_txq_timer(struct iwl_trans *trans,
 					      bool freeze)
 {
 	if (WARN_ON_ONCE(trans->state != IWL_TRANS_FW_ALIVE)) {
-		//IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
+		IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
 		return;
 	}
 
@@ -1070,7 +1070,7 @@ static inline void iwl_trans_block_txq_ptrs(struct iwl_trans *trans,
 					    bool block)
 {
 	if (WARN_ON_ONCE(trans->state != IWL_TRANS_FW_ALIVE)) {
-		//IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
+		IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
 		return;
 	}
 
@@ -1085,7 +1085,7 @@ static inline int iwl_trans_wait_tx_queues_empty(struct iwl_trans *trans,
 		return -ENOTSUPP;
 
 	if (WARN_ON_ONCE(trans->state != IWL_TRANS_FW_ALIVE)) {
-		//IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
+		IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
 		return -EIO;
 	}
 
@@ -1098,7 +1098,7 @@ static inline int iwl_trans_wait_txq_empty(struct iwl_trans *trans, int queue)
 		return -ENOTSUPP;
 
 	if (WARN_ON_ONCE(trans->state != IWL_TRANS_FW_ALIVE)) {
-		//IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
+		IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
 		return -EIO;
 	}
 

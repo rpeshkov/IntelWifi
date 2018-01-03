@@ -169,6 +169,7 @@ private:
     irqreturn_t iwl_pcie_irq_handler(int irq, void *dev_id);
     u32 iwl_pcie_int_cause_non_ict(struct iwl_trans *trans);
     void iwl_pcie_handle_rfkill_irq(struct iwl_trans *trans);
+    void iwl_pcie_irq_handle_error(struct iwl_trans *trans);
 
     
     ifnet_t fIfNet;

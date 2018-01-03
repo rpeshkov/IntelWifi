@@ -312,9 +312,8 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
     if (test_bit(STATUS_INT_ENABLED, &trans->status))
         _iwl_enable_interrupts(trans);
     /* we are loading the firmware, enable FH_TX interrupt only */
-    // TODO: Implement
-//    else if (handled & CSR_INT_BIT_FH_TX)
-//        iwl_enable_fw_load_int(trans);
+    else if (handled & CSR_INT_BIT_FH_TX)
+        iwl_enable_fw_load_int(trans);
     /* Re-enable RF_KILL if it occurred */
     else if (handled & CSR_INT_BIT_RF_KILL)
         iwl_enable_rfkill_int(trans);
@@ -383,4 +382,40 @@ void IntelWifi::iwl_pcie_handle_rfkill_irq(struct iwl_trans *trans)
     }
 }
 
+/*
+ * iwl_pcie_irq_handle_error - called for HW or SW error interrupt from card
+ */
+void IntelWifi::iwl_pcie_irq_handle_error(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    int i;
+    
+    /* W/A for WiFi/WiMAX coex and WiMAX own the RF */
+    if (trans->cfg->internal_wimax_coex &&
+        !trans->cfg->apmg_not_supported &&
+        (!(io->iwl_read_prph(APMG_CLK_CTRL_REG) &
+           APMS_CLK_VAL_MRB_FUNC_MODE) ||
+         (io->iwl_read_prph(APMG_PS_CTRL_REG) &
+          APMG_PS_CTRL_VAL_RESET_REQ))) {
+             clear_bit(STATUS_SYNC_HCMD_ACTIVE, &trans->status);
+             iwl_op_mode_wimax_active(trans->op_mode);
+             //wake_up(&trans_pcie->wait_command_queue);
+             return;
+         }
+    
+    // TODO: Implement
+//    for (i = 0; i < trans->cfg->base_params->num_of_queues; i++) {
+//        if (!trans_pcie->txq[i])
+//            continue;
+//        del_timer(&trans_pcie->txq[i]->stuck_timer);
+//    }
+    
+    /* The STATUS_FW_ERROR bit is set in this function. This must happen
+     * before we wake up the command caller, to ensure a proper cleanup. */
+    // TODO: Implement. Inside trans->ops->op is used which is undefined and will cause kernel panic
+    //iwl_trans_fw_error(trans);
+    
+    clear_bit(STATUS_SYNC_HCMD_ACTIVE, &trans->status);
+    //wake_up(&trans_pcie->wait_command_queue);
+}
 

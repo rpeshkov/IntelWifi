@@ -221,7 +221,9 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
-    iwl_enable_interrupts(fTrans);
+    const struct fw_img *fw = iwl_get_ucode_image(&fTrans->drv->fw, IWL_UCODE_INIT);
+    
+    iwl_trans_pcie_start_fw(fTrans, fw, false);
     
     netif->registerService();
 
