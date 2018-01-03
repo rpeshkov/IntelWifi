@@ -25,8 +25,6 @@ int IntelWifi::iwl_pcie_alloc_ict(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
-    
-    
 //    trans_pcie->ict_tbl =
 //    dma_zalloc_coherent(trans->dev, ICT_SIZE,
 //                        &trans_pcie->ict_tbl_dma,
@@ -214,26 +212,27 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
         handled |= CSR_INT_BIT_CT_KILL;
     }
     
-    // TODO: Implement
-//    /* Error detected by uCode */
-//    if (inta & CSR_INT_BIT_SW_ERR) {
-//        IWL_ERR(trans, "Microcode SW error detected. "
-//                " Restarting 0x%X.\n", inta);
-//        isr_stats->sw++;
-//        iwl_pcie_irq_handle_error(trans);
-//        handled |= CSR_INT_BIT_SW_ERR;
-//    }
-//
-//    /* uCode wakes up after power-down sleep */
-//    if (inta & CSR_INT_BIT_WAKEUP) {
-//        IWL_DEBUG_ISR(trans, "Wakeup interrupt\n");
+    
+    /* Error detected by uCode */
+    if (inta & CSR_INT_BIT_SW_ERR) {
+        IWL_ERR(trans, "Microcode SW error detected. "
+                " Restarting 0x%X.\n", inta);
+        isr_stats->sw++;
+        iwl_pcie_irq_handle_error(trans);
+        handled |= CSR_INT_BIT_SW_ERR;
+    }
+
+    /* uCode wakes up after power-down sleep */
+    if (inta & CSR_INT_BIT_WAKEUP) {
+        IWL_DEBUG_ISR(trans, "Wakeup interrupt\n");
+        // TODO: Implement
 //        iwl_pcie_rxq_check_wrptr(trans);
 //        iwl_pcie_txq_check_wrptrs(trans);
-//
-//        isr_stats->wakeup++;
-//
-//        handled |= CSR_INT_BIT_WAKEUP;
-//    }
+
+        isr_stats->wakeup++;
+
+        handled |= CSR_INT_BIT_WAKEUP;
+    }
     
     /* All uCode command responses, including Tx command responses,
      * Rx "responses" (frame-received notification), and other

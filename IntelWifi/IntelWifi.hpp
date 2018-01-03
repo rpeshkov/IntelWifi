@@ -117,6 +117,9 @@ private:
     static void interruptOccured(OSObject* owner, IOInterruptEventSource* sender, int count);
     static bool interruptFilter(OSObject* owner, IOFilterInterruptEventSource * src);
     
+    int findMSIInterruptTypeIndex();
+    
+    
     // trans.c
     void _iwl_disable_interrupts(struct iwl_trans *trans);
     void iwl_disable_interrupts(struct iwl_trans *trans);
@@ -159,6 +162,19 @@ private:
     int iwl_pcie_load_firmware_chunk(struct iwl_trans *trans,
                                                 u32 dst_addr, dma_addr_t phy_addr,
                                                 u32 byte_cnt);
+    void iwl_trans_pcie_handle_stop_rfkill(struct iwl_trans *trans,
+                                                      bool was_in_rfkill);
+    void iwl_pcie_set_interrupt_capa(/*struct pci_dev *pdev,*/
+                                     struct iwl_trans *trans);
+    void iwl_pcie_conf_msix_hw(struct iwl_trans_pcie *trans_pcie);
+    void iwl_pcie_map_non_rx_causes(struct iwl_trans *trans);
+    void iwl_pcie_map_rx_causes(struct iwl_trans *trans);
+    void iwl_pcie_init_msix(struct iwl_trans_pcie *trans_pcie);
+    int iwl_pcie_load_cpu_sections_8000(struct iwl_trans *trans,
+                                                   const struct fw_img *image,
+                                                   int cpu,
+                                                   int *first_ucode_section);
+
     
 
     

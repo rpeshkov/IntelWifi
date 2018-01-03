@@ -56,6 +56,13 @@ typedef u64 dma_addr_t;
  */
 #define upper_32_bits(n) ((u32)(((n) >> 16) >> 16))
 
+/**
+ * lower_32_bits - return bits 0-31 of a number
+ * @n: the number we're accessing
+ */
+#define lower_32_bits(n) ((u32)(n))
+
+
 #define __bitwise
 #define __force
 

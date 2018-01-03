@@ -47,6 +47,11 @@ public:
     int iwl_trans_pcie_read_mem(u32 addr, void *buf, int dwords);
     int iwl_trans_pcie_write_mem(u32 addr, const void *buf, int dwords);
     
+    void iwl_write_direct32(u32 reg, u32 value);
+    void iwl_write_direct64(u64 reg, u64 value);
+    u32 iwl_read_direct32(u32 reg);
+    void iwl_write64(u64 ofs, u64 val);
+    
 private:
     struct iwl_trans_pcie* fTrans;
     

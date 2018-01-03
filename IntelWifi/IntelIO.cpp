@@ -324,5 +324,47 @@ void IntelIO::iwl_write8(u32 ofs, u8 val)
 }
 
 
+void IntelIO::iwl_write_direct32(u32 reg, u32 value)
+{
+    IOInterruptState state;
+    
+    if (iwl_grab_nic_access(&state)) {
+        iwl_write32(reg, value);
+        iwl_release_nic_access(&state);
+    }
+}
+
+void IntelIO::iwl_write_direct64(u64 reg, u64 value)
+{
+    IOInterruptState state;
+    
+    if (iwl_grab_nic_access(&state)) {
+        iwl_write64(reg, value);
+        iwl_release_nic_access(&state);
+    }
+}
+
+u32 IntelIO::iwl_read_direct32(u32 reg)
+{
+    u32 value = 0x5a5a5a5a;
+    IOInterruptState state;
+    if (iwl_grab_nic_access(&state)) {
+        value = iwl_read32(reg);
+        iwl_release_nic_access(&state);
+    }
+    
+    return value;
+}
+
+void IntelIO::iwl_write64(u64 ofs, u64 val)
+{
+    //trace_iwlwifi_dev_iowrite64(trans->dev, ofs, val);
+    iwl_write32(ofs, lower_32_bits(val));
+    iwl_write32(ofs + 4, upper_32_bits(val));
+}
+
+
+
+
 
 

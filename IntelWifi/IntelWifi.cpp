@@ -6,6 +6,7 @@ extern "C" {
 #include "Configuration.h"
 }
 
+#include <IOKit/IOInterruptController.h>
 
 #include <sys/errno.h>
 
@@ -38,8 +39,28 @@ static struct MediumTable
     {kIOMediumIEEE80211Auto, 0}
 };
 
+int IntelWifi::findMSIInterruptTypeIndex()
+{
+    IOReturn ret;
+    int index, source = 0;
+    for (index = 0; ; index++)
+    {
+        int interruptType;
+        ret = pciDevice->getInterruptType(index, &interruptType);
+        if (ret != kIOReturnSuccess)
+            break;
+        if (interruptType & kIOInterruptTypePCIMessaged)
+        {
+            source = index;
+            break;
+        }
+    }
+    return source;
+}
+
 bool IntelWifi::init(OSDictionary *properties) {
     TraceLog("Driver init()");
+    
     return super::init(properties);
 }
 
@@ -66,7 +87,7 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     pciDevice->retain();
-
+    
     fDeviceId = pciDevice->configRead16(kIOPCIConfigDeviceID);
     fSubsystemId = pciDevice->configRead16(kIOPCIConfigSubSystemID);
     
@@ -138,28 +159,17 @@ bool IntelWifi::start(IOService *provider) {
     }
     
     /* if RTPM is in use, enable it in our device */
-    // TODO: implement
-//    if (fTrans->runtime_pm_mode != IWL_PLAT_PM_MODE_DISABLED) {
-//        /* We explicitly set the device to active here to
-//         * clear contingent errors.
-//         */
-//        pm_runtime_set_active(&pdev->dev);
-//
-//        pm_runtime_set_autosuspend_delay(&pdev->dev,
-//                                         iwlwifi_mod_params.d0i3_timeout);
-//        pm_runtime_use_autosuspend(&pdev->dev);
-//
-//        /* We are not supposed to call pm_runtime_allow() by
-//         * ourselves, but let userspace enable runtime PM via
-//         * sysfs.  However, since we don't enable this from
-//         * userspace yet, we need to allow/forbid() ourselves.
-//         */
-//        pm_runtime_allow(&pdev->dev);
-//    }
-
-    
-    PMinit();
-    provider->joinPMtree(this);
+    if (fTrans->runtime_pm_mode != IWL_PLAT_PM_MODE_DISABLED) {
+        /* We explicitly set the device to active here to
+         * clear contingent errors.
+         */
+        PMinit();
+        provider->joinPMtree(this);
+        setIdleTimerPeriod(iwlwifi_mod_params.d0i3_timeout);
+        changePowerStateTo(kOffPowerState);// Set the public power state to the lowest level
+        registerPowerDriver(this, gPowerStates, kNumPowerStates);
+        makeUsable();
+    }
     
     int err = iwl_trans_pcie_start_hw(fTrans, true);
     if (err) {
@@ -173,9 +183,6 @@ bool IntelWifi::start(IOService *provider) {
     /* Set is_down to false here so that...*/
     trans_pcie->is_down = false;
     
-    makeUsable();
-//    changePowerStateTo(kOffPowerState);// Set the public power state to the lowest level
-    registerPowerDriver(this, gPowerStates, kNumPowerStates);
 
     eeprom = IntelEeprom::withIO(io, const_cast<struct iwl_cfg*>(fConfiguration), fTrans->hw_rev);
     if (!eeprom) {
@@ -227,10 +234,11 @@ bool IntelWifi::start(IOService *provider) {
     
     netif->registerService();
 
+    int source = 0;//findMSIInterruptTypeIndex(); // Currently not using MSI because I want to see a lot of ignored interrupts in console
+    TraceLog("Source: %d", source);
     fInterruptSource = IOInterruptEventSource::interruptEventSource(this,
                                                                     (IOInterruptEventAction) &IntelWifi::interruptOccured,
-                                                                    
-                                                                    provider, 0);
+                                                                    provider, source);
     if (!fInterruptSource) {
         TraceLog("InterruptSource init failed!");
         releaseAll();
@@ -245,6 +253,8 @@ bool IntelWifi::start(IOService *provider) {
     
     fInterruptSource->enable();
     registerService();
+    
+    
     
     return true;
 }

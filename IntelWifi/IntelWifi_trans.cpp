@@ -113,12 +113,10 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
     
     /* We disable the RETRY_TIMEOUT register (0x41) to keep
      * PCI Tx retries from interfering with C3 CPU state */
-    // original code: pci_write_config_byte(pdev, PCI_CFG_RETRY_TIMEOUT, 0x00);
     pciDevice->configWrite8(PCI_CFG_RETRY_TIMEOUT, 0);
     
     iwl_disable_interrupts(trans);
     
-    // original: trans->hw_rev = iwl_read32(trans, CSR_HW_REV);
     trans->hw_rev = io->iwl_read32(CSR_HW_REV);
     
     /*
@@ -190,8 +188,8 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
     }
 #endif
     
-    // TODO: Implement
-    // iwl_pcie_set_interrupt_capa(pdev, trans);
+    iwl_pcie_set_interrupt_capa(trans);
+    
     trans->hw_id = (fDeviceId << 16) + fSubsystemId;
     snprintf(trans->hw_id_str, sizeof(trans->hw_id_str), "PCI ID: 0x%04X:0x%04X", fDeviceId, fSubsystemId);
     DebugLog("%s", trans->hw_id_str);
@@ -304,7 +302,7 @@ int IntelWifi::_iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power)
     if (err)
         return err;
     
-    //iwl_pcie_init_msix(trans_pcie);
+    iwl_pcie_init_msix(trans_pcie);
     
     /* From now on, the op_mode will be kept updated about RF kill state */
     iwl_enable_rfkill_int(trans);
@@ -603,7 +601,7 @@ void IntelWifi::iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_pow
     trans_pcie->opmode_down = true;
     was_in_rfkill = test_bit(STATUS_RFKILL_OPMODE, &trans->status);
     _iwl_trans_pcie_stop_device(trans, low_power);
-    //    iwl_trans_pcie_handle_stop_rfkill(was_in_rfkill);
+    iwl_trans_pcie_handle_stop_rfkill(trans, was_in_rfkill);
     IOLockUnlock(trans_pcie->mutex);
 }
 
@@ -660,7 +658,7 @@ void IntelWifi::_iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_po
      * driver won't be able to handle the interrupt.
      * Configure the IVAR table again after reset.
      */
-    //    iwl_pcie_conf_msix_hw(trans_pcie);
+    iwl_pcie_conf_msix_hw(trans_pcie);
     
     /*
      * Upon stop, the APM issues an interrupt if HW RF kill is set.
@@ -1193,19 +1191,16 @@ int IntelWifi::iwl_pcie_load_given_ucode_8000(struct iwl_trans *trans,
     /* configure the ucode to be ready to get the secured image */
     /* release CPU reset */
     io->iwl_write_prph(RELEASE_CPU_RESET, RELEASE_CPU_RESET_BIT);
-
-    return 0;
     
-    // TODO: Implement
-//    /* load to FW the binary Secured sections of CPU1 */
-//    ret = iwl_pcie_load_cpu_sections_8000(trans, image, 1,
-//                                          &first_ucode_section);
-//    if (ret)
-//        return ret;
-//
-//    /* load to FW the binary sections of CPU2 */
-//    return iwl_pcie_load_cpu_sections_8000(trans, image, 2,
-//                                           &first_ucode_section);
+    /* load to FW the binary Secured sections of CPU1 */
+    ret = iwl_pcie_load_cpu_sections_8000(trans, image, 1,
+                                          &first_ucode_section);
+    if (ret)
+        return ret;
+
+    /* load to FW the binary sections of CPU2 */
+    return iwl_pcie_load_cpu_sections_8000(trans, image, 2,
+                                           &first_ucode_section);
 }
 
 int IntelWifi::iwl_pcie_load_cpu_sections(struct iwl_trans *trans,
@@ -1466,6 +1461,290 @@ int IntelWifi::iwl_pcie_load_firmware_chunk(struct iwl_trans *trans,
     return 0;
 }
 
+void IntelWifi::iwl_trans_pcie_handle_stop_rfkill(struct iwl_trans *trans,
+                                       bool was_in_rfkill)
+{
+    bool hw_rfkill;
+    
+    /*
+     * Check again since the RF kill state may have changed while
+     * all the interrupts were disabled, in this case we couldn't
+     * receive the RF kill interrupt and update the state in the
+     * op_mode.
+     * Don't call the op_mode if the rkfill state hasn't changed.
+     * This allows the op_mode to call stop_device from the rfkill
+     * notification without endless recursion. Under very rare
+     * circumstances, we might have a small recursion if the rfkill
+     * state changed exactly now while we were called from stop_device.
+     * This is very unlikely but can happen and is supported.
+     */
+    hw_rfkill = iwl_is_rfkill_set(trans);
+    if (hw_rfkill) {
+        set_bit(STATUS_RFKILL_HW, &trans->status);
+        set_bit(STATUS_RFKILL_OPMODE, &trans->status);
+    } else {
+        clear_bit(STATUS_RFKILL_HW, &trans->status);
+        clear_bit(STATUS_RFKILL_OPMODE, &trans->status);
+    }
+    if (hw_rfkill != was_in_rfkill)
+        iwl_trans_pcie_rf_kill(trans, hw_rfkill);
+}
+
+void IntelWifi::iwl_pcie_set_interrupt_capa(/*struct pci_dev *pdev,*/
+                                        struct iwl_trans *trans)
+{
+    // I haven't found any way to enable MSI-X in OS X, so this method is basically not needed
+    // MSI is enabled in start method of this class.
+    
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    trans_pcie->msix_enabled = false;
+//    int max_irqs, num_irqs, i, ret, nr_online_cpus;
+//    u16 pci_cmd;
+//
+//    if (!trans->cfg->mq_rx_supported)
+//        goto enable_msi;
+//
+//    nr_online_cpus = num_online_cpus();
+//    max_irqs = min_t(u32, nr_online_cpus + 2, IWL_MAX_RX_HW_QUEUES);
+//    for (i = 0; i < max_irqs; i++)
+//        trans_pcie->msix_entries[i].entry = i;
+//
+//    num_irqs = pci_enable_msix_range(pdev, trans_pcie->msix_entries,
+//                                     MSIX_MIN_INTERRUPT_VECTORS,
+//                                     max_irqs);
+//    if (num_irqs < 0) {
+//        IWL_DEBUG_INFO(trans,
+//                       "Failed to enable msi-x mode (ret %d). Moving to msi mode.\n",
+//                       num_irqs);
+//        goto enable_msi;
+//    }
+//    trans_pcie->def_irq = (num_irqs == max_irqs) ? num_irqs - 1 : 0;
+//
+//    IWL_DEBUG_INFO(trans,
+//                   "MSI-X enabled. %d interrupt vectors were allocated\n",
+//                   num_irqs);
+//
+//    /*
+//     * In case the OS provides fewer interrupts than requested, different
+//     * causes will share the same interrupt vector as follows:
+//     * One interrupt less: non rx causes shared with FBQ.
+//     * Two interrupts less: non rx causes shared with FBQ and RSS.
+//     * More than two interrupts: we will use fewer RSS queues.
+//     */
+//    if (num_irqs <= nr_online_cpus) {
+//        trans_pcie->trans->num_rx_queues = num_irqs + 1;
+//        trans_pcie->shared_vec_mask = IWL_SHARED_IRQ_NON_RX |
+//        IWL_SHARED_IRQ_FIRST_RSS;
+//    } else if (num_irqs == nr_online_cpus + 1) {
+//        trans_pcie->trans->num_rx_queues = num_irqs;
+//        trans_pcie->shared_vec_mask = IWL_SHARED_IRQ_NON_RX;
+//    } else {
+//        trans_pcie->trans->num_rx_queues = num_irqs - 1;
+//    }
+//
+//    trans_pcie->alloc_vecs = num_irqs;
+//    trans_pcie->msix_enabled = true;
+//    return;
+//
+//enable_msi:
+//    ret = pci_enable_msi(pdev);
+//    if (ret) {
+//        dev_err(&pdev->dev, "pci_enable_msi failed - %d\n", ret);
+//        /* enable rfkill interrupt: hw bug w/a */
+//        pci_read_config_word(pdev, PCI_COMMAND, &pci_cmd);
+//        if (pci_cmd & PCI_COMMAND_INTX_DISABLE) {
+//            pci_cmd &= ~PCI_COMMAND_INTX_DISABLE;
+//            pci_write_config_word(pdev, PCI_COMMAND, pci_cmd);
+//        }
+//    }
+}
+
+void IntelWifi::iwl_pcie_conf_msix_hw(struct iwl_trans_pcie *trans_pcie)
+{
+    struct iwl_trans *trans = trans_pcie->trans;
+    
+    if (!trans_pcie->msix_enabled) {
+        if (trans->cfg->mq_rx_supported &&
+            test_bit(STATUS_DEVICE_ENABLED, &trans->status))
+            io->iwl_write_prph(UREG_CHICK,
+                           UREG_CHICK_MSI_ENABLE);
+        return;
+    }
+    /*
+     * The IVAR table needs to be configured again after reset,
+     * but if the device is disabled, we can't write to
+     * prph.
+     */
+    if (test_bit(STATUS_DEVICE_ENABLED, &trans->status))
+        io->iwl_write_prph(UREG_CHICK, UREG_CHICK_MSIX_ENABLE);
+    
+    /*
+     * Each cause from the causes list above and the RX causes is
+     * represented as a byte in the IVAR table. The first nibble
+     * represents the bound interrupt vector of the cause, the second
+     * represents no auto clear for this cause. This will be set if its
+     * interrupt vector is bound to serve other causes.
+     */
+    iwl_pcie_map_rx_causes(trans);
+
+    iwl_pcie_map_non_rx_causes(trans);
+}
+
+struct iwl_causes_list {
+    u32 cause_num;
+    u32 mask_reg;
+    u8 addr;
+};
+
+static struct iwl_causes_list causes_list[] = {
+    {MSIX_FH_INT_CAUSES_D2S_CH0_NUM,    CSR_MSIX_FH_INT_MASK_AD, 0},
+    {MSIX_FH_INT_CAUSES_D2S_CH1_NUM,    CSR_MSIX_FH_INT_MASK_AD, 0x1},
+    {MSIX_FH_INT_CAUSES_S2D,        CSR_MSIX_FH_INT_MASK_AD, 0x3},
+    {MSIX_FH_INT_CAUSES_FH_ERR,        CSR_MSIX_FH_INT_MASK_AD, 0x5},
+    {MSIX_HW_INT_CAUSES_REG_ALIVE,        CSR_MSIX_HW_INT_MASK_AD, 0x10},
+    {MSIX_HW_INT_CAUSES_REG_WAKEUP,        CSR_MSIX_HW_INT_MASK_AD, 0x11},
+    {MSIX_HW_INT_CAUSES_REG_CT_KILL,    CSR_MSIX_HW_INT_MASK_AD, 0x16},
+    {MSIX_HW_INT_CAUSES_REG_RF_KILL,    CSR_MSIX_HW_INT_MASK_AD, 0x17},
+    {MSIX_HW_INT_CAUSES_REG_PERIODIC,    CSR_MSIX_HW_INT_MASK_AD, 0x18},
+    {MSIX_HW_INT_CAUSES_REG_SW_ERR,        CSR_MSIX_HW_INT_MASK_AD, 0x29},
+    {MSIX_HW_INT_CAUSES_REG_SCD,        CSR_MSIX_HW_INT_MASK_AD, 0x2A},
+    {MSIX_HW_INT_CAUSES_REG_FH_TX,        CSR_MSIX_HW_INT_MASK_AD, 0x2B},
+    {MSIX_HW_INT_CAUSES_REG_HW_ERR,        CSR_MSIX_HW_INT_MASK_AD, 0x2D},
+    {MSIX_HW_INT_CAUSES_REG_HAP,        CSR_MSIX_HW_INT_MASK_AD, 0x2E},
+};
+
+void IntelWifi::iwl_pcie_map_non_rx_causes(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie =  IWL_TRANS_GET_PCIE_TRANS(trans);
+    int val = trans_pcie->def_irq | MSIX_NON_AUTO_CLEAR_CAUSE;
+    int i;
+    
+    /*
+     * Access all non RX causes and map them to the default irq.
+     * In case we are missing at least one interrupt vector,
+     * the first interrupt vector will serve non-RX and FBQ causes.
+     */
+    for (i = 0; i < ARRAY_SIZE(causes_list); i++) {
+        io->iwl_write8(CSR_MSIX_IVAR(causes_list[i].addr), val);
+        io->iwl_clear_bit(causes_list[i].mask_reg,
+                      causes_list[i].cause_num);
+    }
+}
+
+void IntelWifi::iwl_pcie_map_rx_causes(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    u32 offset =
+    trans_pcie->shared_vec_mask & IWL_SHARED_IRQ_FIRST_RSS ? 1 : 0;
+    u32 val, idx;
+    
+    /*
+     * The first RX queue - fallback queue, which is designated for
+     * management frame, command responses etc, is always mapped to the
+     * first interrupt vector. The other RX queues are mapped to
+     * the other (N - 2) interrupt vectors.
+     */
+    val = BIT(MSIX_FH_INT_CAUSES_Q(0));
+    for (idx = 1; idx < trans->num_rx_queues; idx++) {
+        io->iwl_write8(CSR_MSIX_RX_IVAR(idx),
+                   MSIX_FH_INT_CAUSES_Q(idx - offset));
+        val |= BIT(MSIX_FH_INT_CAUSES_Q(idx));
+    }
+    io->iwl_write32(CSR_MSIX_FH_INT_MASK_AD, ~val);
+    
+    val = MSIX_FH_INT_CAUSES_Q(0);
+    if (trans_pcie->shared_vec_mask & IWL_SHARED_IRQ_NON_RX)
+        val |= MSIX_NON_AUTO_CLEAR_CAUSE;
+    io->iwl_write8(CSR_MSIX_RX_IVAR(0), val);
+    
+    if (trans_pcie->shared_vec_mask & IWL_SHARED_IRQ_FIRST_RSS)
+        io->iwl_write8(CSR_MSIX_RX_IVAR(1), val);
+}
+
+void IntelWifi::iwl_pcie_init_msix(struct iwl_trans_pcie *trans_pcie)
+{
+    struct iwl_trans *trans = trans_pcie->trans;
+    
+    iwl_pcie_conf_msix_hw(trans_pcie);
+    
+    if (!trans_pcie->msix_enabled)
+        return;
+    
+    trans_pcie->fh_init_mask = ~io->iwl_read32(CSR_MSIX_FH_INT_MASK_AD);
+    trans_pcie->fh_mask = trans_pcie->fh_init_mask;
+    trans_pcie->hw_init_mask = ~io->iwl_read32(CSR_MSIX_HW_INT_MASK_AD);
+    trans_pcie->hw_mask = trans_pcie->hw_init_mask;
+}
+
+int IntelWifi::iwl_pcie_load_cpu_sections_8000(struct iwl_trans *trans,
+                                           const struct fw_img *image,
+                                           int cpu,
+                                           int *first_ucode_section)
+{
+    int shift_param;
+    int i, ret = 0, sec_num = 0x1;
+    u32 val, last_read_idx = 0;
+    
+    if (cpu == 1) {
+        shift_param = 0;
+        *first_ucode_section = 0;
+    } else {
+        shift_param = 16;
+        (*first_ucode_section)++;
+    }
+    
+    for (i = *first_ucode_section; i < image->num_sec; i++) {
+        last_read_idx = i;
+        
+        /*
+         * CPU1_CPU2_SEPARATOR_SECTION delimiter - separate between
+         * CPU1 to CPU2.
+         * PAGING_SEPARATOR_SECTION delimiter - separate between
+         * CPU2 non paged to CPU2 paging sec.
+         */
+        if (!image->sec[i].data ||
+            image->sec[i].offset == CPU1_CPU2_SEPARATOR_SECTION ||
+            image->sec[i].offset == PAGING_SEPARATOR_SECTION) {
+            IWL_DEBUG_FW(trans,
+                         "Break since Data not valid or Empty section, sec = %d\n",
+                         i);
+            break;
+        }
+        
+        ret = iwl_pcie_load_section(trans, i, &image->sec[i]);
+        if (ret)
+            return ret;
+        
+        /* Notify ucode of loaded section number and status */
+        val = io->iwl_read_direct32(FH_UCODE_LOAD_STATUS);
+        val = val | (sec_num << shift_param);
+        io->iwl_write_direct32(FH_UCODE_LOAD_STATUS, val);
+        
+        sec_num = (sec_num << 1) | 0x1;
+    }
+    
+    *first_ucode_section = last_read_idx;
+    
+    iwl_enable_interrupts(trans);
+    
+    if (trans->cfg->use_tfh) {
+        if (cpu == 1)
+            io->iwl_write_prph(UREG_UCODE_LOAD_STATUS,
+                           0xFFFF);
+        else
+            io->iwl_write_prph(UREG_UCODE_LOAD_STATUS,
+                           0xFFFFFFFF);
+    } else {
+        if (cpu == 1)
+            io->iwl_write_direct32(FH_UCODE_LOAD_STATUS,
+                               0xFFFF);
+        else
+            io->iwl_write_direct32(FH_UCODE_LOAD_STATUS,
+                               0xFFFFFFFF);
+    }
+    
+    return 0;
+}
 
 
 
