@@ -1079,7 +1079,7 @@ int IntelWifi::iwl_pcie_nic_init(struct iwl_trans *trans)
     //iwl_op_mode_nic_config(trans->op_mode);
     
     /* Allocate the RX queue, or reset if it is already allocated */
-    //iwl_pcie_rx_init(trans);
+    iwl_pcie_rx_init(trans);
     
     /* Allocate or reset and init all Tx and Command queues */
 //    if (iwl_pcie_tx_init(trans))

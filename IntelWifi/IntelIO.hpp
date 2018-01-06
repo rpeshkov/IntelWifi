@@ -51,6 +51,8 @@ public:
     void iwl_write_direct64(u64 reg, u64 value);
     u32 iwl_read_direct32(u32 reg);
     void iwl_write64(u64 ofs, u64 val);
+    int iwl_poll_direct_bit(u32 addr, u32 mask, int timeout);
+    void iwl_write_prph64_no_grab(u64 ofs, u64 val);
     
 private:
     struct iwl_trans_pcie* fTrans;

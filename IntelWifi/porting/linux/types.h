@@ -13,7 +13,6 @@
 #include <libkern/OSAtomic.h>
 
 #include "bitfield.h"
-#include "kernel.h"
 
 typedef UInt8  u8;
 typedef UInt16 u16;
@@ -40,6 +39,8 @@ typedef SInt16 __s16;
 typedef SInt32 __s32;
 typedef SInt64 __s64;
 
+
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 //#define __unused __attribute__((__unused__))
 #define __packed __attribute__((packed))
@@ -157,6 +158,11 @@ set_bit(unsigned int nr, volatile unsigned long *addr)
 #define RT_ALIGN_T(u, uAlignment, type) ( ((type)(u) + ((uAlignment) - 1)) & ~(type)((uAlignment) - 1) )
 #define RT_ALIGN_Z(cb, uAlignment)              RT_ALIGN_T(cb, uAlignment, size_t)
 #define ALIGN RT_ALIGN_Z
+
+struct list_head {
+    struct list_head *next, *prev;
+};
+
 
 
 

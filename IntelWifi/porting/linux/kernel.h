@@ -9,7 +9,10 @@
 #ifndef kernel_h
 #define kernel_h
 
+#include "types.h"
 #include "irqreturn.h"
+#include "compiler.h"
+#include "list.h"
 
 #include <sys/errno.h>
 #include <libkern/OSTypes.h>
@@ -111,12 +114,34 @@ ilog2((n) - 1) - PAGE_SHIFT + 1)        \
 __get_order(n)                        \
 )
 
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+/**
+ * container_of - cast a member of a structure out to the containing structure
+ * @ptr:    the pointer to the member.
+ * @type:    the type of the container struct this is embedded in.
+ * @member:    the name of the member within the struct.
+ *
+ */
+#define container_of(ptr, type, member) ({                \
+void *__mptr = (void *)(ptr);                    \
+((type *)(__mptr - offsetof(type, member))); })
+
+
 
 static inline void * ERR_PTR(long error)
 {
     return (void *) error;
 }
+
+/*
+ * This looks more complex than it should be. But we need to
+ * get the type for the ~ right in round_down (it needs to be
+ * as wide as the result!), and we want to evaluate the macro
+ * arguments just once each.
+ */
+#define __round_mask(x, y) ((__typeof__(x))((y)-1))
+#define round_up(x, y) ((((x)-1) | __round_mask(x, y))+1)
+#define round_down(x, y) ((x) & ~__round_mask(x, y))
+
 
 
 

@@ -363,6 +363,29 @@ void IntelIO::iwl_write64(u64 ofs, u64 val)
     iwl_write32(ofs + 4, upper_32_bits(val));
 }
 
+int IntelIO::iwl_poll_direct_bit(u32 addr, u32 mask, int timeout)
+{
+    int t = 0;
+    
+    do {
+        if ((iwl_read_direct32(addr) & mask) == mask)
+            return t;
+        IODelay(IWL_POLL_INTERVAL);
+        t += IWL_POLL_INTERVAL;
+    } while (t < timeout);
+    
+    return -ETIMEDOUT;
+}
+
+void IntelIO::iwl_write_prph64_no_grab(u64 ofs, u64 val)
+{
+    //trace_iwlwifi_dev_iowrite_prph64(trans->dev, ofs, val);
+    iwl_write_prph_no_grab(ofs, val & 0xffffffff);
+    iwl_write_prph_no_grab(ofs + 4, val >> 32);
+}
+
+
+
 
 
 

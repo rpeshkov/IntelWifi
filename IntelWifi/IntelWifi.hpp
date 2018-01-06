@@ -8,6 +8,8 @@
 #include <IOKit/network/IOEthernetInterface.h>
 #include <IOKit/network/IOPacketQueue.h>
 
+
+
 #include <net/if.h>
 
 extern "C" {
@@ -174,19 +176,44 @@ private:
                                                    const struct fw_img *image,
                                                    int cpu,
                                                    int *first_ucode_section);
+    
+    // trans-gen2.c
+    int iwl_pcie_gen2_apm_init(struct iwl_trans *trans);
+    void iwl_pcie_gen2_apm_stop(struct iwl_trans *trans, bool op_mode_leave);
+    void _iwl_trans_pcie_gen2_stop_device(struct iwl_trans *trans, bool low_power);
+    void iwl_trans_pcie_gen2_stop_device(struct iwl_trans *trans, bool low_power);
+    int iwl_pcie_gen2_nic_init(struct iwl_trans *trans);
+    void iwl_trans_pcie_gen2_fw_alive(struct iwl_trans *trans, u32 scd_addr);
+    int iwl_trans_pcie_gen2_start_fw(struct iwl_trans *trans,
+                                     const struct fw_img *fw, bool run_in_rfkill);
 
     
 
     
     // rx.c
+    int iwl_rxq_space(const struct iwl_rxq *rxq);
+    __le32 iwl_pcie_dma_addr2rbd_ptr(dma_addr_t dma_addr);
+    int iwl_pcie_rx_stop(struct iwl_trans *trans);
+    void iwl_pcie_rxq_inc_wr_ptr(struct iwl_trans *trans, struct iwl_rxq *rxq);
+    void iwl_pcie_rxq_check_wrptr(struct iwl_trans *trans);
+    
+    void iwl_pcie_enable_rx_wake(struct iwl_trans *trans, bool enable);
+    void iwl_pcie_rx_mq_hw_init(struct iwl_trans *trans);
+    
+    void iwl_pcie_rx_init_rxb_lists(struct iwl_rxq *rxq);
+    
     int iwl_pcie_alloc_ict(struct iwl_trans *trans);
     void iwl_pcie_disable_ict(struct iwl_trans *trans);
     void iwl_pcie_free_ict(struct iwl_trans *trans);
     irqreturn_t iwl_pcie_irq_handler(int irq, void *dev_id);
+    
     u32 iwl_pcie_int_cause_non_ict(struct iwl_trans *trans);
     void iwl_pcie_handle_rfkill_irq(struct iwl_trans *trans);
     void iwl_pcie_irq_handle_error(struct iwl_trans *trans);
-
+    void iwl_pcie_reset_ict(struct iwl_trans *trans);
+    u32 iwl_pcie_int_cause_ict(struct iwl_trans *trans);
+    void iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq);
+    int iwl_pcie_rx_init(struct iwl_trans *trans);
     
     ifnet_t fIfNet;
     

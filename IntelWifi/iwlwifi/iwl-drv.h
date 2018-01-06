@@ -68,53 +68,6 @@
 #include "fw/img.h"
 
 
-struct list_head {
-    struct list_head *next, *prev;
-};
-
-int list_empty(const struct list_head *head);
-
-void list_add_tail(struct list_head *new2, struct list_head *head);
-
-void list_add(struct list_head *new2, struct list_head *head);
-
-#define container_of(ptr, type, member)                    \
-({                                    \
-const typeof( ((type *)0)->member ) *__mptr = (ptr);        \
-(type *)( (char *)__mptr - offsetof(type,member) );        \
-})
-
-#define __list_for_each(pos, head) \
-for (pos = (head)->next; pos != (head); pos = pos->next)
-
-#define list_entry(ptr, type, member) \
-container_of(ptr, type, member)
-
-static inline void prefetch(const void *x);
-
-
-#define LIST_POISON1  ((void *) 0x00100100)
-#define LIST_POISON2  ((void *) 0x00200200)
-
-void list_del(struct list_head *entry);
-
-#define LIST_HEAD_INIT(name) { &(name), &(name) }
-
-#undef LIST_HEAD
-#define LIST_HEAD(name) \
-struct list_head name = LIST_HEAD_INIT(name)
-
-#define INIT_LIST_HEAD(ptr) do { \
-(ptr)->next = (ptr); (ptr)->prev = (ptr); \
-} while (0)
-
-#define list_for_each_entry(pos, head, member)                \
-for (pos = list_entry((head)->next, typeof(*pos), member);    \
-prefetch(pos->member.next), &pos->member != (head);     \
-pos = list_entry(pos->member.next, typeof(*pos), member))
-
-
-
 /* for all modules */
 #define DRV_NAME        "iwlwifi"
 #define DRV_COPYRIGHT	"Copyright(c) 2003- 2015 Intel Corporation"
