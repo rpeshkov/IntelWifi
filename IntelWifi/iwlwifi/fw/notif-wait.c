@@ -142,6 +142,10 @@ void iwl_abort_notification_waits(struct iwl_notif_wait_data *notif_wait)
 
     // TODO: Implement
 	//wake_up_all(&notif_wait->notif_waitq);
+    IOLockLock(notif_wait->notif_waitq);
+    bool event = true;
+    IOLockWakeup(notif_wait->notif_waitq, &event, true);
+    IOLockUnlock(notif_wait->notif_waitq);
 }
 IWL_EXPORT_SYMBOL(iwl_abort_notification_waits);
 
@@ -192,6 +196,14 @@ int iwl_wait_notification(struct iwl_notif_wait_data *notif_wait,
 //    ret = wait_event_timeout(notif_wait->notif_waitq,
 //                 wait_entry->triggered || wait_entry->aborted,
 //                 timeout);
+    
+    IOLockLock(notif_wait->notif_waitq);
+    bool event = true;
+    
+    AbsoluteTime deadline;
+    clock_interval_to_deadline(timeout, kMillisecondScale, (UInt64 *) &deadline);
+    ret = IOLockSleepDeadline(notif_wait->notif_waitq, &event, *((AbsoluteTime *) &deadline), THREAD_INTERRUPTIBLE);
+    IOLockUnlock(notif_wait->notif_waitq);
 
 	iwl_remove_notification(notif_wait, wait_entry);
 

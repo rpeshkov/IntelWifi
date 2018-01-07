@@ -7,15 +7,14 @@ extern "C" {
 }
 
 #include <IOKit/IOInterruptController.h>
-#include "IwlDvmOpMode.hpp"
+
 
 #include <sys/errno.h>
 
 #define super IOEthernetController
 OSDefineMetaClassAndStructors(IntelWifi, IOEthernetController)
 
-#define MAC_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
-#define MAC_BYTES(x) (x)[0],(x)[1],(x)[2],(x)[3],(x)[4],(x)[5]
+
 
 enum {
     kOffPowerState,
@@ -102,8 +101,6 @@ bool IntelWifi::start(IOService *provider) {
     }
     
     fTrans = iwl_trans_pcie_alloc(fConfiguration);
-    
-    
     if (!fTrans) {
         TraceLog("iwl_trans_pcie_alloc failed");
         releaseAll();
@@ -181,10 +178,37 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
-    IwlDvmOpMode *opmode = new IwlDvmOpMode(this, eeprom);
+    fWorkLoop = getWorkLoop();
+    if (!fWorkLoop) {
+        TraceLog("getWorkLoop failed!");
+        releaseAll();
+        return false;
+    }
+    
+    fWorkLoop->retain();
+    
+    int source = findMSIInterruptTypeIndex(); // Currently not using MSI because I want to see a lot of ignored interrupts in console
+    fInterruptSource = IOInterruptEventSource::interruptEventSource(this,
+                                                                    (IOInterruptEventAction) &IntelWifi::interruptOccured,
+                                                                    provider, source);
+    if (!fInterruptSource) {
+        TraceLog("InterruptSource init failed!");
+        releaseAll();
+        return false;
+    }
+    
+    if (fWorkLoop->addEventSource(fInterruptSource) != kIOReturnSuccess) {
+        TraceLog("EventSource registration failed");
+        releaseAll();
+        return false;
+    }
+    
+    fInterruptSource->enable();
+    
+    
+    opmode = new IwlDvmOpMode(this, eeprom);
     opmode = (IwlDvmOpMode *)opmode->start(fTrans, fTrans->cfg, &fTrans->drv->fw, NULL);
     
-    //int err = iwl_trans_pcie_start_hw(fTrans, true);
     if (!opmode) {
         //TraceLog("ERROR: Error while preparing HW: %d", err);
         releaseAll();
@@ -221,48 +245,23 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
-    fWorkLoop = getWorkLoop();
-    if (!fWorkLoop) {
-        TraceLog("getWorkLoop failed!");
-        releaseAll();
-        return false;
-    }
     
-    fWorkLoop->retain();
     
-    if (!attachInterface((IONetworkInterface**)&netif)) {
-        TraceLog("Interface attach failed!");
-        releaseAll();
-        return false;
-    }
+//    if (!attachInterface((IONetworkInterface**)&netif)) {
+//        TraceLog("Interface attach failed!");
+//        releaseAll();
+//        return false;
+//    }
     
-    int source = findMSIInterruptTypeIndex(); // Currently not using MSI because I want to see a lot of ignored interrupts in console
-    //TraceLog("Source: %d", source);
-    fInterruptSource = IOInterruptEventSource::interruptEventSource(this,
-                                                                    (IOInterruptEventAction) &IntelWifi::interruptOccured,
-                                                                    provider, source);
-    if (!fInterruptSource) {
-        TraceLog("InterruptSource init failed!");
-        releaseAll();
-        return false;
-    }
     
-    if (fWorkLoop->addEventSource(fInterruptSource) != kIOReturnSuccess) {
-        TraceLog("EventSource registration failed");
-        releaseAll();
-        return false;
-    }
+//    const struct fw_img *fw = iwl_get_ucode_image(&fTrans->drv->fw, IWL_UCODE_INIT);
+//
+//    iwl_trans_pcie_start_fw(fTrans, fw, false);
     
-    fInterruptSource->enable();
-    
-    const struct fw_img *fw = iwl_get_ucode_image(&fTrans->drv->fw, IWL_UCODE_INIT);
-    
-    iwl_trans_pcie_start_fw(fTrans, fw, false);
-    
-    netif->registerService();
+//    netif->registerService();
 
     
-    registerService();
+    //registerService();
     
     
     
@@ -334,7 +333,7 @@ IOReturn IntelWifi::enable(IONetworkInterface *netif) {
 
 IOReturn IntelWifi::disable(IONetworkInterface *netif) {
     TraceLog("disable");
-    netif->flushInputQueue();
+//    netif->flushInputQueue();
     return kIOReturnSuccess;
 }
 

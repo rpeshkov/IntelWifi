@@ -195,7 +195,7 @@ bool IntelEeprom::initWithIO(IntelIO *io, struct iwl_cfg *cfg, UInt32 hwRev) {
     fConfiguration = cfg;
     fHwRev = hwRev;
     
-    return read();
+    return true;
 }
 
 void IntelEeprom::free() {
@@ -403,6 +403,23 @@ struct iwl_nvm_data* IntelEeprom::parse() {
     
     return nvmData;
 }
+
+int IntelEeprom::iwl_nvm_check_version(struct iwl_nvm_data *data, struct iwl_trans *trans)
+{
+    if (data->nvm_version >= trans->cfg->nvm_ver ||
+        data->calib_version >= trans->cfg->nvm_calib_ver) {
+        IWL_DEBUG_INFO(trans, "device EEPROM VER=0x%x, CALIB=0x%x\n",
+                       data->nvm_version, data->calib_version);
+        return 0;
+    }
+    
+    IWL_ERR(trans,
+            "Unsupported (too old) EEPROM VER=0x%x < 0x%x CALIB=0x%x < 0x%x\n",
+            data->nvm_version, trans->cfg->nvm_ver,
+            data->calib_version,  trans->cfg->nvm_calib_ver);
+    return -EINVAL;
+}
+
 
 //
 // MARK: Private. Reading routines

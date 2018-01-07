@@ -9,6 +9,8 @@
 #ifndef IwlTransOps_h
 #define IwlTransOps_h
 
+#include <linux/types.h>
+
 class IwlTransOps {
 public:
     virtual int start_hw(struct iwl_trans *trans, bool low_power) = 0;

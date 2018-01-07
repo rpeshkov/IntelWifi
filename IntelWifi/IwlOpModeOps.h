@@ -9,16 +9,18 @@
 #ifndef IwlOpModeOps_h
 #define IwlOpModeOps_h
 
+#include "IwlTransOps.h"
+
 extern "C" {
 #include "iwl-trans.h"
 }
 
-#include "IwlTransOps.h"
+
 
 class IwlOpModeOps {
 public:
     
-    virtual IwlOpModeOps *start(struct iwl_trans *trans,
+    virtual struct iwl_priv *start(struct iwl_trans *trans,
                                  const struct iwl_cfg *cfg,
                                  const struct iwl_fw *fw,
                                  struct dentry *dbgfs_dir) = 0;

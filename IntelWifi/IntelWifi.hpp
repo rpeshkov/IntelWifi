@@ -25,13 +25,11 @@ extern "C" {
 #include "iwl-trans-pcie.h"
 }
 
-
 #include "Logging.h"
 
 #include "IntelEeprom.hpp"
 #include "IwlTransOps.h"
-
-
+#include "IwlDvmOpMode.hpp"
 
 
 // Configuration
@@ -41,13 +39,6 @@ extern "C" {
 #ifdef DEBUG
 #define CONFIG_IWLWIFI_DEBUG
 #endif
-
-
-
-
-
-
-
 
 
 #define    RELEASE(x)    if(x){(x)->release();(x)=NULL;}
@@ -310,6 +301,8 @@ private:
     
     UInt16 fDeviceId;
     UInt16 fSubsystemId;
+    
+    IwlOpModeOps *opmode;
     
     
 };

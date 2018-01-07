@@ -37,7 +37,9 @@ public:
     static IntelEeprom* withIO(IntelIO *io, struct iwl_cfg *config, UInt32 hwRev);
     bool initWithIO(IntelIO *io, struct iwl_cfg *config, UInt32 hwRev);
     virtual void free() override;
+    bool read();
     struct iwl_nvm_data* parse();
+    int iwl_nvm_check_version(struct iwl_nvm_data *data, struct iwl_trans *trans);
     
 private:
     // reading
@@ -94,7 +96,7 @@ private:
     
     
     
-    bool read();
+    
     
     UInt8* fEeprom;
     

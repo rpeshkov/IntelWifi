@@ -123,6 +123,10 @@ static inline void
 iwl_notification_notify(struct iwl_notif_wait_data *notif_data)
 {
 	//wake_up_all(&notif_data->notif_waitq);
+    bool event = true;
+    IOLockLock(notif_data->notif_waitq);
+    IOLockWakeup(notif_data->notif_waitq, &event, true);
+    IOLockUnlock(notif_data->notif_waitq);
 }
 
 static inline void

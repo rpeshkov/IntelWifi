@@ -37,5 +37,9 @@
 #define IWL_DEBUG_RPM(trans, args...) DebugLog("DEBUG RPM: " args)
 #define IWL_DEBUG_TX_QUEUES(trans, args...) DebugLog("DEBUG TXQ: " args)
 
+#define IWL_DEBUG_CALIB(priv, args...) DebugLog("DEBUG CALIB: " args)
+
+#define IWL_DEBUG_MAC80211(priv, args...) DebugLog("DEBUG MAC80211: " args)
+
 
 #endif /* Logging_h */

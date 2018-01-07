@@ -30,7 +30,6 @@
  *****************************************************************************/
 
 #include "IntelWifi.hpp"
-
 #include "iwlwifi/fw/api/tx.h"
 
 #define IWL_TX_CRC_SIZE 4
