@@ -1746,3 +1746,82 @@ int IntelWifi::iwl_pcie_load_cpu_sections_8000(struct iwl_trans *trans,
 
 
 
+
+
+// SCD. TODO: Move to iwl-scd.h
+
+void IntelWifi::iwl_scd_txq_set_chain(struct iwl_trans *trans,
+                                         u16 txq_id)
+{
+    io->iwl_set_bits_prph(SCD_QUEUECHAIN_SEL, BIT(txq_id));
+}
+
+void IntelWifi::iwl_scd_txq_enable_agg(struct iwl_trans *trans,
+                                          u16 txq_id)
+{
+    io->iwl_set_bits_prph(SCD_AGGR_SEL, BIT(txq_id));
+}
+
+void IntelWifi::iwl_scd_txq_disable_agg(struct iwl_trans *trans,
+                                           u16 txq_id)
+{
+    io->iwl_clear_bits_prph(SCD_AGGR_SEL, BIT(txq_id));
+}
+
+void IntelWifi::iwl_scd_disable_agg(struct iwl_trans *trans)
+{
+    io->iwl_set_bits_prph(SCD_AGGR_SEL, 0);
+}
+
+void IntelWifi::iwl_scd_activate_fifos(struct iwl_trans *trans)
+{
+    io->iwl_write_prph(SCD_TXFACT, IWL_MASK(0, 7));
+}
+
+void IntelWifi::iwl_scd_deactivate_fifos(struct iwl_trans *trans)
+{
+    io->iwl_write_prph(SCD_TXFACT, 0);
+}
+
+void IntelWifi::iwl_scd_enable_set_active(struct iwl_trans *trans,
+                                             u32 value)
+{
+    io->iwl_write_prph(SCD_EN_CTRL, value);
+}
+
+unsigned int IntelWifi::SCD_QUEUE_WRPTR(unsigned int chnl)
+{
+    if (chnl < 20)
+        return SCD_BASE + 0x18 + chnl * 4;
+    //WARN_ON_ONCE(chnl >= 32);
+    return SCD_BASE + 0x284 + (chnl - 20) * 4;
+}
+
+unsigned int IntelWifi::SCD_QUEUE_RDPTR(unsigned int chnl)
+{
+    if (chnl < 20)
+        return SCD_BASE + 0x68 + chnl * 4;
+    //WARN_ON_ONCE(chnl >= 32);
+    return SCD_BASE + 0x2B4 + chnl * 4;
+}
+
+unsigned int IntelWifi::SCD_QUEUE_STATUS_BITS(unsigned int chnl)
+{
+    if (chnl < 20)
+        return SCD_BASE + 0x10c + chnl * 4;
+    //WARN_ON_ONCE(chnl >= 32);
+    return SCD_BASE + 0x334 + chnl * 4;
+}
+
+void IntelWifi::iwl_scd_txq_set_inactive(struct iwl_trans *trans,
+                                            u16 txq_id)
+{
+    io->iwl_write_prph(SCD_QUEUE_STATUS_BITS(txq_id),
+                   (0 << SCD_QUEUE_STTS_REG_POS_ACTIVE)|
+                   (1 << SCD_QUEUE_STTS_REG_POS_SCD_ACT_EN));
+}
+
+
+
+
+

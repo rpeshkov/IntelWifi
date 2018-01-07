@@ -31,6 +31,8 @@
 
 #include "IntelWifi.hpp"
 
+#include <libkern/OSDebug.h>
+
 #include "iwlwifi/fw/api/tx.h"
 
 #define IWL_TX_CRC_SIZE 4
@@ -136,8 +138,7 @@ int IntelWifi::iwl_pcie_alloc_dma_ptr(struct iwl_trans *trans,
     }
     
     ptr->addr = bmd->getBytesNoCopy();
-//    ptr->addr = dma_alloc_coherent(trans->dev, size,
-//                                   &ptr->dma, GFP_KERNEL);
+    
     if (!ptr->addr)
         return -ENOMEM;
     ptr->dma = seg.fIOVMAddr;
@@ -313,6 +314,9 @@ int IntelWifi::iwl_pcie_txq_alloc(struct iwl_trans *trans, struct iwl_txq *txq,
     size_t tfd_sz = trans_pcie->tfd_size * TFD_QUEUE_SIZE_MAX;
     size_t tb0_buf_sz;
     int i;
+    int ret;
+    struct iwl_dma_ptr tfds_dma;
+    struct iwl_dma_ptr first_tb_bufs_dma;
     
     if (WARN_ON(txq->entries || txq->tfds))
         return -EINVAL;
@@ -324,16 +328,12 @@ int IntelWifi::iwl_pcie_txq_alloc(struct iwl_trans *trans, struct iwl_txq *txq,
     
     txq->n_window = slots_num;
     
-//    txq->entries = kcalloc(slots_num,
-//                           sizeof(struct iwl_pcie_txq_entry),
-//                           GFP_KERNEL);
     txq->entries = (struct iwl_pcie_txq_entry *) IOMalloc(sizeof(struct iwl_pcie_txq_entry) * slots_num);
     
     if (!txq->entries)
         goto error;
     
     bzero(txq->entries, sizeof(struct iwl_pcie_txq_entry) * slots_num);
-    
     if (cmd_queue)
         for (i = 0; i < slots_num; i++) {
             txq->entries[i].cmd = (struct iwl_device_cmd *)IOMalloc(sizeof(struct iwl_device_cmd));
@@ -343,22 +343,23 @@ int IntelWifi::iwl_pcie_txq_alloc(struct iwl_trans *trans, struct iwl_txq *txq,
     
     /* Circular buffer of transmit frame descriptors (TFDs),
      * shared with device */
-    // TODO: Implement
-//    txq->tfds = dma_alloc_coherent(trans->dev, tfd_sz,
-//                                   &txq->dma_addr, GFP_KERNEL);
-//    if (!txq->tfds)
-//        goto error;
-    
-    //BUILD_BUG_ON(IWL_FIRST_TB_SIZE_ALIGN != sizeof(*txq->first_tb_bufs));
+    tfds_dma = {.addr = NULL};
+    ret = iwl_pcie_alloc_dma_ptr(trans, &tfds_dma, tfd_sz);
+    if (ret) {
+        goto error;
+    }
+    txq->tfds = tfds_dma.addr;
+    txq->dma_addr = tfds_dma.dma;
     
     tb0_buf_sz = sizeof(*txq->first_tb_bufs) * slots_num;
-
-    // TODO: Implement
-//    txq->first_tb_bufs = dma_alloc_coherent(trans->dev, tb0_buf_sz,
-//                                            &txq->first_tb_dma,
-//                                            GFP_KERNEL);
-//    if (!txq->first_tb_bufs)
-//        goto err_free_tfds;
+    
+    first_tb_bufs_dma = { .addr = NULL };
+    ret = iwl_pcie_alloc_dma_ptr(trans, &first_tb_bufs_dma, tb0_buf_sz);
+    if (ret) {
+        goto err_free_tfds;
+    }
+    txq->first_tb_bufs = (struct iwl_pcie_first_tb_buf *)first_tb_bufs_dma.addr;
+    txq->first_tb_dma = first_tb_bufs_dma.dma;
     
     return 0;
 err_free_tfds:
@@ -474,8 +475,7 @@ void IntelWifi::iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr)
                             trans_pcie->cmd_q_wdg_timeout);
     
     /* Activate all Tx DMA/FIFO channels */
-    // TODO: Implement
-    //iwl_scd_activate_fifos(trans);
+    iwl_scd_activate_fifos(trans);
     
     /* Enable DMA channel */
     for (chan = 0; chan < FH_TCSR_CHNL_NUM; chan++)
@@ -501,8 +501,7 @@ void IntelWifi::iwl_pcie_tx_stop_fh(struct iwl_trans *trans)
     IOInterruptState state;
     int ch, ret;
     u32 mask = 0;
-    
-    //spin_lock(&trans_pcie->irq_lock);
+
     IOSimpleLockLock(trans_pcie->irq_lock);
     
     if (!io->iwl_grab_nic_access(&state))
@@ -524,7 +523,6 @@ void IntelWifi::iwl_pcie_tx_stop_fh(struct iwl_trans *trans)
     io->iwl_release_nic_access(&state);
     
 out:
-    //spin_unlock(&trans_pcie->irq_lock);
     IOSimpleLockUnlock(trans_pcie->irq_lock);
 }
 
@@ -561,16 +559,14 @@ int IntelWifi::iwl_pcie_tx_alloc(struct iwl_trans *trans)
         IWL_ERR(trans, "Keep Warm allocation failed\n");
         goto error;
     }
-    
-//    trans_pcie->txq_memory = kcalloc(trans->cfg->base_params->num_of_queues,
-//                                     sizeof(struct iwl_txq), GFP_KERNEL);
+
     trans_pcie->txq_memory = (struct iwl_txq *)IOMalloc(sizeof(struct iwl_txq) * trans->cfg->base_params->num_of_queues);
-    bzero(trans_pcie->txq_memory, sizeof(struct iwl_txq) * trans->cfg->base_params->num_of_queues);
     if (!trans_pcie->txq_memory) {
         IWL_ERR(trans, "Not enough memory for txq\n");
         ret = -ENOMEM;
         goto error;
     }
+    bzero(trans_pcie->txq_memory, sizeof(struct iwl_txq) * trans->cfg->base_params->num_of_queues);
     
     /* Alloc and init all Tx queues, including the command queue (#4/#9) */
     for (txq_id = 0; txq_id < trans->cfg->base_params->num_of_queues;
@@ -617,8 +613,7 @@ int IntelWifi::iwl_pcie_tx_init(struct iwl_trans *trans)
     IOSimpleLockLock(trans_pcie->irq_lock);
     
     /* Turn off all Tx DMA fifos */
-    // TODO: Implement
-    //iwl_scd_deactivate_fifos(trans);
+    iwl_scd_deactivate_fifos(trans);
     
     /* Tell NIC where to find the "keep warm" buffer */
     io->iwl_write_direct32(FH_KW_MEM_ADDR_REG,
@@ -663,6 +658,33 @@ error:
 //        iwl_pcie_tx_free(trans);
     return ret;
 }
+
+// line 1034
+void IntelWifi::iwl_pcie_txq_progress(struct iwl_txq *txq)
+{
+    //lockdep_assert_held(&txq->lock);
+    
+    if (!txq->wd_timeout)
+        return;
+    
+    /*
+     * station is asleep and we send data - that must
+     * be uAPSD or PS-Poll. Don't rearm the timer.
+     */
+    if (txq->frozen)
+        return;
+    
+    /*
+     * if empty delete timer, otherwise move timer forward
+     * since we're making progress on this queue
+     */
+    // TODO: Implement
+//    if (txq->read_ptr == txq->write_ptr)
+//        del_timer(&txq->stuck_timer);
+//    else
+//        mod_timer(&txq->stuck_timer, jiffies + txq->wd_timeout);
+}
+
 
 
 // line 1168
@@ -748,13 +770,12 @@ void IntelWifi::iwl_pcie_cmdq_reclaim(struct iwl_trans *trans, int txq_id, int i
         //spin_lock_irqsave(&trans_pcie->reg_lock, flags);
         state = IOSimpleLockLockDisableInterrupt(trans_pcie->reg_lock);
         // TODO: Implement
-        //iwl_pcie_clear_cmd_in_flight(trans);
+        iwl_pcie_clear_cmd_in_flight(trans);
         //spin_unlock_irqrestore(&trans_pcie->reg_lock, flags);
         IOSimpleLockUnlockEnableInterrupt(trans_pcie->reg_lock, state);
     }
     
-    // TODO: Implement
-    //iwl_pcie_txq_progress(txq);
+    iwl_pcie_txq_progress(txq);
 }
 
 

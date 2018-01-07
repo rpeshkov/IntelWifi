@@ -249,8 +249,39 @@ private:
     void iwl_pcie_tx_stop_fh(struct iwl_trans *trans); // line 812
     int iwl_pcie_tx_alloc(struct iwl_trans *trans); // line 907
     int iwl_pcie_tx_init(struct iwl_trans *trans); // line 973
+    void iwl_pcie_txq_progress(struct iwl_txq *txq); // line 1034
     int iwl_pcie_set_cmd_in_flight(struct iwl_trans *trans, const struct iwl_host_cmd *cmd); // line 1168
     void iwl_pcie_cmdq_reclaim(struct iwl_trans *trans, int txq_id, int idx); // line 1211
+    
+    // SCD
+    void iwl_scd_txq_set_chain(struct iwl_trans *trans,
+                               u16 txq_id);
+    
+    
+    void iwl_scd_txq_enable_agg(struct iwl_trans *trans,
+                                u16 txq_id);
+    
+    void iwl_scd_txq_disable_agg(struct iwl_trans *trans,
+                                 u16 txq_id);
+    
+    void iwl_scd_disable_agg(struct iwl_trans *trans);
+    
+    void iwl_scd_activate_fifos(struct iwl_trans *trans);
+    
+    void iwl_scd_deactivate_fifos(struct iwl_trans *trans);
+    
+    void iwl_scd_enable_set_active(struct iwl_trans *trans,
+                                   u32 value);
+    
+    unsigned int SCD_QUEUE_WRPTR(unsigned int chnl);
+    
+    unsigned int SCD_QUEUE_RDPTR(unsigned int chnl);
+    
+    unsigned int SCD_QUEUE_STATUS_BITS(unsigned int chnl);
+    
+    void iwl_scd_txq_set_inactive(struct iwl_trans *trans,
+                                  u16 txq_id);
+    
     
     ifnet_t fIfNet;
     
