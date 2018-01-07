@@ -122,7 +122,7 @@ __get_order(n)                        \
  *
  */
 #define container_of(ptr, type, member) ({                \
-void *__mptr = (void *)(ptr);                    \
+pointer_t __mptr = (pointer_t)(ptr);                    \
 ((type *)(__mptr - offsetof(type, member))); })
 
 
@@ -142,6 +142,8 @@ static inline void * ERR_PTR(long error)
 #define round_up(x, y) ((((x)-1) | __round_mask(x, y))+1)
 #define round_down(x, y) ((x) & ~__round_mask(x, y))
 
+
+#define DMA_BIT_MASK(n)    (((n) == 64) ? ~0ULL : ((1ULL<<(n))-1))
 
 
 

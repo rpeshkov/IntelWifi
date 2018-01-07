@@ -37,6 +37,10 @@ extern "C" {
 #define CONFIG_IWLMVM // Need NVM mode at least to see that code is compiling
 #define CONFIG_IWLWIFI_PCIE_RTPM // Powerman
 
+#ifdef DEBUG
+#define CONFIG_IWLWIFI_DEBUG
+#endif
+
 
 
 
@@ -198,6 +202,13 @@ private:
     int iwl_pcie_rx_stop(struct iwl_trans *trans);
     void iwl_pcie_rxq_inc_wr_ptr(struct iwl_trans *trans, struct iwl_rxq *rxq);
     void iwl_pcie_rxq_check_wrptr(struct iwl_trans *trans);
+    
+    void iwl_pcie_rxmq_restock(struct iwl_trans *trans,
+                                          struct iwl_rxq *rxq);
+    void iwl_pcie_rxsq_restock(struct iwl_trans *trans,
+                                          struct iwl_rxq *rxq);
+    void iwl_pcie_rxq_restock(struct iwl_trans *trans, struct iwl_rxq *rxq);
+    
     
     void iwl_pcie_enable_rx_wake(struct iwl_trans *trans, bool enable);
     void iwl_pcie_rx_mq_hw_init(struct iwl_trans *trans);

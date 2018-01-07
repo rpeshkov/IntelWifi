@@ -195,9 +195,8 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
     
     
     /* Initialize the wait queue for commands */
-    // TODO: Implement
-    //    init_waitqueue_head(&trans_pcie->wait_command_queue);
-    //    init_waitqueue_head(&trans_pcie->d0i3_waitq);
+    trans_pcie->wait_command_queue = IOLockAlloc();
+    trans_pcie->d0i3_waitq = IOLockAlloc();
     
     // TODO: Implement
     int ret;
@@ -296,7 +295,7 @@ int IntelWifi::_iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power)
     }
     
     iwl_pcie_sw_reset(trans);
-    
+
     err = iwl_pcie_apm_init(trans);
     if (err)
         return err;
@@ -935,9 +934,8 @@ void IntelWifi::_iwl_enable_interrupts(struct iwl_trans *trans)
     
     IWL_DEBUG_ISR(trans, "Enabling interrupts\n");
     set_bit(STATUS_INT_ENABLED, &trans->status);
-    // TODO: Implement msix
+
     if (!trans_pcie->msix_enabled) {
-    //if (1 == 1) {
         trans_pcie->inta_mask = CSR_INI_SET_MASK;
         io->iwl_write32(CSR_INT_MASK, trans_pcie->inta_mask);
     } else {
@@ -1375,9 +1373,6 @@ int IntelWifi::iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
                               LMPM_CHICK_EXTENDED_ADDR_SPACE);
         
         cmd->writeBytes(0, (u8 *)section->data + offset, copy_size);
-//        memcpy((void *)seg.fIOVMAddr, (u8 *)section->data + offset, copy_size);
-//        ret = iwl_pcie_load_firmware_chunk(trans, dst_addr, bmd->getPhysicalAddress(),
-//                                           copy_size);
         ret = iwl_pcie_load_firmware_chunk(trans, dst_addr, seg.fIOVMAddr, copy_size);
 
         
@@ -1458,13 +1453,6 @@ int IntelWifi::iwl_pcie_load_firmware_chunk(struct iwl_trans *trans,
         IWL_ERR(trans, "Failed to load firmware chunk!\n");
         return -ETIMEDOUT;
     }
-    
-//    ret = wait_event_timeout(trans_pcie->ucode_write_waitq,
-//                             trans_pcie->ucode_write_complete, 5 * HZ);
-//    if (!ret) {
-//        IWL_ERR(trans, "Failed to load firmware chunk!\n");
-//        return -ETIMEDOUT;
-//    }
     
     return 0;
 }

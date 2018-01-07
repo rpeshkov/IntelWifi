@@ -235,14 +235,12 @@ void IntelWifi::iwl_trans_pcie_gen2_stop_device(struct iwl_trans *trans, bool lo
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     bool was_in_rfkill;
-    
-    //mutex_lock(&trans_pcie->mutex);
+
     IOLockLock(trans_pcie->mutex);
     trans_pcie->opmode_down = true;
     was_in_rfkill = test_bit(STATUS_RFKILL_OPMODE, &trans->status);
     _iwl_trans_pcie_gen2_stop_device(trans, low_power);
     iwl_trans_pcie_handle_stop_rfkill(trans, was_in_rfkill);
-    //mutex_unlock(&trans_pcie->mutex);
     IOLockUnlock(trans_pcie->mutex);
 }
 
@@ -251,10 +249,8 @@ int IntelWifi::iwl_pcie_gen2_nic_init(struct iwl_trans *trans)
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
     /* TODO: most of the logic can be removed in A0 - but not in Z0 */
-    //spin_lock(&trans_pcie->irq_lock);
     IOSimpleLockLock(trans_pcie->irq_lock);
     iwl_pcie_gen2_apm_init(trans);
-    //spin_unlock(&trans_pcie->irq_lock);
     IOSimpleLockUnlock(trans_pcie->irq_lock);
     
     iwl_op_mode_nic_config(trans->op_mode);
@@ -323,7 +319,6 @@ int IntelWifi::iwl_trans_pcie_gen2_start_fw(struct iwl_trans *trans,
     // TODO: Implement
     //iwl_pcie_synchronize_irqs(trans);
     
-    //mutex_lock(&trans_pcie->mutex);
     IOLockLock(trans_pcie->mutex);
     
     /* If platform's RF_KILL switch is NOT set to KILL */
@@ -366,7 +361,6 @@ int IntelWifi::iwl_trans_pcie_gen2_start_fw(struct iwl_trans *trans,
         ret = -ERFKILL;
     
 out:
-    //mutex_unlock(&trans_pcie->mutex);
     IOLockUnlock(trans_pcie->mutex);
     return ret;
 }

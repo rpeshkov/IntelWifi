@@ -233,13 +233,130 @@ void IntelWifi::iwl_pcie_rxq_check_wrptr(struct iwl_trans *trans)
         
         if (!rxq->need_update)
             continue;
-        //spin_lock(&rxq->lock);
         IOSimpleLockLock(rxq->lock);
         iwl_pcie_rxq_inc_wr_ptr(trans, rxq);
         rxq->need_update = false;
-        //spin_unlock(&rxq->lock);
         IOSimpleLockUnlock(rxq->lock);
     }
+}
+
+/*
+ * iwl_pcie_rxmq_restock - restock implementation for multi-queue rx
+ */
+void IntelWifi::iwl_pcie_rxmq_restock(struct iwl_trans *trans,
+                                  struct iwl_rxq *rxq)
+{
+    struct iwl_rx_mem_buffer *rxb;
+    
+    /*
+     * If the device isn't enabled - no need to try to add buffers...
+     * This can happen when we stop the device and still have an interrupt
+     * pending. We stop the APM before we sync the interrupts because we
+     * have to (see comment there). On the other hand, since the APM is
+     * stopped, we cannot access the HW (in particular not prph).
+     * So don't try to restock if the APM has been already stopped.
+     */
+    if (!test_bit(STATUS_DEVICE_ENABLED, &trans->status))
+        return;
+    
+    //spin_lock(&rxq->lock);
+    IOSimpleLockLock(rxq->lock);
+    while (rxq->free_count) {
+        __le64 *bd = (__le64 *)rxq->bd;
+        
+        /* Get next free Rx buffer, remove from free list */
+        rxb = list_first_entry(&rxq->rx_free, struct iwl_rx_mem_buffer,
+                               list);
+        list_del(&rxb->list);
+        rxb->invalid = false;
+        /* 12 first bits are expected to be empty */
+        
+        //WARN_ON(rxb->page_dma & DMA_BIT_MASK(12));
+        /* Point to Rx buffer via next RBD in circular buffer */
+        bd[rxq->write] = cpu_to_le64(rxb->page_dma | rxb->vid);
+        rxq->write = (rxq->write + 1) & MQ_RX_TABLE_MASK;
+        rxq->free_count--;
+    }
+    IOSimpleLockUnlock(rxq->lock);
+    
+    /*
+     * If we've added more space for the firmware to place data, tell it.
+     * Increment device's write pointer in multiples of 8.
+     */
+    if (rxq->write_actual != (rxq->write & ~0x7)) {
+        IOSimpleLockLock(rxq->lock);
+        iwl_pcie_rxq_inc_wr_ptr(trans, rxq);
+        IOSimpleLockUnlock(rxq->lock);
+    }
+}
+
+/*
+ * iwl_pcie_rxsq_restock - restock implementation for single queue rx
+ */
+void IntelWifi::iwl_pcie_rxsq_restock(struct iwl_trans *trans,
+                                  struct iwl_rxq *rxq)
+{
+    struct iwl_rx_mem_buffer *rxb;
+    
+    /*
+     * If the device isn't enabled - not need to try to add buffers...
+     * This can happen when we stop the device and still have an interrupt
+     * pending. We stop the APM before we sync the interrupts because we
+     * have to (see comment there). On the other hand, since the APM is
+     * stopped, we cannot access the HW (in particular not prph).
+     * So don't try to restock if the APM has been already stopped.
+     */
+    if (!test_bit(STATUS_DEVICE_ENABLED, &trans->status))
+        return;
+    
+    IOSimpleLockLock(rxq->lock);
+    while ((iwl_rxq_space(rxq) > 0) && (rxq->free_count)) {
+        __le32 *bd = (__le32 *)rxq->bd;
+        /* The overwritten rxb must be a used one */
+        rxb = rxq->queue[rxq->write];
+        //BUG_ON(rxb && rxb->page);
+        
+        /* Get next free Rx buffer, remove from free list */
+        rxb = list_first_entry(&rxq->rx_free, struct iwl_rx_mem_buffer,
+                               list);
+        list_del(&rxb->list);
+        rxb->invalid = false;
+        
+        /* Point to Rx buffer via next RBD in circular buffer */
+        bd[rxq->write] = iwl_pcie_dma_addr2rbd_ptr(rxb->page_dma);
+        rxq->queue[rxq->write] = rxb;
+        rxq->write = (rxq->write + 1) & RX_QUEUE_MASK;
+        rxq->free_count--;
+    }
+    IOSimpleLockUnlock(rxq->lock);
+    
+    /* If we've added more space for the firmware to place data, tell it.
+     * Increment device's write pointer in multiples of 8. */
+    if (rxq->write_actual != (rxq->write & ~0x7)) {
+        IOSimpleLockLock(rxq->lock);
+        iwl_pcie_rxq_inc_wr_ptr(trans, rxq);
+        IOSimpleLockUnlock(rxq->lock);
+    }
+}
+
+
+/*
+ * iwl_pcie_rxq_restock - refill RX queue from pre-allocated pool
+ *
+ * If there are slots in the RX queue that need to be restocked,
+ * and we have free pre-allocated buffers, fill the ranks as much
+ * as we can, pulling from rx_free.
+ *
+ * This moves the 'write' index forward to catch up with 'processed', and
+ * also updates the memory address in the firmware to reference the new
+ * target buffer.
+ */
+void IntelWifi::iwl_pcie_rxq_restock(struct iwl_trans *trans, struct iwl_rxq *rxq)
+{
+    if (trans->cfg->mq_rx_supported)
+        iwl_pcie_rxmq_restock(trans, rxq);
+    else
+        iwl_pcie_rxsq_restock(trans, rxq);
 }
 
 
@@ -668,18 +785,17 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
     else
         inta = iwl_pcie_int_cause_non_ict(trans);
     
-    // TODO: Implement
-    //if (iwl_have_debug_level(IWL_DL_ISR)) {
-    //    IWL_DEBUG_ISR(trans,
-    //                  "ISR inta 0x%08x, enabled 0x%08x(sw), enabled(hw) 0x%08x, fh 0x%08x\n",
-    //                  inta, trans_pcie->inta_mask,
-    //                  iwl_read32(trans, CSR_INT_MASK),
-    //                  iwl_read32(trans, CSR_FH_INT_STATUS));
-    //    if (inta & (~trans_pcie->inta_mask))
-    //        IWL_DEBUG_ISR(trans,
-    //                      "We got a masked interrupt (0x%08x)\n",
-    //                      inta & (~trans_pcie->inta_mask));
-    //}
+    if (iwl_have_debug_level(IWL_DL_ISR)) {
+        IWL_DEBUG_ISR(trans,
+                      "ISR inta 0x%08x, enabled 0x%08x(sw), enabled(hw) 0x%08x, fh 0x%08x\n",
+                      inta, trans_pcie->inta_mask,
+                      io->iwl_read32(CSR_INT_MASK),
+                      io->iwl_read32(CSR_FH_INT_STATUS));
+        if (inta & (~trans_pcie->inta_mask))
+            IWL_DEBUG_ISR(trans,
+                          "We got a masked interrupt (0x%08x)\n",
+                          inta & (~trans_pcie->inta_mask));
+    }
     
     inta &= trans_pcie->inta_mask;
     
@@ -697,7 +813,6 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
         if (test_bit(STATUS_INT_ENABLED, &trans->status))
             _iwl_enable_interrupts(trans);
         
-        //spin_unlock(&trans_pcie->irq_lock);
         IOSimpleLockUnlock(trans_pcie->irq_lock);
         //lock_map_release(&trans->sync_cmd_lockdep_map);
         return IRQ_NONE;
@@ -709,7 +824,6 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
          * already raised an interrupt.
          */
         IWL_WARN(trans, "HARDWARE GONE?? INTA == 0x%08x\n", inta);
-        // spin_unlock(&trans_pcie->irq_lock);
         IOSimpleLockUnlock(trans_pcie->irq_lock);
         goto out;
     }
@@ -727,12 +841,10 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
      */
     io->iwl_write32(CSR_INT, inta | ~trans_pcie->inta_mask);
     
-    // TODO: Implement
-    /*if (iwl_have_debug_level(IWL_DL_ISR))
+    if (iwl_have_debug_level(IWL_DL_ISR))
         IWL_DEBUG_ISR(trans, "inta 0x%08x, enabled 0x%08x\n",
-                      inta, iwl_read32(trans, CSR_INT_MASK));*/
-    
-    //spin_unlock(&trans_pcie->irq_lock);
+                      inta, io->iwl_read32(CSR_INT_MASK));
+
     IOSimpleLockUnlock(trans_pcie->irq_lock);
     
     /* Now service all interrupt bits discovered above. */
@@ -743,36 +855,34 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
         iwl_disable_interrupts(trans);
         
         isr_stats->hw++;
-        // TODO: implement
-        //iwl_pcie_irq_handle_error(trans);
+        iwl_pcie_irq_handle_error(trans);
         
         handled |= CSR_INT_BIT_HW_ERR;
         
         goto out;
     }
     
-    // TODO: Implement
-    //if (iwl_have_debug_level(IWL_DL_ISR)) {
-    //    /* NIC fires this, but we don't use it, redundant with WAKEUP */
-    //    if (inta & CSR_INT_BIT_SCD) {
-    //        IWL_DEBUG_ISR(trans,
-    //                      "Scheduler finished to transmit the frame/frames.\n");
-    //        isr_stats->sch++;
-    //    }
-    //
-    //    /* Alive notification via Rx interrupt will do the real work */
-    //    if (inta & CSR_INT_BIT_ALIVE) {
-    //        IWL_DEBUG_ISR(trans, "Alive interrupt\n");
-    //        isr_stats->alive++;
-    //        if (trans->cfg->gen2) {
-    //            /*
-    //             * We can restock, since firmware configured
-    //             * the RFH
-    //             */
-    //            iwl_pcie_rxmq_restock(trans, trans_pcie->rxq);
-    //        }
-    //    }
-    //}
+    if (iwl_have_debug_level(IWL_DL_ISR)) {
+        /* NIC fires this, but we don't use it, redundant with WAKEUP */
+        if (inta & CSR_INT_BIT_SCD) {
+            IWL_DEBUG_ISR(trans,
+                          "Scheduler finished to transmit the frame/frames.\n");
+            isr_stats->sch++;
+        }
+    
+        /* Alive notification via Rx interrupt will do the real work */
+        if (inta & CSR_INT_BIT_ALIVE) {
+            IWL_DEBUG_ISR(trans, "Alive interrupt\n");
+            isr_stats->alive++;
+            if (trans->cfg->gen2) {
+                /*
+                 * We can restock, since firmware configured
+                 * the RFH
+                 */
+                iwl_pcie_rxmq_restock(trans, trans_pcie->rxq);
+            }
+        }
+    }
     
     /* Safely ignore these bits for debug checks below */
     inta &= ~(CSR_INT_BIT_SCD | CSR_INT_BIT_ALIVE);
@@ -858,6 +968,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
         isr_stats->rx++;
         
         DebugLog("Frame interrupt!");
+        
 //        local_bh_disable();
 //        iwl_pcie_rx_handle(trans, 0);
 //        local_bh_enable();
@@ -870,9 +981,6 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
         isr_stats->tx++;
         handled |= CSR_INT_BIT_FH_TX;
         /* Wake up uCode load routine, now that load is complete */
-        
-        //wake_up(&trans_pcie->ucode_write_waitq);
-        
         IOLockLock(trans_pcie->ucode_write_waitq);
         trans_pcie->ucode_write_complete = true;
         IOLockWakeup(trans_pcie->ucode_write_waitq, &trans_pcie->ucode_write_complete, true);
@@ -889,7 +997,6 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
                  inta & ~trans_pcie->inta_mask);
     }
     
-    //spin_lock(&trans_pcie->irq_lock);
     IOSimpleLockLock(trans_pcie->irq_lock);
     /* only Re-enable all interrupt if disabled by irq */
     if (test_bit(STATUS_INT_ENABLED, &trans->status))
@@ -900,7 +1007,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
     /* Re-enable RF_KILL if it occurred */
     else if (handled & CSR_INT_BIT_RF_KILL)
         iwl_enable_rfkill_int(trans);
-    //spin_unlock(&trans_pcie->irq_lock);
+
     IOSimpleLockUnlock(trans_pcie->irq_lock);
     
 out:
@@ -956,7 +1063,9 @@ void IntelWifi::iwl_pcie_handle_rfkill_irq(struct iwl_trans *trans)
                                &trans->status))
             IWL_DEBUG_RF_KILL(trans,
                               "Rfkill while SYNC HCMD in flight\n");
-        //wake_up(&trans_pcie->wait_command_queue);
+        IOLockLock(trans_pcie->wait_command_queue);
+        IOLockWakeup(trans_pcie->wait_command_queue, 0, true);
+        IOLockUnlock(trans_pcie->wait_command_queue);
     } else {
         clear_bit(STATUS_RFKILL_HW, &trans->status);
         if (trans_pcie->opmode_down)
@@ -969,7 +1078,7 @@ void IntelWifi::iwl_pcie_handle_rfkill_irq(struct iwl_trans *trans)
  */
 void IntelWifi::iwl_pcie_irq_handle_error(struct iwl_trans *trans)
 {
-    //struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     //int i;
     
     /* W/A for WiFi/WiMAX coex and WiMAX own the RF */
@@ -981,7 +1090,9 @@ void IntelWifi::iwl_pcie_irq_handle_error(struct iwl_trans *trans)
           APMG_PS_CTRL_VAL_RESET_REQ))) {
              clear_bit(STATUS_SYNC_HCMD_ACTIVE, &trans->status);
              iwl_op_mode_wimax_active(trans->op_mode);
-             //wake_up(&trans_pcie->wait_command_queue);
+             IOLockLock(trans_pcie->wait_command_queue);
+             IOLockWakeup(trans_pcie->wait_command_queue, 0, true);
+             IOLockUnlock(trans_pcie->wait_command_queue);
              return;
          }
     
@@ -998,7 +1109,10 @@ void IntelWifi::iwl_pcie_irq_handle_error(struct iwl_trans *trans)
     //iwl_trans_fw_error(trans);
     
     clear_bit(STATUS_SYNC_HCMD_ACTIVE, &trans->status);
-    //wake_up(&trans_pcie->wait_command_queue);
+
+    IOLockLock(trans_pcie->wait_command_queue);
+    IOLockWakeup(trans_pcie->wait_command_queue, 0, true);
+    IOLockUnlock(trans_pcie->wait_command_queue);
 }
 
 /* Device is going up inform it about using ICT interrupt table,
@@ -1012,7 +1126,6 @@ void IntelWifi::iwl_pcie_reset_ict(struct iwl_trans *trans)
     if (!trans_pcie->ict_tbl)
         return;
     
-    //spin_lock(&trans_pcie->irq_lock);
     IOSimpleLockLock(trans_pcie->irq_lock);
     _iwl_disable_interrupts(trans);
     
@@ -1031,7 +1144,6 @@ void IntelWifi::iwl_pcie_reset_ict(struct iwl_trans *trans)
     trans_pcie->ict_index = 0;
     io->iwl_write32(CSR_INT, trans_pcie->inta_mask);
     _iwl_enable_interrupts(trans);
-    //spin_unlock(&trans_pcie->irq_lock);
     IOSimpleLockUnlock(trans_pcie->irq_lock);
 }
 
@@ -1177,8 +1289,7 @@ int IntelWifi::iwl_pcie_rx_init(struct iwl_trans *trans)
     else
         iwl_pcie_rx_hw_init(trans, trans_pcie->rxq);
 
-    // TODO: Implement
-    //iwl_pcie_rxq_restock(trans, trans_pcie->rxq);
+    iwl_pcie_rxq_restock(trans, trans_pcie->rxq);
 
     IOSimpleLockLock(trans_pcie->rxq->lock);
     iwl_pcie_rxq_inc_wr_ptr(trans, trans_pcie->rxq);

@@ -178,6 +178,8 @@ struct iwl_trans_pcie {
     
     bool ucode_write_complete;
     IOLock* ucode_write_waitq;
+    IOLock* wait_command_queue;
+    IOLock* d0i3_waitq;
 //    wait_queue_t wait_command_queue;
 //    wait_queue_t d0i3_waitq;
 
