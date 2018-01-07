@@ -278,7 +278,7 @@ int IntelWifi::iwl_pcie_gen2_nic_init(struct iwl_trans *trans)
 
 void IntelWifi::iwl_trans_pcie_gen2_fw_alive(struct iwl_trans *trans, u32 scd_addr)
 {
-    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    //struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
     iwl_pcie_reset_ict(trans);
     

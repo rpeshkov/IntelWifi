@@ -243,6 +243,125 @@ void IntelWifi::iwl_pcie_rxq_check_wrptr(struct iwl_trans *trans)
 }
 
 
+int IntelWifi::iwl_pcie_rx_alloc(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    struct iwl_rb_allocator *rba = &trans_pcie->rba;
+    //struct device *dev = trans->dev;
+    int i;
+    //int free_size = trans->cfg->mq_rx_supported ? sizeof(__le64) : sizeof(__le32);
+    
+    if (WARN_ON(trans_pcie->rxq))
+        return -EINVAL;
+    
+//    trans_pcie->rxq = kcalloc(trans->num_rx_queues, sizeof(struct iwl_rxq),
+//                              GFP_KERNEL);
+    trans_pcie->rxq = (struct iwl_rxq *)IOMalloc(sizeof(struct iwl_rxq) * trans->num_rx_queues);
+    memset(trans_pcie->rxq, 0, sizeof(struct iwl_rxq) * trans->num_rx_queues);
+    
+    if (!trans_pcie->rxq)
+        return -EINVAL;
+    
+    //spin_lock_init(&rba->lock);
+    rba->lock = IOSimpleLockAlloc();
+    
+    for (i = 0; i < trans->num_rx_queues; i++) {
+        struct iwl_rxq *rxq = &trans_pcie->rxq[i];
+        
+        //spin_lock_init(&rxq->lock);
+        rxq->lock = IOSimpleLockAlloc();
+        if (trans->cfg->mq_rx_supported)
+            rxq->queue_size = MQ_RX_TABLE_SIZE;
+        else
+            rxq->queue_size = RX_QUEUE_SIZE;
+        
+        /*
+         * Allocate the circular buffer of Read Buffer Descriptors
+         * (RBDs)
+         */
+        // TODO: Implement
+//        rxq->bd = dma_zalloc_coherent(dev,
+//                                      free_size * rxq->queue_size,
+//                                      &rxq->bd_dma, GFP_KERNEL);
+//        if (!rxq->bd)
+//            goto err;
+//
+//        if (trans->cfg->mq_rx_supported) {
+//            rxq->used_bd = dma_zalloc_coherent(dev,
+//                                               sizeof(__le32) *
+//                                               rxq->queue_size,
+//                                               &rxq->used_bd_dma,
+//                                               GFP_KERNEL);
+//            if (!rxq->used_bd)
+//                goto err;
+//        }
+        
+        /*Allocate the driver's pointer to receive buffer status */
+        // TODO: Implement
+        
+        IOBufferMemoryDescriptor *bmd =
+        IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionInOut | kIOMemoryPhysicallyContiguous | kIOMapInhibitCache), sizeof(*rxq->rb_stts), 0x00000000FFFFFFFFULL);
+        
+        IODMACommand *cmd = IODMACommand::withSpecification(kIODMACommandOutputHost64, 64, 0, IODMACommand::kMapped, 0, 1);
+        cmd->setMemoryDescriptor(bmd);
+        cmd->prepare();
+        
+        IODMACommand::Segment64 seg;
+        UInt64 ofs = 0;
+        UInt32 numSegs = 1;
+        
+        if (cmd->gen64IOVMSegments(&ofs, &seg, &numSegs) != kIOReturnSuccess) {
+            TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
+            return -1;
+        }
+        
+        rxq->rb_stts = (struct iwl_rb_status*)bmd->getBytesNoCopy();
+        rxq->rb_stts_dma = seg.fIOVMAddr;
+        bzero(rxq->rb_stts, sizeof(struct iwl_rb_status));
+        
+//        rxq->rb_stts = dma_zalloc_coherent(dev, sizeof(*rxq->rb_stts),
+//                                           &rxq->rb_stts_dma,
+//                                           GFP_KERNEL);
+        if (!rxq->rb_stts) {
+            //goto err;
+            return -ENOMEM;
+        }
+        
+    }
+    return 0;
+    
+    // TODO: Implement
+//err:
+//    for (i = 0; i < trans->num_rx_queues; i++) {
+//        struct iwl_rxq *rxq = &trans_pcie->rxq[i];
+//
+//        if (rxq->bd)
+//            dma_free_coherent(dev, free_size * rxq->queue_size,
+//                              rxq->bd, rxq->bd_dma);
+//        rxq->bd_dma = 0;
+//        rxq->bd = NULL;
+//
+//        if (rxq->rb_stts)
+//            dma_free_coherent(trans->dev,
+//                              sizeof(struct iwl_rb_status),
+//                              rxq->rb_stts, rxq->rb_stts_dma);
+//
+//        if (rxq->used_bd)
+//            dma_free_coherent(dev, sizeof(__le32) * rxq->queue_size,
+//                              rxq->used_bd, rxq->used_bd_dma);
+//        rxq->used_bd_dma = 0;
+//        rxq->used_bd = NULL;
+//    }
+//    kfree(trans_pcie->rxq);
+    
+    return -ENOMEM;
+}
+
+
+
+
+
+
 
 
 
@@ -339,13 +458,13 @@ void IntelWifi::iwl_pcie_rx_mq_hw_init(struct iwl_trans *trans)
      * Default queue is 0
      */
     io->iwl_write_prph_no_grab(RFH_GEN_CFG,
-                           RFH_GEN_CFG_RFH_DMA_SNOOP |
+                           (u32)(RFH_GEN_CFG_RFH_DMA_SNOOP |
                            RFH_GEN_CFG_VAL(DEFAULT_RXQ_NUM, 0) |
                            RFH_GEN_CFG_SERVICE_DMA_SNOOP |
                            RFH_GEN_CFG_VAL(RB_CHUNK_SIZE,
                                            trans->cfg->integrated ?
                                            RFH_GEN_CFG_RB_CHUNK_SIZE_64 :
-                                           RFH_GEN_CFG_RB_CHUNK_SIZE_128));
+                                           RFH_GEN_CFG_RB_CHUNK_SIZE_128)));
     /* Enable the relevant rx queues */
     io->iwl_write_prph_no_grab(RFH_RXF_RXQ_ACTIVE, enabled);
     
@@ -367,7 +486,7 @@ void IntelWifi::iwl_pcie_rx_init_rxb_lists(struct iwl_rxq *rxq)
     rxq->used_count = 0;
 }
 
-static int _iwl_pcie_rx_init(struct iwl_trans *trans)
+int IntelWifi::_iwl_pcie_rx_init(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     struct iwl_rxq *def_rxq;
@@ -380,16 +499,18 @@ static int _iwl_pcie_rx_init(struct iwl_trans *trans)
             return err;
     }
     def_rxq = trans_pcie->rxq;
+
+    IOSimpleLockLock(rba->lock);
+    rba->req_pending = 0;
+    rba->req_ready = 0;
     
-    spin_lock(&rba->lock);
-    atomic_set(&rba->req_pending, 0);
-    atomic_set(&rba->req_ready, 0);
     INIT_LIST_HEAD(&rba->rbd_allocated);
     INIT_LIST_HEAD(&rba->rbd_empty);
-    spin_unlock(&rba->lock);
+    IOSimpleLockUnlock(rba->lock);
     
     /* free all first - we might be reconfigured for a different size */
-    iwl_pcie_free_rbs_pool(trans);
+    // TODO: Implement
+    //iwl_pcie_free_rbs_pool(trans);
     
     for (i = 0; i < RX_QUEUE_SIZE; i++)
         def_rxq->queue[i] = NULL;
@@ -399,7 +520,7 @@ static int _iwl_pcie_rx_init(struct iwl_trans *trans)
         
         rxq->id = i;
         
-        spin_lock(&rxq->lock);
+        IOSimpleLockLock(rxq->lock);
         /*
          * Set read write pointer to reflect that we have processed
          * and used all buffers, but have not restocked the Rx queue
@@ -411,12 +532,13 @@ static int _iwl_pcie_rx_init(struct iwl_trans *trans)
         memset(rxq->rb_stts, 0, sizeof(*rxq->rb_stts));
         
         iwl_pcie_rx_init_rxb_lists(rxq);
+
+        // TODO: Implement
+//        if (!rxq->napi.poll)
+//            netif_napi_add(&trans_pcie->napi_dev, &rxq->napi,
+//                           iwl_pcie_dummy_napi_poll, 64);
         
-        if (!rxq->napi.poll)
-            netif_napi_add(&trans_pcie->napi_dev, &rxq->napi,
-                           iwl_pcie_dummy_napi_poll, 64);
-        
-        spin_unlock(&rxq->lock);
+        IOSimpleLockUnlock(rxq->lock);
     }
     
     /* move the pool to the default queue and allocator ownerships */
@@ -425,8 +547,6 @@ static int _iwl_pcie_rx_init(struct iwl_trans *trans)
     allocator_pool_size = trans->num_rx_queues *
     (RX_CLAIM_REQ_ALLOC - RX_POST_REQ_ALLOC);
     num_alloc = queue_size + allocator_pool_size;
-    BUILD_BUG_ON(ARRAY_SIZE(trans_pcie->global_table) !=
-                 ARRAY_SIZE(trans_pcie->rx_pool));
     for (i = 0; i < num_alloc; i++) {
         struct iwl_rx_mem_buffer *rxb = &trans_pcie->rx_pool[i];
         
@@ -439,7 +559,8 @@ static int _iwl_pcie_rx_init(struct iwl_trans *trans)
         rxb->invalid = true;
     }
     
-    iwl_pcie_rxq_alloc_rbs(trans, GFP_KERNEL, def_rxq);
+    // TODO: Implement
+    //iwl_pcie_rxq_alloc_rbs(trans, GFP_KERNEL, def_rxq);
     
     return 0;
 }
@@ -464,6 +585,25 @@ static int _iwl_pcie_rx_init(struct iwl_trans *trans)
 int IntelWifi::iwl_pcie_alloc_ict(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    IOBufferMemoryDescriptor *bmd =
+    IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionInOut | kIOMemoryPhysicallyContiguous | kIOMapInhibitCache), ICT_SIZE, 0x00000000FFFFFFFFULL);
+    
+    IODMACommand *cmd = IODMACommand::withSpecification(kIODMACommandOutputHost64, 64, 0, IODMACommand::kMapped, 0, 1);
+    cmd->setMemoryDescriptor(bmd);
+    cmd->prepare();
+    
+    IODMACommand::Segment64 seg;
+    UInt64 ofs = 0;
+    UInt32 numSegs = 1;
+    
+    if (cmd->gen64IOVMSegments(&ofs, &seg, &numSegs) != kIOReturnSuccess) {
+        TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
+        return -1;
+    }
+    
+    trans_pcie->ict_tbl = (__le32*)bmd->getBytesNoCopy();
+    trans_pcie->ict_tbl_dma = seg.fIOVMAddr;
     
 //    trans_pcie->ict_tbl =
 //    dma_zalloc_coherent(trans->dev, ICT_SIZE,
@@ -523,7 +663,6 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
     /* dram interrupt table not set yet,
      * use legacy interrupt.
      */
-    // TODO: Implement modern IRQ handling. For now, using legacy interrupt
     if (likely(trans_pcie->use_ict))
         inta = iwl_pcie_int_cause_ict(trans);
     else
@@ -664,9 +803,10 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
     /* uCode wakes up after power-down sleep */
     if (inta & CSR_INT_BIT_WAKEUP) {
         IWL_DEBUG_ISR(trans, "Wakeup interrupt\n");
+        
+        iwl_pcie_rxq_check_wrptr(trans);
         // TODO: Implement
-//        iwl_pcie_rxq_check_wrptr(trans);
-//        iwl_pcie_txq_check_wrptrs(trans);
+        //iwl_pcie_txq_check_wrptrs(trans);
 
         isr_stats->wakeup++;
 
@@ -730,8 +870,13 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
         isr_stats->tx++;
         handled |= CSR_INT_BIT_FH_TX;
         /* Wake up uCode load routine, now that load is complete */
-        trans_pcie->ucode_write_complete = true;
+        
         //wake_up(&trans_pcie->ucode_write_waitq);
+        
+        IOLockLock(trans_pcie->ucode_write_waitq);
+        trans_pcie->ucode_write_complete = true;
+        IOLockWakeup(trans_pcie->ucode_write_waitq, &trans_pcie->ucode_write_complete, true);
+        IOLockUnlock(trans_pcie->ucode_write_waitq);
     }
     
     if (inta & ~handled) {
@@ -784,7 +929,6 @@ void IntelWifi::iwl_pcie_handle_rfkill_irq(struct iwl_trans *trans)
     struct isr_statistics *isr_stats = &trans_pcie->isr_stats;
     bool hw_rfkill, prev, report;
     
-    //mutex_lock(&trans_pcie->mutex);
     IOLockLock(trans_pcie->mutex);
     prev = test_bit(STATUS_RFKILL_OPMODE, &trans->status);
     hw_rfkill = iwl_is_rfkill_set(trans);
@@ -804,7 +948,7 @@ void IntelWifi::iwl_pcie_handle_rfkill_irq(struct iwl_trans *trans)
     
     if (prev != report)
         iwl_trans_pcie_rf_kill(trans, report);
-    //mutex_unlock(&trans_pcie->mutex);
+
     IOLockUnlock(trans_pcie->mutex);
     
     if (hw_rfkill) {
@@ -825,8 +969,8 @@ void IntelWifi::iwl_pcie_handle_rfkill_irq(struct iwl_trans *trans)
  */
 void IntelWifi::iwl_pcie_irq_handle_error(struct iwl_trans *trans)
 {
-    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
-    int i;
+    //struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    //int i;
     
     /* W/A for WiFi/WiMAX coex and WiMAX own the RF */
     if (trans->cfg->internal_wimax_coex &&
@@ -874,7 +1018,7 @@ void IntelWifi::iwl_pcie_reset_ict(struct iwl_trans *trans)
     
     memset(trans_pcie->ict_tbl, 0, ICT_SIZE);
     
-    val = trans_pcie->ict_tbl_dma >> ICT_SHIFT;
+    val = (u32)(trans_pcie->ict_tbl_dma >> ICT_SHIFT);
     
     val |= CSR_DRAM_INT_TBL_ENABLE |
     CSR_DRAM_INIT_TBL_WRAP_CHECK |
@@ -992,7 +1136,7 @@ void IntelWifi::iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq
     
     /* Tell device where in DRAM to update its Rx status */
     io->iwl_write32(FH_RSCSR_CHNL0_STTS_WPTR_REG,
-                rxq->rb_stts_dma >> 4);
+                (u32)(rxq->rb_stts_dma >> 4));
     
     /* Enable Rx DMA
      * FH_RCSR_CHNL0_RX_IGNORE_RXF_EMPTY is set because of HW bug in
@@ -1023,18 +1167,19 @@ void IntelWifi::iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq
 int IntelWifi::iwl_pcie_rx_init(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
-//    int ret = _iwl_pcie_rx_init(trans);
-//
-//    if (ret)
-//        return ret;
-    
+    int ret = _iwl_pcie_rx_init(trans);
+
+    if (ret)
+        return ret;
+
     if (trans->cfg->mq_rx_supported)
         iwl_pcie_rx_mq_hw_init(trans);
     else
         iwl_pcie_rx_hw_init(trans, trans_pcie->rxq);
-    
+
+    // TODO: Implement
     //iwl_pcie_rxq_restock(trans, trans_pcie->rxq);
-    
+
     IOSimpleLockLock(trans_pcie->rxq->lock);
     iwl_pcie_rxq_inc_wr_ptr(trans, trans_pcie->rxq);
     IOSimpleLockUnlock(trans_pcie->rxq->lock);

@@ -59,7 +59,7 @@ struct iwl_rx_mem_buffer {
     //struct page *page;
     u16 vid;
     bool invalid;
-    //struct list_head list;
+    struct list_head list;
 };
 
 /**
@@ -125,11 +125,39 @@ struct iwl_rxq {
     struct iwl_rx_mem_buffer *queue[RX_QUEUE_SIZE];
 };
 
+/**
+* struct iwl_rb_allocator - Rx allocator
+* @req_pending: number of requests the allcator had not processed yet
+* @req_ready: number of requests honored and ready for claiming
+* @rbd_allocated: RBDs with pages allocated and ready to be handled to
+*    the queue. This is a list of &struct iwl_rx_mem_buffer
+* @rbd_empty: RBDs with no page attached for allocator use. This is a list
+*    of &struct iwl_rx_mem_buffer
+* @lock: protects the rbd_allocated and rbd_empty lists
+* @alloc_wq: work queue for background calls
+* @rx_alloc: work struct for background calls
+*/
+struct iwl_rb_allocator {
+//    atomic_t req_pending;
+//    atomic_t req_ready;
+    int req_pending;
+    int req_ready;
+    struct list_head rbd_allocated;
+    struct list_head rbd_empty;
+    IOSimpleLock *lock;
+//    struct workqueue_struct *alloc_wq;
+//    struct work_struct rx_alloc;
+};
+
+
 
 
 
 struct iwl_trans_pcie {
     struct iwl_rxq *rxq;
+    struct iwl_rx_mem_buffer rx_pool[RX_POOL_SIZE];
+    struct iwl_rx_mem_buffer *global_table[RX_POOL_SIZE];
+    struct iwl_rb_allocator rba;
     struct iwl_trans *trans;
     
     /* INT ICT Table */
@@ -149,6 +177,10 @@ struct iwl_trans_pcie {
     volatile void* hw_base;
     
     bool ucode_write_complete;
+    IOLock* ucode_write_waitq;
+//    wait_queue_t wait_command_queue;
+//    wait_queue_t d0i3_waitq;
+
 
     
     UInt8 max_tbs;

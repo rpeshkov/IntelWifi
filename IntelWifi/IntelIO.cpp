@@ -359,8 +359,8 @@ u32 IntelIO::iwl_read_direct32(u32 reg)
 void IntelIO::iwl_write64(u64 ofs, u64 val)
 {
     //trace_iwlwifi_dev_iowrite64(trans->dev, ofs, val);
-    iwl_write32(ofs, lower_32_bits(val));
-    iwl_write32(ofs + 4, upper_32_bits(val));
+    iwl_write32((u32)ofs, lower_32_bits(val));
+    iwl_write32((u32)ofs + 4, upper_32_bits(val));
 }
 
 int IntelIO::iwl_poll_direct_bit(u32 addr, u32 mask, int timeout)
@@ -380,8 +380,8 @@ int IntelIO::iwl_poll_direct_bit(u32 addr, u32 mask, int timeout)
 void IntelIO::iwl_write_prph64_no_grab(u64 ofs, u64 val)
 {
     //trace_iwlwifi_dev_iowrite_prph64(trans->dev, ofs, val);
-    iwl_write_prph_no_grab(ofs, val & 0xffffffff);
-    iwl_write_prph_no_grab(ofs + 4, val >> 32);
+    iwl_write_prph_no_grab((u32)ofs, val & 0xffffffff);
+    iwl_write_prph_no_grab((u32)ofs + 4, val >> 32);
 }
 
 

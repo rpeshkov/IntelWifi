@@ -1,6 +1,8 @@
 /* add your code here */
 
 #include <IOKit/IOLib.h>
+#include <IOKit/IOBufferMemoryDescriptor.h>
+#include <IOKit/IODMACommand.h>
 #include <IOKit/IOTimerEventSource.h>
 #include <IOKit/IOFilterInterruptEventSource.h>
 #include <IOKit/pci/IOPCIDevice.h>
@@ -199,6 +201,9 @@ private:
     
     void iwl_pcie_enable_rx_wake(struct iwl_trans *trans, bool enable);
     void iwl_pcie_rx_mq_hw_init(struct iwl_trans *trans);
+    
+    int iwl_pcie_rx_alloc(struct iwl_trans *trans);
+    int _iwl_pcie_rx_init(struct iwl_trans *trans);
     
     void iwl_pcie_rx_init_rxb_lists(struct iwl_rxq *rxq);
     

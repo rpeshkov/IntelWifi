@@ -228,14 +228,8 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
-    const struct fw_img *fw = iwl_get_ucode_image(&fTrans->drv->fw, IWL_UCODE_INIT);
-    
-    iwl_trans_pcie_start_fw(fTrans, fw, false);
-    
-    netif->registerService();
-
-    int source = 0;//findMSIInterruptTypeIndex(); // Currently not using MSI because I want to see a lot of ignored interrupts in console
-    TraceLog("Source: %d", source);
+    int source = findMSIInterruptTypeIndex(); // Currently not using MSI because I want to see a lot of ignored interrupts in console
+    //TraceLog("Source: %d", source);
     fInterruptSource = IOInterruptEventSource::interruptEventSource(this,
                                                                     (IOInterruptEventAction) &IntelWifi::interruptOccured,
                                                                     provider, source);
@@ -252,6 +246,14 @@ bool IntelWifi::start(IOService *provider) {
     }
     
     fInterruptSource->enable();
+    
+    const struct fw_img *fw = iwl_get_ucode_image(&fTrans->drv->fw, IWL_UCODE_INIT);
+    
+    iwl_trans_pcie_start_fw(fTrans, fw, false);
+    
+    netif->registerService();
+
+    
     registerService();
     
     
