@@ -29,6 +29,7 @@ extern "C" {
 #include "Logging.h"
 
 #include "IntelEeprom.hpp"
+#include "IwlTransOps.h"
 
 
 
@@ -51,11 +52,20 @@ extern "C" {
 
 #define    RELEASE(x)    if(x){(x)->release();(x)=NULL;}
 
-class IntelWifi : public IOEthernetController
+
+class IntelWifi : public IOEthernetController, public IwlTransOps
 {
     OSDeclareDefaultStructors(IntelWifi)
     
 public:
+    virtual int start_hw(struct iwl_trans *trans, bool low_power) override;
+    virtual int start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill) override;
+    virtual void op_mode_leave(struct iwl_trans *trans) override;
+    virtual void set_pmi(struct iwl_trans *trans, bool state) override;
+    virtual void configure(struct iwl_trans *trans, const struct iwl_trans_config *trans_cfg) override;
+    virtual void fw_alive(struct iwl_trans *trans, u32 scd_addr) override;
+    virtual void stop_device(struct iwl_trans *trans, bool low_power) override;
+    
     virtual bool init(OSDictionary *properties) override;
     virtual void free() override;
     
@@ -129,6 +139,10 @@ private:
     
     
     // trans.c
+    void iwl_trans_pcie_fw_alive(struct iwl_trans *trans, u32 scd_addr); // line 1312
+    void iwl_trans_pcie_op_mode_leave(struct iwl_trans *trans); // line 1687
+    void iwl_trans_pcie_configure(struct iwl_trans *trans, const struct iwl_trans_config *trans_cfg); // line 1737
+
     void _iwl_disable_interrupts(struct iwl_trans *trans);
     void iwl_disable_interrupts(struct iwl_trans *trans);
     struct iwl_trans* iwl_trans_pcie_alloc(const struct iwl_cfg *cfg);

@@ -12,6 +12,20 @@
 		A61264FA1FF20162006A7AEA /* iwl-csr.h in Headers */ = {isa = PBXBuildFile; fileRef = A61264F91FF20162006A7AEA /* iwl-csr.h */; };
 		A61427262001B3760093DED7 /* IntelWifi_tx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A61427252001B3760093DED7 /* IntelWifi_tx.cpp */; };
 		A61427282001BF090093DED7 /* tx.h in Headers */ = {isa = PBXBuildFile; fileRef = A61427272001BF090093DED7 /* tx.h */; };
+		A614272D2001F3F10093DED7 /* IwlDvmOpMode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A614272B2001F3F10093DED7 /* IwlDvmOpMode.cpp */; };
+		A614272E2001F3F10093DED7 /* IwlDvmOpMode.hpp in Headers */ = {isa = PBXBuildFile; fileRef = A614272C2001F3F10093DED7 /* IwlDvmOpMode.hpp */; };
+		A61427302001F6960093DED7 /* IntelWifi_ops.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A614272F2001F6960093DED7 /* IntelWifi_ops.cpp */; };
+		A61427322001FB660093DED7 /* IwlDvmOpMode_ops.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A61427312001FB660093DED7 /* IwlDvmOpMode_ops.cpp */; };
+		A6142736200202730093DED7 /* dev.h in Headers */ = {isa = PBXBuildFile; fileRef = A6142734200202730093DED7 /* dev.h */; };
+		A6142737200202730093DED7 /* commands.h in Headers */ = {isa = PBXBuildFile; fileRef = A6142735200202730093DED7 /* commands.h */; };
+		A6142739200203220093DED7 /* rs.h in Headers */ = {isa = PBXBuildFile; fileRef = A6142738200203220093DED7 /* rs.h */; };
+		A614273B200204B90093DED7 /* power.h in Headers */ = {isa = PBXBuildFile; fileRef = A614273A200204B80093DED7 /* power.h */; };
+		A614273E200205480093DED7 /* notif-wait.h in Headers */ = {isa = PBXBuildFile; fileRef = A614273C200205480093DED7 /* notif-wait.h */; };
+		A614273F200205480093DED7 /* notif-wait.c in Sources */ = {isa = PBXBuildFile; fileRef = A614273D200205480093DED7 /* notif-wait.c */; };
+		A6142741200206A20093DED7 /* tt.h in Headers */ = {isa = PBXBuildFile; fileRef = A6142740200206A10093DED7 /* tt.h */; };
+		A6142743200207230093DED7 /* devices.c in Sources */ = {isa = PBXBuildFile; fileRef = A6142742200207230093DED7 /* devices.c */; };
+		A61427452002075B0093DED7 /* agn.h in Headers */ = {isa = PBXBuildFile; fileRef = A61427442002075B0093DED7 /* agn.h */; };
+		A614274720020EAE0093DED7 /* lib.c in Sources */ = {isa = PBXBuildFile; fileRef = A614274620020EAE0093DED7 /* lib.c */; };
 		A614367B1FFAEA5B00852FEC /* IntelWifi_trans.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A614367A1FFAEA5B00852FEC /* IntelWifi_trans.cpp */; };
 		A614367E1FFAF8FD00852FEC /* Configuration.c in Sources */ = {isa = PBXBuildFile; fileRef = A614367C1FFAF8FD00852FEC /* Configuration.c */; };
 		A614367F1FFAF8FD00852FEC /* Configuration.h in Headers */ = {isa = PBXBuildFile; fileRef = A614367D1FFAF8FD00852FEC /* Configuration.h */; };
@@ -60,6 +74,22 @@
 		A61264F91FF20162006A7AEA /* iwl-csr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-csr.h"; sourceTree = "<group>"; };
 		A61427252001B3760093DED7 /* IntelWifi_tx.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IntelWifi_tx.cpp; sourceTree = "<group>"; };
 		A61427272001BF090093DED7 /* tx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tx.h; sourceTree = "<group>"; };
+		A61427292001F2DC0093DED7 /* IwlOpModeOps.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IwlOpModeOps.h; sourceTree = "<group>"; };
+		A614272A2001F3690093DED7 /* IwlTransOps.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IwlTransOps.h; sourceTree = "<group>"; };
+		A614272B2001F3F10093DED7 /* IwlDvmOpMode.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IwlDvmOpMode.cpp; sourceTree = "<group>"; };
+		A614272C2001F3F10093DED7 /* IwlDvmOpMode.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IwlDvmOpMode.hpp; sourceTree = "<group>"; };
+		A614272F2001F6960093DED7 /* IntelWifi_ops.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IntelWifi_ops.cpp; sourceTree = "<group>"; };
+		A61427312001FB660093DED7 /* IwlDvmOpMode_ops.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IwlDvmOpMode_ops.cpp; sourceTree = "<group>"; };
+		A6142734200202730093DED7 /* dev.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dev.h; sourceTree = "<group>"; };
+		A6142735200202730093DED7 /* commands.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = commands.h; sourceTree = "<group>"; };
+		A6142738200203220093DED7 /* rs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rs.h; sourceTree = "<group>"; };
+		A614273A200204B80093DED7 /* power.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = power.h; sourceTree = "<group>"; };
+		A614273C200205480093DED7 /* notif-wait.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "notif-wait.h"; sourceTree = "<group>"; };
+		A614273D200205480093DED7 /* notif-wait.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "notif-wait.c"; sourceTree = "<group>"; };
+		A6142740200206A10093DED7 /* tt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tt.h; sourceTree = "<group>"; };
+		A6142742200207230093DED7 /* devices.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = devices.c; sourceTree = "<group>"; };
+		A61427442002075B0093DED7 /* agn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = agn.h; sourceTree = "<group>"; };
+		A614274620020EAE0093DED7 /* lib.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lib.c; sourceTree = "<group>"; };
 		A614367A1FFAEA5B00852FEC /* IntelWifi_trans.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IntelWifi_trans.cpp; sourceTree = "<group>"; };
 		A614367C1FFAF8FD00852FEC /* Configuration.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = Configuration.c; sourceTree = "<group>"; };
 		A614367D1FFAF8FD00852FEC /* Configuration.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Configuration.h; sourceTree = "<group>"; };
@@ -138,6 +168,7 @@
 		A61264F81FF200F6006A7AEA /* iwlwifi */ = {
 			isa = PBXGroup;
 			children = (
+				A6142733200201110093DED7 /* dvm */,
 				A61525971FF4B6480094A282 /* cfg */,
 				A61525BB1FF4C8810094A282 /* fw */,
 				A6D275E61FF50F8C00F5723B /* firmware_file.h */,
@@ -157,6 +188,21 @@
 				A61525CB1FF4CFC60094A282 /* iwl-trans.h */,
 			);
 			path = iwlwifi;
+			sourceTree = "<group>";
+		};
+		A6142733200201110093DED7 /* dvm */ = {
+			isa = PBXGroup;
+			children = (
+				A61427442002075B0093DED7 /* agn.h */,
+				A6142742200207230093DED7 /* devices.c */,
+				A6142740200206A10093DED7 /* tt.h */,
+				A614273A200204B80093DED7 /* power.h */,
+				A6142738200203220093DED7 /* rs.h */,
+				A6142735200202730093DED7 /* commands.h */,
+				A6142734200202730093DED7 /* dev.h */,
+				A614274620020EAE0093DED7 /* lib.c */,
+			);
+			path = dvm;
 			sourceTree = "<group>";
 		};
 		A61525971FF4B6480094A282 /* cfg */ = {
@@ -213,6 +259,8 @@
 		A61525BB1FF4C8810094A282 /* fw */ = {
 			isa = PBXGroup;
 			children = (
+				A614273D200205480093DED7 /* notif-wait.c */,
+				A614273C200205480093DED7 /* notif-wait.h */,
 				A61525C61FF4CF530094A282 /* api */,
 				A61525C01FF4CB760094A282 /* img.h */,
 				A61525BE1FF4C9600094A282 /* error-dump.h */,
@@ -255,6 +303,8 @@
 				A61264F81FF200F6006A7AEA /* iwlwifi */,
 				A65083771FEFB2DC001300AC /* IntelWifi.hpp */,
 				A65083791FEFB2DC001300AC /* IntelWifi.cpp */,
+				A614367A1FFAEA5B00852FEC /* IntelWifi_trans.cpp */,
+				A614272F2001F6960093DED7 /* IntelWifi_ops.cpp */,
 				A650837B1FEFB2DC001300AC /* Info.plist */,
 				A65CD61E1FF1D2BB004AA810 /* Logging.h */,
 				A6157B781FF3303E00DAC8CE /* IntelEeprom.cpp */,
@@ -262,12 +312,16 @@
 				A60DDC031FF46EE200E81A4B /* IntelIO.cpp */,
 				A60DDC041FF46EE200E81A4B /* IntelIO.hpp */,
 				A61873D21FF63DC800F9252C /* iwl-trans-pcie.h */,
-				A614367A1FFAEA5B00852FEC /* IntelWifi_trans.cpp */,
 				A614367C1FFAF8FD00852FEC /* Configuration.c */,
 				A614367D1FFAF8FD00852FEC /* Configuration.h */,
 				A61436801FFC063900852FEC /* IntelWifi_rx.cpp */,
 				A632A3BD1FFEB01B006B1128 /* IntelWifi_trans-gen2.cpp */,
 				A61427252001B3760093DED7 /* IntelWifi_tx.cpp */,
+				A61427292001F2DC0093DED7 /* IwlOpModeOps.h */,
+				A614272A2001F3690093DED7 /* IwlTransOps.h */,
+				A614272B2001F3F10093DED7 /* IwlDvmOpMode.cpp */,
+				A614272C2001F3F10093DED7 /* IwlDvmOpMode.hpp */,
+				A61427312001FB660093DED7 /* IwlDvmOpMode_ops.cpp */,
 			);
 			path = IntelWifi;
 			sourceTree = "<group>";
@@ -297,18 +351,26 @@
 			buildActionMask = 2147483647;
 			files = (
 				A61525C31FF4CE520094A282 /* iwl-modparams.h in Headers */,
+				A614272E2001F3F10093DED7 /* IwlDvmOpMode.hpp in Headers */,
+				A6142736200202730093DED7 /* dev.h in Headers */,
 				A61525C11FF4CB760094A282 /* img.h in Headers */,
 				A61525BD1FF4C89D0094A282 /* file.h in Headers */,
 				A6D275E71FF50F8C00F5723B /* firmware_file.h in Headers */,
+				A614273E200205480093DED7 /* notif-wait.h in Headers */,
 				A61264FA1FF20162006A7AEA /* iwl-csr.h in Headers */,
+				A6142739200203220093DED7 /* rs.h in Headers */,
 				A614367F1FFAF8FD00852FEC /* Configuration.h in Headers */,
 				A60DDC061FF46EE200E81A4B /* IntelIO.hpp in Headers */,
 				A642B2CC20004F5000264363 /* list.h in Headers */,
 				A642B2CE20004F5000264363 /* compiler.h in Headers */,
+				A614273B200204B90093DED7 /* power.h in Headers */,
 				A61525C51FF4CED70094A282 /* iwl-context-info.h in Headers */,
 				A61525BF1FF4C9600094A282 /* error-dump.h in Headers */,
 				A61525C81FF4CF6A0094A282 /* cmdhdr.h in Headers */,
+				A61427452002075B0093DED7 /* agn.h in Headers */,
 				A61525D51FF4E38D0094A282 /* iwl-drv.h in Headers */,
+				A6142737200202730093DED7 /* commands.h in Headers */,
+				A6142741200206A20093DED7 /* tt.h in Headers */,
 				A642B2CD20004F5000264363 /* poison.h in Headers */,
 				A61525CA1FF4CF900094A282 /* txq.h in Headers */,
 				A6E59FE41FF34BA600E86DC0 /* iwl-agn-hw.h in Headers */,
@@ -393,22 +455,28 @@
 			buildActionMask = 2147483647;
 			files = (
 				A61525D41FF4E38D0094A282 /* iwl-drv.c in Sources */,
+				A61427322001FB660093DED7 /* IwlDvmOpMode_ops.cpp in Sources */,
 				A61525A61FF4B6F90094A282 /* 7000.c in Sources */,
 				A61525A11FF4B6F90094A282 /* 6000.c in Sources */,
 				A61427262001B3760093DED7 /* IntelWifi_tx.cpp in Sources */,
 				A6157B7A1FF3303E00DAC8CE /* IntelEeprom.cpp in Sources */,
+				A614273F200205480093DED7 /* notif-wait.c in Sources */,
 				A632A3BE1FFEB01B006B1128 /* IntelWifi_trans-gen2.cpp in Sources */,
 				A61525A71FF4B6F90094A282 /* 2000.c in Sources */,
 				A60DDC051FF46EE200E81A4B /* IntelIO.cpp in Sources */,
 				A61525D11FF4E30F0094A282 /* iwl-trans.c in Sources */,
 				A650837A1FEFB2DC001300AC /* IntelWifi.cpp in Sources */,
 				A614367E1FFAF8FD00852FEC /* Configuration.c in Sources */,
+				A6142743200207230093DED7 /* devices.c in Sources */,
 				A61525A41FF4B6F90094A282 /* 5000.c in Sources */,
 				A61436811FFC063900852FEC /* IntelWifi_rx.cpp in Sources */,
 				A6F3F8971FF78DA400F1582E /* util.c in Sources */,
 				A61525A21FF4B6F90094A282 /* 9000.c in Sources */,
+				A614274720020EAE0093DED7 /* lib.c in Sources */,
 				A614367B1FFAEA5B00852FEC /* IntelWifi_trans.cpp in Sources */,
+				A614272D2001F3F10093DED7 /* IwlDvmOpMode.cpp in Sources */,
 				A61525A01FF4B6F90094A282 /* 8000.c in Sources */,
+				A61427302001F6960093DED7 /* IntelWifi_ops.cpp in Sources */,
 				A61525A31FF4B6F90094A282 /* 1000.c in Sources */,
 				A61525A51FF4B6F90094A282 /* a000.c in Sources */,
 			);

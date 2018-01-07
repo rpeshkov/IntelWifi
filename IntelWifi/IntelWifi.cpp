@@ -7,6 +7,7 @@ extern "C" {
 }
 
 #include <IOKit/IOInterruptController.h>
+#include "IwlDvmOpMode.hpp"
 
 #include <sys/errno.h>
 
@@ -38,6 +39,7 @@ static struct MediumTable
     {kIOMediumIEEE80211None, 0},
     {kIOMediumIEEE80211Auto, 0}
 };
+
 
 int IntelWifi::findMSIInterruptTypeIndex()
 {
@@ -100,6 +102,7 @@ bool IntelWifi::start(IOService *provider) {
     }
     
     fTrans = iwl_trans_pcie_alloc(fConfiguration);
+    
     
     if (!fTrans) {
         TraceLog("iwl_trans_pcie_alloc failed");
@@ -171,9 +174,19 @@ bool IntelWifi::start(IOService *provider) {
         makeUsable();
     }
     
-    int err = iwl_trans_pcie_start_hw(fTrans, true);
-    if (err) {
-        TraceLog("ERROR: Error while preparing HW: %d", err);
+    eeprom = IntelEeprom::withIO(io, const_cast<struct iwl_cfg*>(fConfiguration), fTrans->hw_rev);
+    if (!eeprom) {
+        TraceLog("EEPROM init failed!");
+        releaseAll();
+        return false;
+    }
+    
+    IwlDvmOpMode *opmode = new IwlDvmOpMode(this, eeprom);
+    opmode = (IwlDvmOpMode *)opmode->start(fTrans, fTrans->cfg, &fTrans->drv->fw, NULL);
+    
+    //int err = iwl_trans_pcie_start_hw(fTrans, true);
+    if (!opmode) {
+        //TraceLog("ERROR: Error while preparing HW: %d", err);
         releaseAll();
         return false;
     }
@@ -184,28 +197,23 @@ bool IntelWifi::start(IOService *provider) {
     trans_pcie->is_down = false;
     
 
-    eeprom = IntelEeprom::withIO(io, const_cast<struct iwl_cfg*>(fConfiguration), fTrans->hw_rev);
-    if (!eeprom) {
-        TraceLog("EEPROM init failed!");
-        releaseAll();
-        return false;
-    }
     
-    fNvmData = eeprom->parse();
-    if (!fNvmData) {
-        TraceLog("EEPROM parse failed!");
-        releaseAll();
-        return false;
-    }
     
-    DebugLog("MAC: " MAC_FMT "\n"
-             "Num addr: %d\n"
-             "Calib: version - %d, voltage - %d\n"
-             "Raw temperature: %u",
-             MAC_BYTES(fNvmData->hw_addr),
-             fNvmData->n_hw_addrs,
-             fNvmData->calib_version, fNvmData->calib_voltage,
-             fNvmData->raw_temperature);
+//    fNvmData = eeprom->parse();
+//    if (!fNvmData) {
+//        TraceLog("EEPROM parse failed!");
+//        releaseAll();
+//        return false;
+//    }
+    
+//    DebugLog("MAC: " MAC_FMT "\n"
+//             "Num addr: %d\n"
+//             "Calib: version - %d, voltage - %d\n"
+//             "Raw temperature: %u",
+//             MAC_BYTES(fNvmData->hw_addr),
+//             fNvmData->n_hw_addrs,
+//             fNvmData->calib_version, fNvmData->calib_voltage,
+//             fNvmData->raw_temperature);
     
     if (!createMediumDict()) {
         TraceLog("MediumDict creation failed!");
@@ -333,7 +341,7 @@ IOReturn IntelWifi::disable(IONetworkInterface *netif) {
 
 
 IOReturn IntelWifi::getHardwareAddress(IOEthernetAddress *addrP) {
-    memcpy(addrP->bytes, fNvmData->hw_addr, 6);
+//    memcpy(addrP->bytes, fNvmData->hw_addr, 6);
     return kIOReturnSuccess;
 }
 

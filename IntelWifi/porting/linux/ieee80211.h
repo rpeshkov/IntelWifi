@@ -9,7 +9,9 @@
 #ifndef ieee80211_h
 #define ieee80211_h
 
+#include <linux/kernel.h>
 #include <linux/types.h>
+#include <linux/netdevice.h>
 
 /* 802.11 BAR control masks */
 #define IEEE80211_BAR_CTRL_ACK_POLICY_NORMAL    0x0000
@@ -19,6 +21,20 @@
 #define IEEE80211_BAR_CTRL_TID_INFO_SHIFT    12
 
 #define IEEE80211_HT_MCS_MASK_LEN        10
+
+// line 188
+/* number of ACs */
+#define IEEE80211_NUM_ACS        4
+
+
+struct mac_address {
+    u8 addr[ETH_ALEN];
+};
+
+struct ieee80211_channel_switch {
+    int something;
+};
+
 
 
 /**
@@ -47,6 +63,26 @@ struct ieee80211_mcs_info {
 #define IEEE80211_HT_MCS_TX_MAX_STREAMS_SHIFT    2
 #define        IEEE80211_HT_MCS_TX_MAX_STREAMS    4
 #define IEEE80211_HT_MCS_TX_UNEQUAL_MODULATION    0x10
+
+/** line 1305
+ * enum ieee80211_smps_mode - spatial multiplexing power save mode
+ *
+ * @IEEE80211_SMPS_AUTOMATIC: automatic
+ * @IEEE80211_SMPS_OFF: off
+ * @IEEE80211_SMPS_STATIC: static
+ * @IEEE80211_SMPS_DYNAMIC: dynamic
+ * @IEEE80211_SMPS_NUM_MODES: internal, don't use
+ */
+enum ieee80211_smps_mode {
+    IEEE80211_SMPS_AUTOMATIC,
+    IEEE80211_SMPS_OFF,
+    IEEE80211_SMPS_STATIC,
+    IEEE80211_SMPS_DYNAMIC,
+    
+    /* keep last */
+    IEEE80211_SMPS_NUM_MODES,
+};
+
 
 /*
  * 802.11n D5.0 20.3.5 / 20.6 says:
@@ -175,6 +211,16 @@ struct ieee80211_vht_mcs_info {
     __le16 tx_mcs_map;
     __le16 tx_highest;
 } __packed;
+
+struct ieee80211_hdr {
+    __le16 frame_control;
+    __le16 duration_id;
+    u8 addr1[ETH_ALEN];
+    u8 addr2[ETH_ALEN];
+    u8 addr3[ETH_ALEN];
+    __le16 seq_ctrl;
+    u8 addr4[ETH_ALEN];
+} __packed __aligned(2);
 
 
 
