@@ -629,8 +629,8 @@ void IntelWifi::_iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_po
      */
     if (test_and_clear_bit(STATUS_DEVICE_ENABLED, &trans->status)) {
         IWL_DEBUG_INFO(trans, "DEVICE_ENABLED bit was set and is now cleared\n");
-        //        iwl_pcie_tx_stop(trans);
-        //        iwl_pcie_rx_stop(trans);
+        // iwl_pcie_tx_stop(trans);
+        iwl_pcie_rx_stop(trans);
         
         /* Power-down device's busmaster DMA clocks */
         if (!trans->cfg->apmg_not_supported) {
@@ -1073,8 +1073,8 @@ int IntelWifi::iwl_pcie_nic_init(struct iwl_trans *trans)
     iwl_pcie_rx_init(trans);
     
     /* Allocate or reset and init all Tx and Command queues */
-//    if (iwl_pcie_tx_init(trans))
-//        return -ENOMEM;
+    if (iwl_pcie_tx_init(trans))
+        return -ENOMEM;
     
     if (trans->cfg->base_params->shadow_reg_enable) {
         /* enable shadow regs in HW */

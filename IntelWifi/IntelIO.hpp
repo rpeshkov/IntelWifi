@@ -53,14 +53,17 @@ public:
     void iwl_write64(u64 ofs, u64 val);
     int iwl_poll_direct_bit(u32 addr, u32 mask, int timeout);
     void iwl_write_prph64_no_grab(u64 ofs, u64 val);
+    void iwl_force_nmi(struct iwl_trans *trans);
+    
+    void __iwl_trans_pcie_clear_bit(UInt32 reg, UInt32 mask);
+    void __iwl_trans_pcie_set_bit(UInt32 reg, UInt32 mask);
     
 private:
     struct iwl_trans_pcie* fTrans;
     
     void iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value);
     void __iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value);
-    void __iwl_trans_pcie_clear_bit(UInt32 reg, UInt32 mask);
-    void __iwl_trans_pcie_set_bit(UInt32 reg, UInt32 mask);
+    
    
 };
 

@@ -11,6 +11,7 @@
 #include <sys/errno.h>
 
 #include "iwl-csr.h"
+#include "iwl-prph.h"
 #include "Logging.h"
 
 // MARK: Defines
@@ -382,6 +383,16 @@ void IntelIO::iwl_write_prph64_no_grab(u64 ofs, u64 val)
     //trace_iwlwifi_dev_iowrite_prph64(trans->dev, ofs, val);
     iwl_write_prph_no_grab((u32)ofs, val & 0xffffffff);
     iwl_write_prph_no_grab((u32)ofs + 4, val >> 32);
+}
+
+void IntelIO::iwl_force_nmi(struct iwl_trans *trans)
+{
+    if (trans->cfg->device_family < IWL_DEVICE_FAMILY_9000)
+        iwl_write_prph(DEVICE_SET_NMI_REG,
+                       DEVICE_SET_NMI_VAL_DRV);
+    else
+        iwl_write_prph(UREG_NIC_SET_NMI_DRIVER,
+                       UREG_NIC_SET_NMI_DRIVER_NMI_FROM_DRIVER_MSK);
 }
 
 

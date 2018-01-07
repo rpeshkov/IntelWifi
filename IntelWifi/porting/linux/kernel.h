@@ -146,6 +146,32 @@ static inline void * ERR_PTR(long error)
 #define DMA_BIT_MASK(n)    (((n) == 64) ? ~0ULL : ((1ULL<<(n))-1))
 
 
+// log2.h
+/*
+ *  Determine whether some value is a power of two, where zero is
+ * *not* considered a power of two.
+ */
+
+static inline __attribute__((const))
+bool is_power_of_2(unsigned long n)
+{
+    return (n != 0 && ((n & (n - 1)) == 0));
+}
+
+static inline void put_unaligned_le32(u32 val, void *p)
+{
+    *((__le32 *)p) = cpu_to_le32(val);
+}
+
+static inline u32 get_unaligned_le32(const void *p)
+{
+    return le32_to_cpup((__le32 *)p);
+}
+
+
+
+
+
 
 
 

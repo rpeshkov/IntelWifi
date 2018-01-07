@@ -231,6 +231,27 @@ private:
     void iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq);
     int iwl_pcie_rx_init(struct iwl_trans *trans);
     
+    // tx.c
+    int iwl_queue_space(const struct iwl_txq *q);
+    int iwl_queue_init(struct iwl_txq *q, int slots_num);
+    int iwl_pcie_alloc_dma_ptr(struct iwl_trans *trans, struct iwl_dma_ptr *ptr, size_t size); // line 127
+    void iwl_pcie_txq_inval_byte_cnt_tbl(struct iwl_trans *trans, struct iwl_txq *txq); // line 217
+    void iwl_pcie_txq_inc_wr_ptr(struct iwl_trans *trans, struct iwl_txq *txq); // line 244
+    void iwl_pcie_txq_check_wrptrs(struct iwl_trans *trans); // line 292
+    dma_addr_t iwl_pcie_tfd_tb_get_addr(struct iwl_trans *trans, void *_tfd, u8 idx); // line 312
+    void iwl_pcie_tfd_set_tb(struct iwl_trans *trans, void *tfd,
+                             u8 idx, dma_addr_t addr, u16 len); // line 341
+    u8 iwl_pcie_tfd_get_num_tbs(struct iwl_trans *trans, void *_tfd); // line 357
+    int iwl_pcie_txq_alloc(struct iwl_trans *trans, struct iwl_txq *txq, int slots_num, bool cmd_queue); // line 487
+    int iwl_pcie_txq_init(struct iwl_trans *trans, struct iwl_txq *txq, int slots_num, bool cmd_queue); // line 551
+    void iwl_pcie_clear_cmd_in_flight(struct iwl_trans *trans); // line 593
+    void iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr); // line 715
+    void iwl_pcie_tx_stop_fh(struct iwl_trans *trans); // line 812
+    int iwl_pcie_tx_alloc(struct iwl_trans *trans); // line 907
+    int iwl_pcie_tx_init(struct iwl_trans *trans); // line 973
+    int iwl_pcie_set_cmd_in_flight(struct iwl_trans *trans, const struct iwl_host_cmd *cmd); // line 1168
+    void iwl_pcie_cmdq_reclaim(struct iwl_trans *trans, int txq_id, int idx); // line 1211
+    
     ifnet_t fIfNet;
     
     UInt16 fDeviceId;

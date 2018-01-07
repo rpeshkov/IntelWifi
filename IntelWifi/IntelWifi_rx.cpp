@@ -915,8 +915,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
         IWL_DEBUG_ISR(trans, "Wakeup interrupt\n");
         
         iwl_pcie_rxq_check_wrptr(trans);
-        // TODO: Implement
-        //iwl_pcie_txq_check_wrptrs(trans);
+        iwl_pcie_txq_check_wrptrs(trans);
 
         isr_stats->wakeup++;
 

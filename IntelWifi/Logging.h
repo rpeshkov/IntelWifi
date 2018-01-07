@@ -32,5 +32,9 @@
 
 #define IWL_DEBUG_POWER(trans, args...) DebugLog("DEBUG POWER: " args)
 
+#define IWL_DEBUG_TX(trans, args...) DebugLog("DEBUG TX: " args)
+
+#define IWL_DEBUG_RPM(trans, args...) DebugLog("DEBUG RPM: " args)
+
 
 #endif /* Logging_h */
