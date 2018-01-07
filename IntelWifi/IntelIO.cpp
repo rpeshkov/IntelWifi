@@ -395,6 +395,23 @@ void IntelIO::iwl_force_nmi(struct iwl_trans *trans)
                        UREG_NIC_SET_NMI_DRIVER_NMI_FROM_DRIVER_MSK);
 }
 
+u32 IntelIO::iwl_trans_write_mem32(struct iwl_trans *trans, u32 addr,
+                                        u32 val)
+{
+    return iwl_trans_write_mem(trans, addr, &val, 1);
+}
+
+u32 IntelIO::iwl_trans_read_mem32(struct iwl_trans *trans, u32 addr)
+{
+    u32 value;
+    
+    if (iwl_trans_read_mem(trans, addr, &value, 1))
+        return 0xa5a5a5a5;
+    
+    return value;
+}
+
+
 
 
 

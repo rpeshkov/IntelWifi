@@ -57,6 +57,10 @@ public:
     
     void __iwl_trans_pcie_clear_bit(UInt32 reg, UInt32 mask);
     void __iwl_trans_pcie_set_bit(UInt32 reg, UInt32 mask);
+    u32 iwl_trans_write_mem32(struct iwl_trans *trans, u32 addr,
+                                       u32 val);
+    u32 iwl_trans_read_mem32(struct iwl_trans *trans, u32 addr);
+
     
 private:
     struct iwl_trans_pcie* fTrans;

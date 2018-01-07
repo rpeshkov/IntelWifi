@@ -35,6 +35,7 @@
 #define IWL_DEBUG_TX(trans, args...) DebugLog("DEBUG TX: " args)
 
 #define IWL_DEBUG_RPM(trans, args...) DebugLog("DEBUG RPM: " args)
+#define IWL_DEBUG_TX_QUEUES(trans, args...) DebugLog("DEBUG TXQ: " args)
 
 
 #endif /* Logging_h */

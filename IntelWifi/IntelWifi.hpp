@@ -252,6 +252,15 @@ private:
     void iwl_pcie_txq_progress(struct iwl_txq *txq); // line 1034
     int iwl_pcie_set_cmd_in_flight(struct iwl_trans *trans, const struct iwl_host_cmd *cmd); // line 1168
     void iwl_pcie_cmdq_reclaim(struct iwl_trans *trans, int txq_id, int idx); // line 1211
+    int iwl_pcie_txq_set_ratid_map(struct iwl_trans *trans, u16 ra_tid, u16 txq_id); // line 1254
+    bool iwl_trans_pcie_txq_enable(struct iwl_trans *trans, int txq_id, u16 ssn,
+                                   const struct iwl_trans_txq_scd_cfg *cfg,
+                                   unsigned int wdg_timeout); // line 1283
+    void iwl_trans_pcie_txq_set_shared_mode(struct iwl_trans *trans, u32 txq_id,
+                                            bool shared_mode);
+    void iwl_trans_pcie_txq_disable(struct iwl_trans *trans, int txq_id, bool configure_scd); // line 1404
+    int iwl_trans_pcie_tx(struct iwl_trans *trans, struct sk_buff *skb,
+                          struct iwl_device_cmd *dev_cmd, int txq_id); // line 2256
     
     // SCD
     void iwl_scd_txq_set_chain(struct iwl_trans *trans,
