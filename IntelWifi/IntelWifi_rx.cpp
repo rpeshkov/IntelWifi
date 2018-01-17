@@ -785,7 +785,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
     else
         inta = iwl_pcie_int_cause_non_ict(trans);
     
-    if (iwl_have_debug_level(IWL_DL_ISR)) {
+    //if (iwl_have_debug_level(IWL_DL_ISR)) {
         IWL_DEBUG_ISR(trans,
                       "ISR inta 0x%08x, enabled 0x%08x(sw), enabled(hw) 0x%08x, fh 0x%08x\n",
                       inta, trans_pcie->inta_mask,
@@ -795,7 +795,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
             IWL_DEBUG_ISR(trans,
                           "We got a masked interrupt (0x%08x)\n",
                           inta & (~trans_pcie->inta_mask));
-    }
+    //}
     
     inta &= trans_pcie->inta_mask;
     
@@ -841,7 +841,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
      */
     io->iwl_write32(CSR_INT, inta | ~trans_pcie->inta_mask);
     
-    if (iwl_have_debug_level(IWL_DL_ISR))
+    //if (iwl_have_debug_level(IWL_DL_ISR))
         IWL_DEBUG_ISR(trans, "inta 0x%08x, enabled 0x%08x\n",
                       inta, io->iwl_read32(CSR_INT_MASK));
 

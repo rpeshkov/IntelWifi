@@ -37,7 +37,7 @@ extern "C" {
 #define CONFIG_IWLWIFI_PCIE_RTPM // Powerman
 
 #ifdef DEBUG
-#define CONFIG_IWLWIFI_DEBUG
+#define CONFIG_IWLWIFI_DEBUG 1
 #endif
 
 
@@ -187,6 +187,8 @@ private:
                                                    const struct fw_img *image,
                                                    int cpu,
                                                    int *first_ucode_section);
+    
+    void iwl_pcie_set_pwr(struct iwl_trans *trans, bool vaux);
     
     // trans-gen2.c
     int iwl_pcie_gen2_apm_init(struct iwl_trans *trans);

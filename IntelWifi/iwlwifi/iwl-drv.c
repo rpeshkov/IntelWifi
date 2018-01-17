@@ -1654,6 +1654,7 @@ struct iwl_mod_params iwlwifi_mod_params = {
 	.d0i3_disable = true,
 	.d0i3_timeout = 1000,
 	.uapsd_disable = IWL_DISABLE_UAPSD_BSS | IWL_DISABLE_UAPSD_P2P_CLIENT,
+    .debug_level = 0x02000000,
 	/* the rest are 0 by default */
 };
 IWL_EXPORT_SYMBOL(iwlwifi_mod_params);

@@ -60,12 +60,13 @@ public:
     u32 iwl_trans_write_mem32(struct iwl_trans *trans, u32 addr,
                                        u32 val);
     u32 iwl_trans_read_mem32(struct iwl_trans *trans, u32 addr);
+    void iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value);
 
     
 private:
     struct iwl_trans_pcie* fTrans;
     
-    void iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value);
+    
     void __iwl_trans_pcie_set_bits_mask(UInt32 reg, UInt32 mask, UInt32 value);
     
    

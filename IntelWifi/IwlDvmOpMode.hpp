@@ -14,11 +14,12 @@
 
 class IwlDvmOpMode : public IwlOpModeOps {
 public:
-    IwlDvmOpMode(IwlTransOps *ops, IntelEeprom *eeprom);
+    IwlDvmOpMode(IwlTransOps *ops, IntelIO *io, IntelEeprom *eeprom);
     virtual struct iwl_priv *start(struct iwl_trans *trans,
                                 const struct iwl_cfg *cfg,
                                 const struct iwl_fw *fw,
                                 struct dentry *dbgfs_dir) override;
+    virtual void nic_config(struct iwl_priv *priv) override;
 
     
 private:
@@ -38,12 +39,16 @@ private:
     int iwl_load_ucode_wait_alive(struct iwl_priv *priv,
                                   enum iwl_ucode_type ucode_type);
     int iwl_run_init_ucode(struct iwl_priv *priv);
+    int iwl_alive_notify(struct iwl_priv *priv);
+    void iwl_nic_config(struct iwl_priv *priv);
     
     
 
     
     IwlTransOps *_ops;
     IntelEeprom *_eeprom;
+    IntelIO *_io;
+    struct iwl_priv *priv;
 };
 
 #endif /* IwlDvmOpMode_hpp */

@@ -24,6 +24,7 @@ public:
                                  const struct iwl_cfg *cfg,
                                  const struct iwl_fw *fw,
                                  struct dentry *dbgfs_dir) = 0;
+    virtual void nic_config(struct iwl_priv *priv) = 0;
 
     
 //    struct iwl_op_mode *(*start)(struct iwl_trans *trans,

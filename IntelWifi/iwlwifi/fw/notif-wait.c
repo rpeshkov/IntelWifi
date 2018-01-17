@@ -203,9 +203,10 @@ int iwl_wait_notification(struct iwl_notif_wait_data *notif_wait,
     AbsoluteTime deadline;
     clock_interval_to_deadline(timeout, kMillisecondScale, (UInt64 *) &deadline);
     ret = IOLockSleepDeadline(notif_wait->notif_waitq, &event, *((AbsoluteTime *) &deadline), THREAD_INTERRUPTIBLE);
+    iwl_remove_notification(notif_wait, wait_entry);
     IOLockUnlock(notif_wait->notif_waitq);
 
-	iwl_remove_notification(notif_wait, wait_entry);
+	
 
 	if (wait_entry->aborted)
 		return -EIO;

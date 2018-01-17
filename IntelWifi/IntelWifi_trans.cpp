@@ -1063,10 +1063,12 @@ int IntelWifi::iwl_pcie_nic_init(struct iwl_trans *trans)
     if (ret)
         return ret;
     
-    //iwl_pcie_set_pwr(trans, false);
+    iwl_pcie_set_pwr(trans, false);
     
     // TODO: Deal with this. I'm not setting up op_mode functions mapping
     //iwl_op_mode_nic_config(trans->op_mode);
+    opmode->nic_config(0);
+    
     
     /* Allocate the RX queue, or reset if it is already allocated */
     iwl_pcie_rx_init(trans);
@@ -1091,7 +1093,6 @@ void IntelWifi::iwl_enable_fw_load_int(struct iwl_trans *trans)
     IWL_DEBUG_ISR(trans, "Enabling FW load interrupt\n");
     // TODO: Implement msix
     if (!trans_pcie->msix_enabled) {
-    //if (1 == 1) {
         trans_pcie->inta_mask = CSR_INT_BIT_FH_TX;
         io->iwl_write32(CSR_INT_MASK, trans_pcie->inta_mask);
     } else {
@@ -1890,6 +1891,22 @@ void IntelWifi::iwl_scd_txq_set_inactive(struct iwl_trans *trans,
                    (0 << SCD_QUEUE_STTS_REG_POS_ACTIVE)|
                    (1 << SCD_QUEUE_STTS_REG_POS_SCD_ACT_EN));
 }
+
+void IntelWifi::iwl_pcie_set_pwr(struct iwl_trans *trans, bool vaux)
+{
+    if (trans->cfg->apmg_not_supported)
+        return;
+    
+    if (vaux /*&& pci_pme_capable(to_pci_dev(trans->dev), PCI_D3cold)*/)
+        io->iwl_set_bits_mask_prph(APMG_PS_CTRL_REG,
+                               APMG_PS_CTRL_VAL_PWR_SRC_VAUX,
+                               ~APMG_PS_CTRL_MSK_PWR_SRC);
+    else
+        io->iwl_set_bits_mask_prph(APMG_PS_CTRL_REG,
+                               APMG_PS_CTRL_VAL_PWR_SRC_VMAIN,
+                               ~APMG_PS_CTRL_MSK_PWR_SRC);
+}
+
 
 
 

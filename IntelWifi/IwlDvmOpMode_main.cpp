@@ -13,7 +13,7 @@ extern "C" {
 #include "iwlwifi/dvm/dev.h"
 #include "iwlwifi/dvm/agn.h"
 #include "iwlwifi/iwl-drv.h"
-
+#include "iwlwifi/iwl-prph.h"
 }
 
 #define MAC_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
@@ -109,10 +109,6 @@ static const struct iwl_hcmd_arr iwl_dvm_groups[] = {
 //static const struct iwl_op_mode_ops iwl_dvm_ops;
 
 
-IwlDvmOpMode::IwlDvmOpMode(IwlTransOps *ops, IntelEeprom *eeprom) {
-    _ops = ops;
-    _eeprom = eeprom;
-}
 
 /* line 590
  * queue/FIFO/AC mapping definitions
@@ -591,4 +587,62 @@ out:
     op_mode = NULL;
     return NULL;
 }
+
+#define EEPROM_RF_CONFIG_TYPE_MAX      0x3
+
+// line 1996
+void IwlDvmOpMode::iwl_nic_config(struct iwl_priv *priv)
+{
+    //struct iwl_priv *priv = IWL_OP_MODE_GET_DVM(op_mode);
+    
+    /* SKU Control */
+    _io->iwl_trans_pcie_set_bits_mask(CSR_HW_IF_CONFIG_REG,
+                            CSR_HW_IF_CONFIG_REG_MSK_MAC_DASH |
+                            CSR_HW_IF_CONFIG_REG_MSK_MAC_STEP,
+                            (CSR_HW_REV_STEP(priv->trans->hw_rev) <<
+                             CSR_HW_IF_CONFIG_REG_POS_MAC_STEP) |
+                            (CSR_HW_REV_DASH(priv->trans->hw_rev) <<
+                             CSR_HW_IF_CONFIG_REG_POS_MAC_DASH));
+    
+    /* write radio config values to register */
+    if (priv->nvm_data->radio_cfg_type <= EEPROM_RF_CONFIG_TYPE_MAX) {
+        u32 reg_val =
+        priv->nvm_data->radio_cfg_type <<
+        CSR_HW_IF_CONFIG_REG_POS_PHY_TYPE |
+        priv->nvm_data->radio_cfg_step <<
+        CSR_HW_IF_CONFIG_REG_POS_PHY_STEP |
+        priv->nvm_data->radio_cfg_dash <<
+        CSR_HW_IF_CONFIG_REG_POS_PHY_DASH;
+        
+        _io->iwl_trans_pcie_set_bits_mask(CSR_HW_IF_CONFIG_REG,
+                                CSR_HW_IF_CONFIG_REG_MSK_PHY_TYPE |
+                                CSR_HW_IF_CONFIG_REG_MSK_PHY_STEP |
+                                CSR_HW_IF_CONFIG_REG_MSK_PHY_DASH,
+                                reg_val);
+        
+        IWL_INFO(priv, "Radio type=0x%x-0x%x-0x%x\n",
+                 priv->nvm_data->radio_cfg_type,
+                 priv->nvm_data->radio_cfg_step,
+                 priv->nvm_data->radio_cfg_dash);
+    } else {
+        WARN_ON(1);
+    }
+    
+    /* set CSR_HW_CONFIG_REG for uCode use */
+    _io->iwl_set_bit(CSR_HW_IF_CONFIG_REG,
+                CSR_HW_IF_CONFIG_REG_BIT_RADIO_SI |
+                CSR_HW_IF_CONFIG_REG_BIT_MAC_SI);
+    
+    /* W/A : NIC is stuck in a reset state after Early PCIe power off
+     * (PCIe power is lost before PERST# is asserted),
+     * causing ME FW to lose ownership and not being able to obtain it back.
+     */
+    _io->iwl_set_bits_mask_prph(APMG_PS_CTRL_REG,
+                           APMG_PS_CTRL_EARLY_PWR_OFF_RESET_DIS,
+                           ~APMG_PS_CTRL_EARLY_PWR_OFF_RESET_DIS);
+    
+    if (priv->lib->nic_config)
+        priv->lib->nic_config(priv);
+}
+
 

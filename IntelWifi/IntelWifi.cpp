@@ -206,7 +206,7 @@ bool IntelWifi::start(IOService *provider) {
     fInterruptSource->enable();
     
     
-    opmode = new IwlDvmOpMode(this, eeprom);
+    opmode = new IwlDvmOpMode(this, io, eeprom);
     opmode = (IwlDvmOpMode *)opmode->start(fTrans, fTrans->cfg, &fTrans->drv->fw, NULL);
     
     if (!opmode) {

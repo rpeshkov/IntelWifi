@@ -258,14 +258,15 @@ static const u8 iwlagn_ipan_queue_to_tx_fifo[] = {
     IWL_TX_FIFO_AUX,
 };
 
-static int iwl_alive_notify(struct iwl_priv *priv)
+int IwlDvmOpMode::iwl_alive_notify(struct iwl_priv *priv)
 {
     const u8 *queue_to_txf;
     u8 n_queues;
     int ret;
     int i;
     
-    iwl_trans_fw_alive(priv->trans, 0);
+    //iwl_trans_fw_alive(priv->trans, 0);
+    _ops->fw_alive(priv->trans, 0);
     
     if (priv->fw->ucode_capa.flags & IWL_UCODE_TLV_FLAGS_PAN &&
         priv->nvm_data->sku_cap_ipan_enable) {
