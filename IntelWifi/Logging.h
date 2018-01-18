@@ -41,5 +41,11 @@
 
 #define IWL_DEBUG_MAC80211(priv, args...) DebugLog("DEBUG MAC80211: " args)
 
+#define IWL_DEBUG_ASSOC(priv, args...) DebugLog("DEBUG ASSOC: " args)
+#define IWL_DEBUG_HC(priv, args...) DebugLog("DEBUG HC: " args)
+#define IWL_DEBUG_11H(priv, args...) DebugLog("DEBUG 11H: " args)
+#define IWL_DEBUG_RATE(priv, args...) DebugLog("DEBUG RATE: " args)
+#define IWL_DEBUG_COEX(priv, args...) DebugLog("DEBUG COEX: " args)
+
 
 #endif /* Logging_h */

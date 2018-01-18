@@ -9,6 +9,9 @@
 #ifndef bitfield_h
 #define bitfield_h
 
+#define BITS_PER_LONG 64
+
+
 #define BIT(nr)            (1UL << (nr))
 #define BIT_ULL(nr)        (1ULL << (nr))
 #define BIT_MASK(nr)        (1UL << ((nr) % BITS_PER_LONG))
@@ -20,6 +23,12 @@
 #define DIV_ROUND_UP(n, d) (((n) + (d) - 1) / (d))
 
 #define __bf_shf(x) (__builtin_ffsll(x) - 1)
+
+#define for_each_set_bit(bit, addr, size) \
+for ((bit) = find_first_bit((addr), (size));        \
+(bit) < (size);                    \
+(bit) = find_next_bit((addr), (size), (bit) + 1))
+
 
 
 /**

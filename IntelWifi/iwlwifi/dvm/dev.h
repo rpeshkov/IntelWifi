@@ -31,6 +31,8 @@
 #ifndef __iwl_dev_h__
 #define __iwl_dev_h__
 
+#include <linux/mac80211.h>
+
 //#include <linux/interrupt.h>
 //#include <linux/kernel.h>
 //#include <linux/wait.h>
@@ -883,7 +885,7 @@ struct iwl_priv {
 	size_t eeprom_blob_size;
 
 //    struct work_struct txpower_work;
-//    u32 calib_disabled;
+    u32 calib_disabled;
 //    struct work_struct run_time_calib_work;
 //    struct timer_list statistics_periodic;
 //    struct timer_list ucode_trace;

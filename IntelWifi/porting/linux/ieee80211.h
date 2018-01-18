@@ -13,6 +13,93 @@
 #include <linux/types.h>
 #include <linux/netdevice.h>
 
+// line 149
+/* miscellaneous IEEE 802.11 constants */
+#define IEEE80211_MAX_FRAG_THRESHOLD    2352
+#define IEEE80211_MAX_RTS_THRESHOLD    2353
+#define IEEE80211_MAX_AID        2007
+#define IEEE80211_MAX_TIM_LEN        251
+#define IEEE80211_MAX_MESH_PEERINGS    63
+/* Maximum size for the MA-UNITDATA primitive, 802.11 standard section
+ 6.2.1.1.2.
+ 
+ 802.11e clarifies the figure in section 7.1.2. The frame body is
+ up to 2304 octets long (maximum MSDU size) plus any crypt overhead. */
+#define IEEE80211_MAX_DATA_LEN        2304
+/* 802.11ad extends maximum MSDU size for DMG (freq > 40Ghz) networks
+ * to 7920 bytes, see 8.2.3 General frame format
+ */
+#define IEEE80211_MAX_DATA_LEN_DMG    7920
+/* 30 byte 4 addr hdr, 2 byte QoS, 2304 byte MSDU, 12 byte crypt, 4 byte FCS */
+#define IEEE80211_MAX_FRAME_LEN        2352
+
+/* Maximal size of an A-MSDU that can be transported in a HT BA session */
+#define IEEE80211_MAX_MPDU_LEN_HT_BA        4095
+
+/* Maximal size of an A-MSDU */
+#define IEEE80211_MAX_MPDU_LEN_HT_3839        3839
+#define IEEE80211_MAX_MPDU_LEN_HT_7935        7935
+
+#define IEEE80211_MAX_MPDU_LEN_VHT_3895        3895
+#define IEEE80211_MAX_MPDU_LEN_VHT_7991        7991
+#define IEEE80211_MAX_MPDU_LEN_VHT_11454    11454
+
+#define IEEE80211_MAX_SSID_LEN        32
+
+#define IEEE80211_MAX_MESH_ID_LEN    32
+
+#define IEEE80211_FIRST_TSPEC_TSID    8
+#define IEEE80211_NUM_TIDS        16
+
+/* number of user priorities 802.11 uses */
+#define IEEE80211_NUM_UPS        8
+/* number of ACs */
+#define IEEE80211_NUM_ACS        4
+
+#define IEEE80211_QOS_CTL_LEN        2
+/* 1d tag mask */
+#define IEEE80211_QOS_CTL_TAG1D_MASK        0x0007
+/* TID mask */
+#define IEEE80211_QOS_CTL_TID_MASK        0x000f
+/* EOSP */
+#define IEEE80211_QOS_CTL_EOSP            0x0010
+/* ACK policy */
+#define IEEE80211_QOS_CTL_ACK_POLICY_NORMAL    0x0000
+#define IEEE80211_QOS_CTL_ACK_POLICY_NOACK    0x0020
+#define IEEE80211_QOS_CTL_ACK_POLICY_NO_EXPL    0x0040
+#define IEEE80211_QOS_CTL_ACK_POLICY_BLOCKACK    0x0060
+#define IEEE80211_QOS_CTL_ACK_POLICY_MASK    0x0060
+/* A-MSDU 802.11n */
+#define IEEE80211_QOS_CTL_A_MSDU_PRESENT    0x0080
+/* Mesh Control 802.11s */
+#define IEEE80211_QOS_CTL_MESH_CONTROL_PRESENT  0x0100
+
+/* Mesh Power Save Level */
+#define IEEE80211_QOS_CTL_MESH_PS_LEVEL        0x0200
+/* Mesh Receiver Service Period Initiated */
+#define IEEE80211_QOS_CTL_RSPI            0x0400
+
+/* U-APSD queue for WMM IEs sent by AP */
+#define IEEE80211_WMM_IE_AP_QOSINFO_UAPSD    (1<<7)
+#define IEEE80211_WMM_IE_AP_QOSINFO_PARAM_SET_CNT_MASK    0x0f
+
+/* U-APSD queues for WMM IEs sent by STA */
+#define IEEE80211_WMM_IE_STA_QOSINFO_AC_VO    (1<<0)
+#define IEEE80211_WMM_IE_STA_QOSINFO_AC_VI    (1<<1)
+#define IEEE80211_WMM_IE_STA_QOSINFO_AC_BK    (1<<2)
+#define IEEE80211_WMM_IE_STA_QOSINFO_AC_BE    (1<<3)
+#define IEEE80211_WMM_IE_STA_QOSINFO_AC_MASK    0x0f
+
+/* U-APSD max SP length for WMM IEs sent by STA */
+#define IEEE80211_WMM_IE_STA_QOSINFO_SP_ALL    0x00
+#define IEEE80211_WMM_IE_STA_QOSINFO_SP_2    0x01
+#define IEEE80211_WMM_IE_STA_QOSINFO_SP_4    0x02
+#define IEEE80211_WMM_IE_STA_QOSINFO_SP_6    0x03
+#define IEEE80211_WMM_IE_STA_QOSINFO_SP_MASK    0x03
+#define IEEE80211_WMM_IE_STA_QOSINFO_SP_SHIFT    5
+
+
+
 /* 802.11 BAR control masks */
 #define IEEE80211_BAR_CTRL_ACK_POLICY_NORMAL    0x0000
 #define IEEE80211_BAR_CTRL_MULTI_TID        0x0002
@@ -35,6 +122,50 @@ struct ieee80211_channel_switch {
     int something;
 };
 
+
+/* Notice of Absence attribute - described in P2P spec 4.1.14 */
+/* Typical max value used here */
+#define IEEE80211_P2P_NOA_DESC_MAX    4
+
+struct ieee80211_p2p_noa_desc {
+    u8 count;
+    __le32 duration;
+    __le32 interval;
+    __le32 start_time;
+} __packed;
+
+struct ieee80211_p2p_noa_attr {
+    u8 index;
+    u8 oppps_ctwindow;
+    struct ieee80211_p2p_noa_desc desc[IEEE80211_P2P_NOA_DESC_MAX];
+} __packed;
+
+#define IEEE80211_P2P_OPPPS_ENABLE_BIT        BIT(7)
+#define IEEE80211_P2P_OPPPS_CTWINDOW_MASK    0x7F
+
+/**
+ * struct ieee80211_bar - HT Block Ack Request
+ *
+ * This structure refers to "HT BlockAckReq" as
+ * described in 802.11n draft section 7.2.1.7.1
+ */
+struct ieee80211_bar {
+    __le16 frame_control;
+    __le16 duration;
+    __u8 ra[ETH_ALEN];
+    __u8 ta[ETH_ALEN];
+    __le16 control;
+    __le16 start_seq_num;
+} __packed;
+
+/* 802.11 BAR control masks */
+#define IEEE80211_BAR_CTRL_ACK_POLICY_NORMAL    0x0000
+#define IEEE80211_BAR_CTRL_MULTI_TID        0x0002
+#define IEEE80211_BAR_CTRL_CBMTID_COMPRESSED_BA    0x0004
+#define IEEE80211_BAR_CTRL_TID_INFO_MASK    0xf000
+#define IEEE80211_BAR_CTRL_TID_INFO_SHIFT    12
+
+#define IEEE80211_HT_MCS_MASK_LEN        10
 
 
 /**
@@ -64,24 +195,6 @@ struct ieee80211_mcs_info {
 #define        IEEE80211_HT_MCS_TX_MAX_STREAMS    4
 #define IEEE80211_HT_MCS_TX_UNEQUAL_MODULATION    0x10
 
-/** line 1305
- * enum ieee80211_smps_mode - spatial multiplexing power save mode
- *
- * @IEEE80211_SMPS_AUTOMATIC: automatic
- * @IEEE80211_SMPS_OFF: off
- * @IEEE80211_SMPS_STATIC: static
- * @IEEE80211_SMPS_DYNAMIC: dynamic
- * @IEEE80211_SMPS_NUM_MODES: internal, don't use
- */
-enum ieee80211_smps_mode {
-    IEEE80211_SMPS_AUTOMATIC,
-    IEEE80211_SMPS_OFF,
-    IEEE80211_SMPS_STATIC,
-    IEEE80211_SMPS_DYNAMIC,
-    
-    /* keep last */
-    IEEE80211_SMPS_NUM_MODES,
-};
 
 
 /*
@@ -136,7 +249,7 @@ struct ieee80211_ht_cap {
 #define IEEE80211_HT_EXT_CAP_PCO        0x0001
 #define IEEE80211_HT_EXT_CAP_PCO_TIME        0x0006
 #define        IEEE80211_HT_EXT_CAP_PCO_TIME_SHIFT    1
-#define IEEE80211_HT_EXT_CAP_MCS_FB        0x0300
+#define IEEE80211_HT_EXT_CAP_M4CS_FB        0x0300
 #define        IEEE80211_HT_EXT_CAP_MCS_FB_SHIFT    8
 #define IEEE80211_HT_EXT_CAP_HTC_SUP        0x0400
 #define IEEE80211_HT_EXT_CAP_RD_RESPONDER    0x0800
@@ -145,6 +258,13 @@ struct ieee80211_ht_cap {
 #define IEEE80211_HT_AMPDU_PARM_FACTOR        0x03
 #define IEEE80211_HT_AMPDU_PARM_DENSITY        0x1C
 #define        IEEE80211_HT_AMPDU_PARM_DENSITY_SHIFT    2
+
+
+// line 870
+#define WLAN_SA_QUERY_TR_ID_LEN 2
+#define WLAN_MEMBERSHIP_LEN 8
+#define WLAN_USER_POSITION_LEN 16
+
 
 
 

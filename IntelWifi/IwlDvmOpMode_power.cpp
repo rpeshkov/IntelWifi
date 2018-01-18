@@ -26,6 +26,8 @@
  * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
  *****************************************************************************/
 
+#include "IwlDvmOpMode.hpp"
+
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -270,7 +272,7 @@ static void iwl_power_sleep_cam_cmd(struct iwl_priv *priv,
 	IWL_DEBUG_POWER(priv, "Sleep command for CAM\n");
 }
 
-static int iwl_set_power(struct iwl_priv *priv, struct iwl_powertable_cmd *cmd)
+int IwlDvmOpMode::iwl_set_power(struct iwl_priv *priv, struct iwl_powertable_cmd *cmd)
 {
 	IWL_DEBUG_POWER(priv, "Sending power/sleep command\n");
 	IWL_DEBUG_POWER(priv, "Flags value = 0x%08X\n", cmd->flags);
@@ -283,10 +285,8 @@ static int iwl_set_power(struct iwl_priv *priv, struct iwl_powertable_cmd *cmd)
 			le32_to_cpu(cmd->sleep_interval[3]),
 			le32_to_cpu(cmd->sleep_interval[4]));
 
-    return 0;
-    // TODO: Implement
-//    return iwl_dvm_send_cmd_pdu(priv, POWER_TABLE_CMD, 0,
-//                sizeof(struct iwl_powertable_cmd), cmd);
+    return iwl_dvm_send_cmd_pdu(priv, POWER_TABLE_CMD, 0,
+                sizeof(struct iwl_powertable_cmd), cmd);
 }
 
 static void iwl_power_build_cmd(struct iwl_priv *priv,
@@ -331,7 +331,7 @@ static void iwl_power_build_cmd(struct iwl_priv *priv,
 //    }
 }
 
-int iwl_power_set_mode(struct iwl_priv *priv, struct iwl_powertable_cmd *cmd,
+int IwlDvmOpMode::iwl_power_set_mode(struct iwl_priv *priv, struct iwl_powertable_cmd *cmd,
 		       bool force)
 {
 	int ret;
@@ -380,7 +380,7 @@ int iwl_power_set_mode(struct iwl_priv *priv, struct iwl_powertable_cmd *cmd,
 	return ret;
 }
 
-int iwl_power_update_mode(struct iwl_priv *priv, bool force)
+int IwlDvmOpMode::iwl_power_update_mode(struct iwl_priv *priv, bool force)
 {
 	struct iwl_powertable_cmd cmd;
 
@@ -389,7 +389,7 @@ int iwl_power_update_mode(struct iwl_priv *priv, bool force)
 }
 
 /* initialize to default */
-void iwl_power_initialize(struct iwl_priv *priv)
+void IwlDvmOpMode::iwl_power_initialize(struct iwl_priv *priv)
 {
 	priv->power_data.bus_pm = priv->trans->pm_support;
 

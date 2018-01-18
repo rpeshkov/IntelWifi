@@ -108,6 +108,25 @@ static const struct iwl_hcmd_arr iwl_dvm_groups[] = {
 
 //static const struct iwl_op_mode_ops iwl_dvm_ops;
 
+// line 374
+int IwlDvmOpMode::iwl_send_statistics_request(struct iwl_priv *priv, u8 flags, bool clear)
+{
+    struct iwl_statistics_cmd statistics_cmd = {
+        .configuration_flags =
+        clear ? IWL_STATS_CONF_CLEAR_STATS : 0,
+    };
+    
+    if (flags & CMD_ASYNC)
+        return iwl_dvm_send_cmd_pdu(priv, REPLY_STATISTICS_CMD,
+                                    CMD_ASYNC,
+                                    sizeof(struct iwl_statistics_cmd),
+                                    &statistics_cmd);
+    else
+        return iwl_dvm_send_cmd_pdu(priv, REPLY_STATISTICS_CMD, 0,
+                                    sizeof(struct iwl_statistics_cmd),
+                                    &statistics_cmd);
+}
+
 
 
 /* line 590
@@ -199,6 +218,224 @@ static void iwl_init_context(struct iwl_priv *priv, u32 ucode_flags)
     
     //BUILD_BUG_ON(NUM_IWL_RXON_CTX != 2);
 }
+
+// line 678
+void IwlDvmOpMode::iwl_rf_kill_ct_config(struct iwl_priv *priv)
+{
+    struct iwl_ct_kill_config cmd;
+    struct iwl_ct_kill_throttling_config adv_cmd;
+    int ret = 0;
+    
+    _io->iwl_write32(CSR_UCODE_DRV_GP1_CLR,
+                CSR_UCODE_DRV_GP1_REG_BIT_CT_KILL_EXIT);
+    
+    priv->thermal_throttle.ct_kill_toggle = false;
+    
+    if (priv->lib->support_ct_kill_exit) {
+        adv_cmd.critical_temperature_enter =
+        cpu_to_le32(priv->hw_params.ct_kill_threshold);
+        adv_cmd.critical_temperature_exit =
+        cpu_to_le32(priv->hw_params.ct_kill_exit_threshold);
+        
+        ret = iwl_dvm_send_cmd_pdu(priv,
+                                   REPLY_CT_KILL_CONFIG_CMD,
+                                   0, sizeof(adv_cmd), &adv_cmd);
+        if (ret)
+            IWL_ERR(priv, "REPLY_CT_KILL_CONFIG_CMD failed\n");
+        else
+            IWL_DEBUG_INFO(priv, "REPLY_CT_KILL_CONFIG_CMD "
+                           "succeeded, critical temperature enter is %d,"
+                           "exit is %d\n",
+                           priv->hw_params.ct_kill_threshold,
+                           priv->hw_params.ct_kill_exit_threshold);
+    } else {
+        cmd.critical_temperature_R =
+        cpu_to_le32(priv->hw_params.ct_kill_threshold);
+        
+        ret = iwl_dvm_send_cmd_pdu(priv,
+                                   REPLY_CT_KILL_CONFIG_CMD,
+                                   0, sizeof(cmd), &cmd);
+        if (ret)
+            IWL_ERR(priv, "REPLY_CT_KILL_CONFIG_CMD failed\n");
+        else
+            IWL_DEBUG_INFO(priv, "REPLY_CT_KILL_CONFIG_CMD "
+                           "succeeded, "
+                           "critical temperature is %d\n",
+                           priv->hw_params.ct_kill_threshold);
+    }
+}
+
+
+// line 723
+static int iwlagn_send_calib_cfg_rt(struct iwl_priv *priv, u32 cfg)
+{
+    struct iwl_calib_cfg_cmd calib_cfg_cmd;
+    struct iwl_host_cmd cmd = {
+        .id = CALIBRATION_CFG_CMD,
+        .len = { sizeof(struct iwl_calib_cfg_cmd), },
+        .data = { &calib_cfg_cmd, },
+    };
+    
+    memset(&calib_cfg_cmd, 0, sizeof(calib_cfg_cmd));
+    calib_cfg_cmd.ucd_calib_cfg.once.is_enable = IWL_CALIB_RT_CFG_ALL;
+    calib_cfg_cmd.ucd_calib_cfg.once.start = cpu_to_le32(cfg);
+    
+    // TODO: Implement
+    //return iwl_dvm_send_cmd(priv, &cmd);
+    return 0;
+}
+
+static int iwlagn_send_tx_ant_config(struct iwl_priv *priv, u8 valid_tx_ant)
+{
+    struct iwl_tx_ant_config_cmd tx_ant_cmd = {
+        .valid = cpu_to_le32(valid_tx_ant),
+    };
+    
+    if (IWL_UCODE_API(priv->fw->ucode_ver) > 1) {
+        IWL_DEBUG_HC(priv, "select valid tx ant: %u\n", valid_tx_ant);
+        return 0;
+        // TODO: Implement
+//        return iwl_dvm_send_cmd_pdu(priv, TX_ANT_CONFIGURATION_CMD, 0,
+//                                    sizeof(struct iwl_tx_ant_config_cmd),
+//                                    &tx_ant_cmd);
+    } else {
+        IWL_DEBUG_HC(priv, "TX_ANT_CONFIGURATION_CMD not supported\n");
+        return -EOPNOTSUPP;
+    }
+}
+
+static void iwl_send_bt_config(struct iwl_priv *priv)
+{
+    struct iwl_bt_cmd bt_cmd = {
+        .lead_time = BT_LEAD_TIME_DEF,
+        .max_kill = BT_MAX_KILL_DEF,
+        .kill_ack_mask = 0,
+        .kill_cts_mask = 0,
+    };
+    
+    if (!iwlwifi_mod_params.bt_coex_active)
+        bt_cmd.flags = BT_COEX_DISABLE;
+    else
+        bt_cmd.flags = BT_COEX_ENABLE;
+    
+    priv->bt_enable_flag = bt_cmd.flags;
+    IWL_DEBUG_INFO(priv, "BT coex %s\n",
+                   (bt_cmd.flags == BT_COEX_DISABLE) ? "disable" : "active");
+
+    // TODO: Implement
+//    if (iwl_dvm_send_cmd_pdu(priv, REPLY_BT_CONFIG,
+//                             0, sizeof(struct iwl_bt_cmd), &bt_cmd))
+//        IWL_ERR(priv, "failed to send BT Coex Config\n");
+}
+
+
+
+
+
+/** line 780
+ * iwl_alive_start - called after REPLY_ALIVE notification received
+ *                   from protocol/runtime uCode (initialization uCode's
+ *                   Alive gets handled by iwl_init_alive_start()).
+ */
+int IwlDvmOpMode::iwl_alive_start(struct iwl_priv *priv)
+{
+    int ret = 0;
+    struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
+    
+    IWL_DEBUG_INFO(priv, "Runtime Alive received.\n");
+    
+    /* After the ALIVE response, we can send host commands to the uCode */
+    set_bit(STATUS_ALIVE, &priv->status);
+    
+    if (iwl_is_rfkill(priv))
+        return -ERFKILL;
+    
+    if (priv->event_log.ucode_trace) {
+        /* start collecting data now */
+        // TODO: Implement
+        //mod_timer(&priv->ucode_trace, jiffies);
+    }
+    
+    /* download priority table before any calibration request */
+    if (priv->lib->bt_params &&
+        priv->lib->bt_params->advanced_bt_coexist) {
+        /* Configure Bluetooth device coexistence support */
+        if (priv->lib->bt_params->bt_sco_disable)
+            priv->bt_enable_pspoll = false;
+        else
+            priv->bt_enable_pspoll = true;
+        
+        priv->bt_valid = IWLAGN_BT_ALL_VALID_MSK;
+        priv->kill_ack_mask = IWLAGN_BT_KILL_ACK_MASK_DEFAULT;
+        priv->kill_cts_mask = IWLAGN_BT_KILL_CTS_MASK_DEFAULT;
+        iwlagn_send_advance_bt_config(priv);
+        priv->bt_valid = IWLAGN_BT_VALID_ENABLE_FLAGS;
+        priv->cur_rssi_ctx = NULL;
+        
+        iwl_send_prio_tbl(priv);
+        
+        /* FIXME: w/a to force change uCode BT state machine */
+        ret = iwl_send_bt_env(priv, IWL_BT_COEX_ENV_OPEN,
+                              BT_COEX_PRIO_TBL_EVT_INIT_CALIB2);
+        if (ret)
+            return ret;
+        ret = iwl_send_bt_env(priv, IWL_BT_COEX_ENV_CLOSE,
+                              BT_COEX_PRIO_TBL_EVT_INIT_CALIB2);
+        if (ret)
+            return ret;
+    } else if (priv->lib->bt_params) {
+        /*
+         * default is 2-wire BT coexexistence support
+         */
+        iwl_send_bt_config(priv);
+    }
+    
+    /*
+     * Perform runtime calibrations, including DC calibration.
+     */
+    iwlagn_send_calib_cfg_rt(priv, IWL_CALIB_CFG_DC_IDX);
+    
+    // TODO: Implement
+    //ieee80211_wake_queues(priv->hw);
+    
+    /* Configure Tx antenna selection based on H/W config */
+    iwlagn_send_tx_ant_config(priv, priv->nvm_data->valid_tx_ant);
+    
+    if (iwl_is_associated_ctx(ctx) && !priv->wowlan) {
+        struct iwl_rxon_cmd *active_rxon =
+        (struct iwl_rxon_cmd *)&ctx->active;
+        /* apply any changes in staging */
+        ctx->staging.filter_flags |= RXON_FILTER_ASSOC_MSK;
+        active_rxon->filter_flags &= ~RXON_FILTER_ASSOC_MSK;
+    } else {
+        struct iwl_rxon_context *tmp;
+        /* Initialize our rx_config data */
+        for_each_context(priv, tmp)
+            iwl_connection_init_rx_config(priv, tmp);
+        
+        iwlagn_set_rxon_chain(priv, ctx);
+    }
+    
+    if (!priv->wowlan) {
+        /* WoWLAN ucode will not reply in the same way, skip it */
+        iwl_reset_run_time_calib(priv);
+    }
+    
+    set_bit(STATUS_READY, &priv->status);
+    
+    /* Configure the adapter for unassociated operation */
+    ret = iwlagn_commit_rxon(priv, ctx);
+    if (ret)
+        return ret;
+    
+    /* At this point, the NIC is initialized and operational */
+    iwl_rf_kill_ct_config(priv);
+    
+    IWL_DEBUG_INFO(priv, "ALIVE processing complete.\n");
+    
+    return iwl_power_update_mode(priv, true);
+}
+
 
 
 // line 1112
@@ -430,6 +667,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     //SET_IEEE80211_DEV(priv->hw, priv->trans->dev);
     
     // TODO: Implement
+    // Only logging here, so lowest priority
     //iwl_option_config(priv);
     
     IWL_DEBUG_INFO(priv, "*** LOAD DRIVER ***\n");

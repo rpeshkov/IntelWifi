@@ -27,13 +27,14 @@ int IwlDvmOpMode::__iwl_up(struct iwl_priv *priv)
         return -EIO;
     }
     
-//    for_each_context(priv, ctx) {
-//        ret = iwlagn_alloc_bcast_station(priv, ctx);
-//        if (ret) {
-//            iwl_dealloc_bcast_stations(priv);
-//            return ret;
-//        }
-//    }
+    for_each_context(priv, ctx) {
+        ret = iwlagn_alloc_bcast_station(priv, ctx);
+        if (ret) {
+            // TODO: Implement
+            //iwl_dealloc_bcast_stations(priv);
+            return ret;
+        }
+    }
     
     ret = _ops->start_hw(priv->trans, true);
     if (ret) {
@@ -47,7 +48,6 @@ int IwlDvmOpMode::__iwl_up(struct iwl_priv *priv)
         goto error;
     }
     
-    //ret = iwl_trans_start_hw(priv->trans);
     ret = _ops->start_hw(priv->trans, true);
     if (ret) {
         IWL_ERR(priv, "Failed to start HW: %d\n", ret);
@@ -61,7 +61,7 @@ int IwlDvmOpMode::__iwl_up(struct iwl_priv *priv)
     }
 
     // TODO: Implement
-//    ret = iwl_alive_start(priv);
+    ret = iwl_alive_start(priv);
 //    if (ret)
 //        goto error;
     return 0;
@@ -106,3 +106,24 @@ int IwlDvmOpMode::iwlagn_mac_start(struct iwl_priv *priv)
     IWL_DEBUG_MAC80211(priv, "leave\n");
     return 0;
 }
+
+// line 1048
+void IwlDvmOpMode::iwl_chswitch_done(struct iwl_priv *priv, bool is_success)
+{
+    /*
+     * MULTI-FIXME
+     * See iwlagn_mac_channel_switch.
+     */
+    struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
+    
+    if (test_bit(STATUS_EXIT_PENDING, &priv->status))
+        return;
+    
+    if (!test_and_clear_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status))
+        return;
+
+    // TODO: Implement
+//    if (ctx->vif)
+//        ieee80211_chswitch_done(ctx->vif, is_success);
+}
+
