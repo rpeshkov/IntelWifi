@@ -36,12 +36,17 @@ private:
     // main.c
     int iwl_send_statistics_request(struct iwl_priv *priv, u8 flags, bool clear); // line 374
     void iwl_rf_kill_ct_config(struct iwl_priv *priv); // line 678
+    int iwlagn_send_calib_cfg_rt(struct iwl_priv *priv, u32 cfg); // line 723
+    int iwlagn_send_tx_ant_config(struct iwl_priv *priv, u8 valid_tx_ant); // line 740
+    void iwl_send_bt_config(struct iwl_priv *priv); // line 757
     int iwl_alive_start(struct iwl_priv *priv); // line 780
+    int iwl_init_drv(struct iwl_priv *priv); // line 1112
     
     // mac80211.c
     int __iwl_up(struct iwl_priv *priv); // line 238
     int iwlagn_mac_start(struct iwl_priv *priv); // line 296
     void iwl_chswitch_done(struct iwl_priv *priv, bool is_success); // line 1048
+    struct ieee80211_hw *iwl_alloc_all(void); // line 1637
     
     // ucode.c
     int iwl_init_alive_start(struct iwl_priv *priv);

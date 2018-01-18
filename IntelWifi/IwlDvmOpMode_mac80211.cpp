@@ -60,10 +60,9 @@ int IwlDvmOpMode::__iwl_up(struct iwl_priv *priv)
         goto error;
     }
 
-    // TODO: Implement
     ret = iwl_alive_start(priv);
-//    if (ret)
-//        goto error;
+    if (ret)
+        goto error;
     return 0;
     
 error:
@@ -126,4 +125,41 @@ void IwlDvmOpMode::iwl_chswitch_done(struct iwl_priv *priv, bool is_success)
 //    if (ctx->vif)
 //        ieee80211_chswitch_done(ctx->vif, is_success);
 }
+
+// line 1637
+/* This function both allocates and initializes hw and priv. */
+struct ieee80211_hw *IwlDvmOpMode::iwl_alloc_all(void)
+{
+    struct iwl_priv *priv;
+    //struct iwl_op_mode *op_mode;
+    /* mac80211 allocates memory for this device instance, including
+     *   space for this driver's private structure */
+    struct ieee80211_hw *hw;
+    
+    // This is not kinda correct I guess...
+    hw = (struct ieee80211_hw *)IOMalloc(sizeof(ieee80211_hw));
+    
+    
+//    hw = ieee80211_alloc_hw(sizeof(struct iwl_priv) +
+//                            sizeof(struct iwl_op_mode), &iwlagn_hw_ops);
+    if (!hw)
+        goto out;
+    
+    hw->wiphy = (struct wiphy *)IOMalloc(sizeof(wiphy));
+    
+    hw->priv = IOMalloc(sizeof(iwl_priv));
+    if (!hw->priv)
+        goto out;
+    
+    priv = (struct iwl_priv *)hw->priv;
+    priv->hw = hw;
+    
+//    op_mode = hw->priv;
+//    priv = IWL_OP_MODE_GET_DVM(op_mode);
+//    priv->hw = hw;
+    
+out:
+    return hw;
+}
+
 

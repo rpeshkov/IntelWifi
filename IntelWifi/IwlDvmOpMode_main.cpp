@@ -267,7 +267,7 @@ void IwlDvmOpMode::iwl_rf_kill_ct_config(struct iwl_priv *priv)
 
 
 // line 723
-static int iwlagn_send_calib_cfg_rt(struct iwl_priv *priv, u32 cfg)
+int IwlDvmOpMode::iwlagn_send_calib_cfg_rt(struct iwl_priv *priv, u32 cfg)
 {
     struct iwl_calib_cfg_cmd calib_cfg_cmd;
     struct iwl_host_cmd cmd = {
@@ -280,12 +280,13 @@ static int iwlagn_send_calib_cfg_rt(struct iwl_priv *priv, u32 cfg)
     calib_cfg_cmd.ucd_calib_cfg.once.is_enable = IWL_CALIB_RT_CFG_ALL;
     calib_cfg_cmd.ucd_calib_cfg.once.start = cpu_to_le32(cfg);
     
-    // TODO: Implement
-    //return iwl_dvm_send_cmd(priv, &cmd);
-    return 0;
+    
+    return iwl_dvm_send_cmd(priv, &cmd);
+    //return 0;
 }
 
-static int iwlagn_send_tx_ant_config(struct iwl_priv *priv, u8 valid_tx_ant)
+// line 740
+int IwlDvmOpMode::iwlagn_send_tx_ant_config(struct iwl_priv *priv, u8 valid_tx_ant)
 {
     struct iwl_tx_ant_config_cmd tx_ant_cmd = {
         .valid = cpu_to_le32(valid_tx_ant),
@@ -293,18 +294,18 @@ static int iwlagn_send_tx_ant_config(struct iwl_priv *priv, u8 valid_tx_ant)
     
     if (IWL_UCODE_API(priv->fw->ucode_ver) > 1) {
         IWL_DEBUG_HC(priv, "select valid tx ant: %u\n", valid_tx_ant);
-        return 0;
-        // TODO: Implement
-//        return iwl_dvm_send_cmd_pdu(priv, TX_ANT_CONFIGURATION_CMD, 0,
-//                                    sizeof(struct iwl_tx_ant_config_cmd),
-//                                    &tx_ant_cmd);
+        
+        return iwl_dvm_send_cmd_pdu(priv, TX_ANT_CONFIGURATION_CMD, 0,
+                                    sizeof(struct iwl_tx_ant_config_cmd),
+                                    &tx_ant_cmd);
     } else {
         IWL_DEBUG_HC(priv, "TX_ANT_CONFIGURATION_CMD not supported\n");
         return -EOPNOTSUPP;
     }
 }
 
-static void iwl_send_bt_config(struct iwl_priv *priv)
+// line 757
+void IwlDvmOpMode::iwl_send_bt_config(struct iwl_priv *priv)
 {
     struct iwl_bt_cmd bt_cmd = {
         .lead_time = BT_LEAD_TIME_DEF,
@@ -322,10 +323,9 @@ static void iwl_send_bt_config(struct iwl_priv *priv)
     IWL_DEBUG_INFO(priv, "BT coex %s\n",
                    (bt_cmd.flags == BT_COEX_DISABLE) ? "disable" : "active");
 
-    // TODO: Implement
-//    if (iwl_dvm_send_cmd_pdu(priv, REPLY_BT_CONFIG,
-//                             0, sizeof(struct iwl_bt_cmd), &bt_cmd))
-//        IWL_ERR(priv, "failed to send BT Coex Config\n");
+    if (iwl_dvm_send_cmd_pdu(priv, REPLY_BT_CONFIG,
+                             0, sizeof(struct iwl_bt_cmd), &bt_cmd))
+        IWL_ERR(priv, "failed to send BT Coex Config\n");
 }
 
 
@@ -439,7 +439,7 @@ int IwlDvmOpMode::iwl_alive_start(struct iwl_priv *priv)
 
 
 // line 1112
-static int iwl_init_drv(struct iwl_priv *priv)
+int IwlDvmOpMode::iwl_init_drv(struct iwl_priv *priv)
 {
     priv->sta_lock = IOSimpleLockAlloc();
  
@@ -459,8 +459,9 @@ static int iwl_init_drv(struct iwl_priv *priv)
     //priv->rx_statistics_jiffies = jiffies;
     
     /* Choose which receivers/antennas to use */
-    //iwlagn_set_rxon_chain(priv, &priv->contexts[IWL_RXON_CTX_BSS]);
+    iwlagn_set_rxon_chain(priv, &priv->contexts[IWL_RXON_CTX_BSS]);
     
+    // TODO: Implement
     //iwl_init_scan_params(priv);
     
     /* init bt coex */
@@ -533,7 +534,7 @@ static int iwl_eeprom_init_hw_params(struct iwl_priv *priv)
 struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, const struct iwl_cfg *cfg, const struct iwl_fw *fw, struct dentry *dbgfs_dir)
 {
     struct iwl_priv *priv;
-//    struct ieee80211_hw *hw;
+    struct ieee80211_hw *hw;
     struct iwl_op_mode *op_mode;
     u16 num_mac;
     u32 ucode_flags;
@@ -550,16 +551,16 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     /************************
      * 1. Allocating HW data
      ************************/
-//    hw = iwl_alloc_all();
-//    if (!hw) {
-//        TraceLog("%s: Cannot allocate network device\n", cfg->name);
-//        goto out;
-//    }
+    hw = iwl_alloc_all();
+    if (!hw) {
+        TraceLog("%s: Cannot allocate network device\n", cfg->name);
+        goto out;
+    }
     
 //    op_mode = hw->priv;
 //    op_mode->ops = &iwl_dvm_ops;
 //    priv = IWL_OP_MODE_GET_DVM(op_mode);
-    priv = (struct iwl_priv *)IOMalloc(sizeof(iwl_priv));
+    priv = (struct iwl_priv *)hw->priv; //(struct iwl_priv *)IOMalloc(sizeof(iwl_priv));
     priv->trans = trans;
     priv->dev = trans->dev;
     priv->cfg = cfg;
@@ -711,7 +712,6 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     if (!priv->nvm_data)
         goto out_free_eeprom_blob;
 
-    // TODO: Implement
     if (_eeprom->iwl_nvm_check_version(priv->nvm_data, priv->trans))
         goto out_free_eeprom;
     
@@ -721,14 +721,14 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     /* extract MAC Address */
     memcpy(priv->addresses[0].addr, priv->nvm_data->hw_addr, ETH_ALEN);
     IWL_DEBUG_INFO(priv, "MAC address: " MAC_FMT "\n", MAC_BYTES(priv->addresses[0].addr));
-//    priv->hw->wiphy->addresses = priv->addresses;
-//    priv->hw->wiphy->n_addresses = 1;
+    priv->hw->wiphy->addresses = priv->addresses;
+    priv->hw->wiphy->n_addresses = 1;
     num_mac = priv->nvm_data->n_hw_addrs;
     if (num_mac > 1) {
         memcpy(priv->addresses[1].addr, priv->addresses[0].addr,
                ETH_ALEN);
         priv->addresses[1].addr[5]++;
-//        priv->hw->wiphy->n_addresses++;
+        priv->hw->wiphy->n_addresses++;
     }
 
     /************************
@@ -771,18 +771,17 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     /********************
      * 6. Setup services
      ********************/
-////    iwl_setup_deferred_work(priv);
+//    iwl_setup_deferred_work(priv);
 //    iwl_setup_rx_handlers(priv);
     iwl_notification_wait_init(&priv->notif_wait);
 
-//
     iwl_power_initialize(priv);
-////    iwl_tt_initialize(priv);
-//
-////    snprintf(priv->hw->wiphy->fw_version,
-////             sizeof(priv->hw->wiphy->fw_version),
-////             "%s", fw->fw_version);
-//
+//    iwl_tt_initialize(priv);
+
+    snprintf(priv->hw->wiphy->fw_version,
+             sizeof(priv->hw->wiphy->fw_version),
+             "%s", fw->fw_version);
+
     priv->new_scan_threshold_behaviour =
     !!(ucode_flags & IWL_UCODE_TLV_FLAGS_NEWSCAN);
 
