@@ -104,9 +104,7 @@ struct iwl_trans *iwl_trans_alloc(unsigned int priv_size,
 #ifdef CONFIG_LOCKDEP
 	static struct lock_class_key __key;
 #endif
-    
-//    trans = devm_kzalloc(dev, sizeof(*trans) + priv_size, GFP_KERNEL);
-    
+        
     // TODO: Need to remember that trans should be freed somewhere. In OSX we don't have devm_kzalloc :(
     trans = (struct iwl_trans *)IOMalloc(sizeof(*trans) + priv_size);
 	if (!trans)

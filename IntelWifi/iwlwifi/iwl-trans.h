@@ -983,8 +983,10 @@ iwl_trans_txq_enable_cfg(struct iwl_trans *trans, int queue, u16 ssn,
 		return false;
 	}
 
-	return trans->ops->txq_enable(trans, queue, ssn,
-				      cfg, queue_wdg_timeout);
+    return true;
+    // TODO: Implement
+//    return trans->ops->txq_enable(trans, queue, ssn,
+//                      cfg, queue_wdg_timeout);
 }
 
 static inline void
@@ -1022,36 +1024,36 @@ static inline void iwl_trans_txq_set_shared_mode(struct iwl_trans *trans,
 		trans->ops->txq_set_shared_mode(trans, queue, shared_mode);
 }
 
-static inline void iwl_trans_txq_enable(struct iwl_trans *trans, int queue,
-					int fifo, int sta_id, int tid,
-					int frame_limit, u16 ssn,
-					unsigned int queue_wdg_timeout)
-{
-	struct iwl_trans_txq_scd_cfg cfg = {
-		.fifo = (u8)fifo,
-		.sta_id = (u8)sta_id,
-		.tid = (u8)tid,
-		.frame_limit = frame_limit,
-		.aggregate = sta_id >= 0,
-	};
-
-	iwl_trans_txq_enable_cfg(trans, queue, ssn, &cfg, queue_wdg_timeout);
-}
-
-static inline
-void iwl_trans_ac_txq_enable(struct iwl_trans *trans, int queue, int fifo,
-			     unsigned int queue_wdg_timeout)
-{
-	struct iwl_trans_txq_scd_cfg cfg = {
-		.fifo = (u8)fifo,
-		.sta_id = (u8)-1,
-		.tid = IWL_MAX_TID_COUNT,
-		.frame_limit = IWL_FRAME_LIMIT,
-		.aggregate = false,
-	};
-
-	iwl_trans_txq_enable_cfg(trans, queue, 0, &cfg, queue_wdg_timeout);
-}
+//static inline void iwl_trans_txq_enable(struct iwl_trans *trans, int queue,
+//                    int fifo, int sta_id, int tid,
+//                    int frame_limit, u16 ssn,
+//                    unsigned int queue_wdg_timeout)
+//{
+//    struct iwl_trans_txq_scd_cfg cfg = {
+//        .fifo = (u8)fifo,
+//        .sta_id = (u8)sta_id,
+//        .tid = (u8)tid,
+//        .frame_limit = frame_limit,
+//        .aggregate = sta_id >= 0,
+//    };
+//
+//    iwl_trans_txq_enable_cfg(trans, queue, ssn, &cfg, queue_wdg_timeout);
+//}
+//
+//static inline
+//void iwl_trans_ac_txq_enable(struct iwl_trans *trans, int queue, int fifo,
+//                 unsigned int queue_wdg_timeout)
+//{
+//    struct iwl_trans_txq_scd_cfg cfg = {
+//        .fifo = (u8)fifo,
+//        .sta_id = (u8)-1,
+//        .tid = IWL_MAX_TID_COUNT,
+//        .frame_limit = IWL_FRAME_LIMIT,
+//        .aggregate = false,
+//    };
+//
+//    iwl_trans_txq_enable_cfg(trans, queue, 0, &cfg, queue_wdg_timeout);
+//}
 
 static inline void iwl_trans_freeze_txq_timer(struct iwl_trans *trans,
 					      unsigned long txqs,

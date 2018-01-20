@@ -399,14 +399,15 @@ void IntelIO::iwl_force_nmi(struct iwl_trans *trans)
 u32 IntelIO::iwl_trans_write_mem32(struct iwl_trans *trans, u32 addr,
                                         u32 val)
 {
-    return iwl_trans_write_mem(trans, addr, &val, 1);
+    
+    return iwl_trans_pcie_write_mem(addr, &val, 1);
 }
 
 u32 IntelIO::iwl_trans_read_mem32(struct iwl_trans *trans, u32 addr)
 {
     u32 value;
     
-    if (iwl_trans_read_mem(trans, addr, &value, 1))
+    if (iwl_trans_pcie_read_mem(addr, &value, 1))
         return 0xa5a5a5a5;
     
     return value;

@@ -414,15 +414,15 @@ int IntelWifi::iwl_pcie_rx_alloc(struct iwl_trans *trans)
         IOBufferMemoryDescriptor *rxqBd =
         IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionInOut | kIOMemoryPhysicallyContiguous | kIOMapInhibitCache), free_size * rxq->queue_size, 0x00000000FFFFFFFFULL);
         
-        IODMACommand *rxqBdCmd = IODMACommand::withSpecification(kIODMACommandOutputHost64, 64, 0, IODMACommand::kMapped, 0, 1);
+        IODMACommand *rxqBdCmd = IODMACommand::withSpecification(kIODMACommandOutputHost32, 32, 0, IODMACommand::kMapped, 0, 1);
         rxqBdCmd->setMemoryDescriptor(rxqBd);
         rxqBdCmd->prepare();
         
-        IODMACommand::Segment64 rxqBdSeg;
+        IODMACommand::Segment32 rxqBdSeg;
         UInt64 rxqBdOfs = 0;
         UInt32 rxqBdNumSegs = 1;
         
-        if (rxqBdCmd->gen64IOVMSegments(&rxqBdOfs, &rxqBdSeg, &rxqBdNumSegs) != kIOReturnSuccess) {
+        if (rxqBdCmd->gen32IOVMSegments(&rxqBdOfs, &rxqBdSeg, &rxqBdNumSegs) != kIOReturnSuccess) {
             TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
             return -1;
         }
@@ -440,15 +440,15 @@ int IntelWifi::iwl_pcie_rx_alloc(struct iwl_trans *trans)
             IOBufferMemoryDescriptor *usedBd =
             IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionInOut | kIOMemoryPhysicallyContiguous | kIOMapInhibitCache), sizeof(__le32) * rxq->queue_size, 0x00000000FFFFFFFFULL);
             
-            IODMACommand *usedBdCmd = IODMACommand::withSpecification(kIODMACommandOutputHost64, 64, 0, IODMACommand::kMapped, 0, 1);
+            IODMACommand *usedBdCmd = IODMACommand::withSpecification(kIODMACommandOutputHost32, 32, 0, IODMACommand::kMapped, 0, 1);
             usedBdCmd->setMemoryDescriptor(usedBd);
             usedBdCmd->prepare();
             
-            IODMACommand::Segment64 usedBdSeg;
+            IODMACommand::Segment32 usedBdSeg;
             UInt64 usedBdOfs = 0;
             UInt32 usedBdNumSegs = 1;
             
-            if (usedBdCmd->gen64IOVMSegments(&usedBdOfs, &usedBdSeg, &usedBdNumSegs) != kIOReturnSuccess) {
+            if (usedBdCmd->gen32IOVMSegments(&usedBdOfs, &usedBdSeg, &usedBdNumSegs) != kIOReturnSuccess) {
                 TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
                 return -1;
             }
@@ -467,15 +467,15 @@ int IntelWifi::iwl_pcie_rx_alloc(struct iwl_trans *trans)
         IOBufferMemoryDescriptor *bmd =
         IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionInOut | kIOMemoryPhysicallyContiguous | kIOMapInhibitCache), sizeof(*rxq->rb_stts), 0x00000000FFFFFFFFULL);
         
-        IODMACommand *cmd = IODMACommand::withSpecification(kIODMACommandOutputHost64, 64, 0, IODMACommand::kMapped, 0, 1);
+        IODMACommand *cmd = IODMACommand::withSpecification(kIODMACommandOutputHost32, 32, 0, IODMACommand::kMapped, 0, 1);
         cmd->setMemoryDescriptor(bmd);
         cmd->prepare();
         
-        IODMACommand::Segment64 seg;
+        IODMACommand::Segment32 seg;
         UInt64 ofs = 0;
         UInt32 numSegs = 1;
         
-        if (cmd->gen64IOVMSegments(&ofs, &seg, &numSegs) != kIOReturnSuccess) {
+        if (cmd->gen32IOVMSegments(&ofs, &seg, &numSegs) != kIOReturnSuccess) {
             TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
             return -1;
         }

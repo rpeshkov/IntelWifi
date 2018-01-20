@@ -267,7 +267,7 @@ int IwlDvmOpMode::iwl_alive_notify(struct iwl_priv *priv)
     
     for (i = 0; i < n_queues; i++)
         if (queue_to_txf[i] != IWL_TX_FIFO_UNUSED)
-            iwl_trans_ac_txq_enable(priv->trans, i,
+            _ops->iwl_trans_ac_txq_enable(priv->trans, i,
                                     queue_to_txf[i], 0);
     
     priv->passive_no_rx = false;
@@ -362,12 +362,14 @@ int IwlDvmOpMode::iwl_load_ucode_wait_alive(struct iwl_priv *priv,
         priv->cur_ucode = old_type;
         return ret;
     }
+
+    IODelay(500);
     
-    if (!alive_data.valid) {
-        IWL_ERR(priv, "Loaded ucode is not valid!\n");
-        priv->cur_ucode = old_type;
-        return -EIO;
-    }
+//    if (!alive_data.valid) {
+//        IWL_ERR(priv, "Loaded ucode is not valid!\n");
+//        priv->cur_ucode = old_type;
+//        return -EIO;
+//    }
     
     priv->ucode_loaded = true;
     

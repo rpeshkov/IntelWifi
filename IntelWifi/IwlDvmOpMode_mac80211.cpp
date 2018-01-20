@@ -139,17 +139,16 @@ struct ieee80211_hw *IwlDvmOpMode::iwl_alloc_all(void)
     // This is not kinda correct I guess...
     hw = (struct ieee80211_hw *)IOMalloc(sizeof(ieee80211_hw));
     
-    
-//    hw = ieee80211_alloc_hw(sizeof(struct iwl_priv) +
-//                            sizeof(struct iwl_op_mode), &iwlagn_hw_ops);
     if (!hw)
         goto out;
     
     hw->wiphy = (struct wiphy *)IOMalloc(sizeof(wiphy));
+    bzero(hw->wiphy, sizeof(wiphy));
     
     hw->priv = IOMalloc(sizeof(iwl_priv));
     if (!hw->priv)
         goto out;
+    bzero(hw->priv, sizeof(iwl_priv));
     
     priv = (struct iwl_priv *)hw->priv;
     priv->hw = hw;

@@ -10,6 +10,7 @@
 
 extern "C" {
 #include "agn.h"
+#include "iwl-trans.h"
 }
 
 // line 49
@@ -354,8 +355,8 @@ int IwlDvmOpMode::iwl_dvm_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *c
     }
     
     if (test_bit(STATUS_FW_ERROR, &priv->status)) {
-        IWL_ERR(priv, "Command %s failed: FW Error\n",
-                iwl_get_cmd_string(priv->trans, cmd->id));
+//        IWL_ERR(priv, "Command %s failed: FW Error\n",
+//                iwl_get_cmd_string(priv->trans, cmd->id));
         return -EIO;
     }
     

@@ -29,9 +29,20 @@ void IntelWifi::configure(struct iwl_trans *trans, const struct iwl_trans_config
 }
 
 void IntelWifi::fw_alive(struct iwl_trans *trans, u32 scd_addr) {
+    trans->state = IWL_TRANS_FW_ALIVE;
     iwl_trans_pcie_fw_alive(trans, scd_addr);
 }
 
 void IntelWifi::stop_device(struct iwl_trans *trans, bool low_power) {
     iwl_trans_pcie_stop_device(trans, low_power);
 }
+
+bool IntelWifi::txq_enable(struct iwl_trans *trans, int queue, u16 ssn,
+                   const struct iwl_trans_txq_scd_cfg *cfg,
+                           unsigned int queue_wdg_timeout) {
+    return iwl_trans_pcie_txq_enable(trans, queue, ssn, cfg, queue_wdg_timeout);
+}
+void IntelWifi::txq_disable(struct iwl_trans *trans, int queue, bool configure_scd) {
+    iwl_trans_pcie_txq_disable(trans, queue, configure_scd);
+}
+

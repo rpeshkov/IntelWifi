@@ -11,6 +11,8 @@
 
 #include <linux/types.h>
 
+#include "iwl-trans.h"
+
 class IwlTransOps {
 public:
     virtual int start_hw(struct iwl_trans *trans, bool low_power) = 0;
@@ -20,6 +22,41 @@ public:
     virtual void configure(struct iwl_trans *trans, const struct iwl_trans_config *trans_cfg) = 0;
     virtual void fw_alive(struct iwl_trans *trans, u32 scd_addr) = 0;
     virtual void stop_device(struct iwl_trans *trans, bool low_power) = 0;
+    virtual bool txq_enable(struct iwl_trans *trans, int queue, u16 ssn,
+                               const struct iwl_trans_txq_scd_cfg *cfg,
+                            unsigned int queue_wdg_timeout) = 0;
+    virtual void txq_disable(struct iwl_trans *trans, int queue, bool configure_scd) = 0;
+    
+    inline void iwl_trans_txq_enable(struct iwl_trans *trans, int queue,
+                                     int fifo, int sta_id, int tid,
+                                     int frame_limit, u16 ssn,
+            
+                                    unsigned int queue_wdg_timeout) {
+        struct iwl_trans_txq_scd_cfg cfg = {
+            .fifo = (u8)fifo,
+            .sta_id = (u8)sta_id,
+            .tid = (u8)tid,
+            .frame_limit = frame_limit,
+            .aggregate = sta_id >= 0,
+        };
+    
+        txq_enable(trans, queue, ssn, &cfg, queue_wdg_timeout);
+    }
+
+    inline
+    void iwl_trans_ac_txq_enable(struct iwl_trans *trans, int queue, int fifo,
+                     unsigned int queue_wdg_timeout)
+    {
+        struct iwl_trans_txq_scd_cfg cfg = {
+            .fifo = (u8)fifo,
+            .sta_id = (u8)-1,
+            .tid = IWL_MAX_TID_COUNT,
+            .frame_limit = IWL_FRAME_LIMIT,
+            .aggregate = false,
+        };
+    
+        txq_enable(trans, queue, 0, &cfg, queue_wdg_timeout);
+    }
     
     
 //    int (*start_fw)(struct iwl_trans *trans, const struct fw_img *fw,

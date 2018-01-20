@@ -201,12 +201,17 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
     
     // TODO: Implement
     int ret;
-    if (1 == 0 /*trans_pcie->msix_enabled*/) {
+    int source = findMSIInterruptTypeIndex();
+    if (trans_pcie->msix_enabled) {
 //        ret = iwl_pcie_init_msix_handler(pdev, trans_pcie);
 //        if (ret)
 //            goto out_no_pci;
+        
     } else {
         ret = iwl_pcie_alloc_ict(trans);
+        
+        
+
 //        if (ret)
 //            goto out_no_pci;
 
@@ -220,6 +225,37 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
 //        }
         trans_pcie->inta_mask = CSR_INI_SET_MASK;
     }
+    
+    fWorkLoop = getWorkLoop();
+    if (!fWorkLoop) {
+        TraceLog("getWorkLoop failed!");
+        releaseAll();
+        return 0;
+        //return false;
+    }
+    
+    fWorkLoop->retain();
+    
+    
+    fInterruptSource = IOFilterInterruptEventSource::filterInterruptEventSource(this,
+                                                                                (IOInterruptEventAction) &IntelWifi::interruptOccured,
+                                                                                (IOFilterInterruptAction) &IntelWifi::interruptFilter,
+                                                                                pciDevice, source);
+    if (!fInterruptSource) {
+        TraceLog("InterruptSource init failed!");
+        releaseAll();
+        return 0;
+    }
+    
+    if (fWorkLoop->addEventSource(fInterruptSource) != kIOReturnSuccess) {
+        TraceLog("EventSource registration failed");
+        releaseAll();
+        return 0;
+    }
+    
+    fInterruptSource->enable();
+    fWorkLoop->enableAllInterrupts();
+    fWorkLoop->enableAllEventSources();
 
 //    trans_pcie->rba.alloc_wq = alloc_workqueue("rb_allocator",
 //                                               WQ_HIGHPRI | WQ_UNBOUND, 1);
@@ -1044,7 +1080,6 @@ int IntelWifi::iwl_trans_pcie_start_fw(struct iwl_trans *trans, const struct fw_
         ret = -ERFKILL;
     
 out:
-    //mutex_unlock(&trans_pcie->mutex);
     IOLockUnlock(trans_pcie->mutex);
     return ret;
 }
@@ -1064,10 +1099,7 @@ int IntelWifi::iwl_pcie_nic_init(struct iwl_trans *trans)
     
     iwl_pcie_set_pwr(trans, false);
     
-    // TODO: Deal with this. I'm not setting up op_mode functions mapping
-    //iwl_op_mode_nic_config(trans->op_mode);
     opmode->nic_config(0);
-    
     
     /* Allocate the RX queue, or reset if it is already allocated */
     iwl_pcie_rx_init(trans);
@@ -1426,7 +1458,7 @@ int IntelWifi::iwl_pcie_load_firmware_chunk(struct iwl_trans *trans,
     iwl_pcie_load_firmware_chunk_fh(trans, dst_addr, phy_addr,
                                     byte_cnt);
     io->iwl_release_nic_access(&state);
-
+    
     IOLockLock(trans_pcie->ucode_write_waitq);
     if (trans_pcie->ucode_write_complete) {
         IOLockUnlock(trans_pcie->ucode_write_waitq);
@@ -1434,7 +1466,7 @@ int IntelWifi::iwl_pcie_load_firmware_chunk(struct iwl_trans *trans,
     }
     AbsoluteTime deadline;
     clock_interval_to_deadline(5, kSecondScale, (UInt64 *) &deadline);
-    ret = IOLockSleepDeadline(trans_pcie->ucode_write_waitq, &trans_pcie->ucode_write_complete, *((AbsoluteTime *) &deadline), THREAD_INTERRUPTIBLE);
+    ret = IOLockSleepDeadline(trans_pcie->ucode_write_waitq, &trans_pcie->ucode_write_complete, deadline, THREAD_INTERRUPTIBLE);
     IOLockUnlock(trans_pcie->ucode_write_waitq);
     if (ret != THREAD_AWAKENED) {
         IWL_ERR(trans, "Failed to load firmware chunk!\n");

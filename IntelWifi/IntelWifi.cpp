@@ -166,7 +166,7 @@ bool IntelWifi::start(IOService *provider) {
         PMinit();
         provider->joinPMtree(this);
         
-        changePowerStateTo(kOnPowerState);// Set the public power state to the lowest level
+        changePowerStateTo(kOffPowerState);// Set the public power state to the lowest level
         registerPowerDriver(this, gPowerStates, kNumPowerStates);
         setIdleTimerPeriod(iwlwifi_mod_params.d0i3_timeout);
     }
@@ -178,33 +178,33 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
-    fWorkLoop = getWorkLoop();
-    if (!fWorkLoop) {
-        TraceLog("getWorkLoop failed!");
-        releaseAll();
-        return false;
-    }
-    
-    fWorkLoop->retain();
-    
-    int source = findMSIInterruptTypeIndex();
-    fInterruptSource = IOFilterInterruptEventSource::filterInterruptEventSource(this,
-                                                                    (IOInterruptEventAction) &IntelWifi::interruptOccured,
-                                                                    (IOFilterInterruptAction) &IntelWifi::interruptFilter,
-                                                                    provider, source);
-    if (!fInterruptSource) {
-        TraceLog("InterruptSource init failed!");
-        releaseAll();
-        return false;
-    }
-    
-    if (fWorkLoop->addEventSource(fInterruptSource) != kIOReturnSuccess) {
-        TraceLog("EventSource registration failed");
-        releaseAll();
-        return false;
-    }
-    
-    fInterruptSource->enable();
+//    fWorkLoop = getWorkLoop();
+//    if (!fWorkLoop) {
+//        TraceLog("getWorkLoop failed!");
+//        releaseAll();
+//        return false;
+//    }
+//    
+//    fWorkLoop->retain();
+//    
+//    int source = findMSIInterruptTypeIndex();
+//    fInterruptSource = IOFilterInterruptEventSource::filterInterruptEventSource(this,
+//                                                                    (IOInterruptEventAction) &IntelWifi::interruptOccured,
+//                                                                    (IOFilterInterruptAction) &IntelWifi::interruptFilter,
+//                                                                    provider, source);
+//    if (!fInterruptSource) {
+//        TraceLog("InterruptSource init failed!");
+//        releaseAll();
+//        return false;
+//    }
+//    
+//    if (fWorkLoop->addEventSource(fInterruptSource) != kIOReturnSuccess) {
+//        TraceLog("EventSource registration failed");
+//        releaseAll();
+//        return false;
+//    }
+//    
+//    fInterruptSource->enable();
     
     
     opmode = new IwlDvmOpMode(this, io, eeprom);

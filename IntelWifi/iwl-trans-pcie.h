@@ -344,10 +344,7 @@ struct iwl_trans_pcie {
     IOSimpleLock* reg_lock;
     bool cmd_hold_nic_awake;
     bool ref_cmd_in_flight;
-
-    
-    
-    
+  
     bool msix_enabled;
     u8 shared_vec_mask;
     u32 alloc_vecs;
@@ -357,19 +354,6 @@ struct iwl_trans_pcie {
     u32 fh_mask;
     u32 hw_mask;
 };
-
-/*static inline struct iwl_trans_pcie* iwl_trans_pcie_alloc() {
-    struct iwl_trans_pcie* trans = (struct iwl_trans_pcie *)IOMalloc(sizeof(struct iwl_trans_pcie));
-    trans->reg_lock = IOSimpleLockAlloc();
-    trans->mutex = IOLockAlloc();
-    return trans;
-}
-
-static inline void iwl_trans_pcie_free(struct iwl_trans_pcie *trans) {
-    IOLockFree(trans->mutex);
-    IOSimpleLockFree(trans->reg_lock);
-    IOFree(trans, sizeof(struct iwl_trans_pcie));
-}*/
 
 static inline bool iwl_queue_used(const struct iwl_txq *q, int i)
 {

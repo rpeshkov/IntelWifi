@@ -56,6 +56,11 @@ public:
     virtual void configure(struct iwl_trans *trans, const struct iwl_trans_config *trans_cfg) override;
     virtual void fw_alive(struct iwl_trans *trans, u32 scd_addr) override;
     virtual void stop_device(struct iwl_trans *trans, bool low_power) override;
+    virtual bool txq_enable(struct iwl_trans *trans, int queue, u16 ssn,
+                               const struct iwl_trans_txq_scd_cfg *cfg,
+                                       unsigned int queue_wdg_timeout) override;
+    virtual void txq_disable(struct iwl_trans *trans, int queue, bool configure_scd) override;
+
     
     virtual bool init(OSDictionary *properties) override;
     virtual void free() override;
@@ -297,6 +302,35 @@ private:
     
     void iwl_scd_txq_set_inactive(struct iwl_trans *trans,
                                   u16 txq_id);
+    
+    inline void iwl_trans_txq_enable(struct iwl_trans *trans, int queue,
+                                             int fifo, int sta_id, int tid,
+                                             int frame_limit, u16 ssn,
+                                     unsigned int queue_wdg_timeout) {
+        struct iwl_trans_txq_scd_cfg cfg = {
+            .fifo = (u8)fifo,
+            .sta_id = (u8)sta_id,
+            .tid = (u8)tid,
+            .frame_limit = frame_limit,
+            .aggregate = sta_id >= 0,
+        };
+        
+        txq_enable(trans, queue, ssn, &cfg, queue_wdg_timeout);
+    }
+    inline void iwl_trans_ac_txq_enable(struct iwl_trans *trans, int queue, int fifo,
+                     unsigned int queue_wdg_timeout)
+    {
+        struct iwl_trans_txq_scd_cfg cfg = {
+            .fifo = (u8)fifo,
+            .sta_id = (u8)-1,
+            .tid = IWL_MAX_TID_COUNT,
+            .frame_limit = IWL_FRAME_LIMIT,
+            .aggregate = false,
+        };
+    
+        txq_enable(trans, queue, 0, &cfg, queue_wdg_timeout);
+    }
+
     
     
     ifnet_t fIfNet;
