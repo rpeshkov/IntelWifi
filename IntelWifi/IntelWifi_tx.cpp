@@ -459,7 +459,7 @@ void IntelWifi::iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr)
                         NULL, clear_dwords);
     
     io->iwl_write_prph(SCD_DRAM_BASE_ADDR,
-                   trans_pcie->scd_bc_tbls.dma >> 10);
+                   (u32)trans_pcie->scd_bc_tbls.dma >> 10);
     
     /* The chain extension of the SCD doesn't work well. This feature is
      * enabled by default by the HW, so we need to disable it manually.
@@ -614,7 +614,7 @@ int IntelWifi::iwl_pcie_tx_init(struct iwl_trans *trans)
     
     /* Tell NIC where to find the "keep warm" buffer */
     io->iwl_write_direct32(FH_KW_MEM_ADDR_REG,
-                       trans_pcie->kw.dma >> 4);
+                       (u32)trans_pcie->kw.dma >> 4);
     
     // spin_unlock(&trans_pcie->irq_lock);
     IOSimpleLockUnlock(trans_pcie->irq_lock);
@@ -639,7 +639,7 @@ int IntelWifi::iwl_pcie_tx_init(struct iwl_trans *trans)
          * Circular buffer (TFD queue in DRAM) physical base address
          */
         io->iwl_write_direct32(FH_MEM_CBBC_QUEUE(trans, txq_id),
-                           trans_pcie->txq[txq_id]->dma_addr >> 8);
+                           (u32)trans_pcie->txq[txq_id]->dma_addr >> 8);
     }
     
     io->iwl_set_bits_prph(SCD_GP_CTRL, SCD_GP_CTRL_AUTO_ACTIVE_MODE);
@@ -905,7 +905,7 @@ bool IntelWifi::iwl_trans_pcie_txq_enable(struct iwl_trans *trans, int txq_id, u
         /* enable the scheduler for this queue (only) */
         if (txq_id == trans_pcie->cmd_queue &&
             trans_pcie->scd_set_active)
-            iwl_scd_enable_set_active(trans, BIT(txq_id));
+            iwl_scd_enable_set_active(trans, (u32)BIT(txq_id));
         
         IWL_DEBUG_TX_QUEUES(trans,
                             "Activate queue %d on FIFO %d WrPtr: %d\n",

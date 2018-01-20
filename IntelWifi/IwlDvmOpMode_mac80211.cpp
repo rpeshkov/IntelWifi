@@ -17,7 +17,7 @@ extern "C" {
 // line 238
 int IwlDvmOpMode::__iwl_up(struct iwl_priv *priv)
 {
-    struct iwl_rxon_context *ctx;
+//    struct iwl_rxon_context *ctx;
     int ret;
     
     //lockdep_assert_held(&priv->mutex);
@@ -113,7 +113,7 @@ void IwlDvmOpMode::iwl_chswitch_done(struct iwl_priv *priv, bool is_success)
      * MULTI-FIXME
      * See iwlagn_mac_channel_switch.
      */
-    struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
+    //struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
     
     if (test_bit(STATUS_EXIT_PENDING, &priv->status))
         return;

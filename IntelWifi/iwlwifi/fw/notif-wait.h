@@ -122,10 +122,11 @@ void iwl_abort_notification_waits(struct iwl_notif_wait_data *notif_data);
 static inline void
 iwl_notification_notify(struct iwl_notif_wait_data *notif_data)
 {
+    struct iwl_notification_wait *wait_entry;
 	//wake_up_all(&notif_data->notif_waitq);
-    bool event = true;
     IOLockLock(notif_data->notif_waitq);
-    IOLockWakeup(notif_data->notif_waitq, &event, true);
+    list_for_each_entry(wait_entry, &notif_data->notif_waits, list)
+        IOLockWakeup(notif_data->notif_waitq, wait_entry, true);
     IOLockUnlock(notif_data->notif_waitq);
 }
 

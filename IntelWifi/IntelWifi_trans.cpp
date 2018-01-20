@@ -74,6 +74,8 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
     }
     trans->max_skb_frags = IWL_PCIE_MAX_FRAGS(trans_pcie);
     
+    DebugLog("Addr Size: %d", addr_size);
+    
     // original linux code: pci_set_master(pdev);
     pciDevice->setBusMasterEnable(true);
     
@@ -324,10 +326,8 @@ int IntelWifi::iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power)
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     int ret;
     
-    //mutex_lock(&trans_pcie->mutex);
     IOLockLock(trans_pcie->mutex);
     ret = _iwl_trans_pcie_start_hw(trans, low_power);
-    //mutex_unlock(&trans_pcie->mutex);
     IOLockUnlock(trans_pcie->mutex);
     
     return ret;
@@ -987,8 +987,7 @@ int IntelWifi::iwl_trans_pcie_start_fw(struct iwl_trans *trans, const struct fw_
     /* Make sure it finished running */
     // TODO: Implement
     //iwl_pcie_synchronize_irqs(trans);
-    
-    //mutex_lock(&trans_pcie->mutex);
+
     IOLockLock(trans_pcie->mutex);
     
     /* If platform's RF_KILL switch is NOT set to KILL */
@@ -1314,16 +1313,11 @@ void IntelWifi::iwl_pcie_apply_destination(struct iwl_trans *trans)
 int IntelWifi::iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
                                  const struct fw_desc *section)
 {
-//    u8 *v_addr;
-//    dma_addr_t p_addr;
     u32 offset, chunk_sz = min(FH_MEM_TB_MAX_LENGTH, (u32)section->len);
     int ret = 0;
 
     IWL_DEBUG_FW(trans, "[%d] uCode section being loaded...\n",
                  section_num);
-
-//    v_addr = dma_alloc_coherent(trans->dev, chunk_sz, &p_addr,
-//                                GFP_KERNEL | __GFP_NOWARN);
 
     IOBufferMemoryDescriptor *bmd =
     IOBufferMemoryDescriptor::inTaskWithPhysicalMask(
@@ -1335,8 +1329,9 @@ int IntelWifi::iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
                                                      chunk_sz,
                                                      // physicalMask - 32 bit addressable and page aligned
                                                      0x00000000FFFFFFFFULL);
+    
 
-    IODMACommand *cmd = IODMACommand::withSpecification(kIODMACommandOutputHost64, 64, 0, IODMACommand::kMapped, 0, 1);
+    IODMACommand *cmd = IODMACommand::withSpecification(kIODMACommandOutputHost64, 64, chunk_sz, IODMACommand::kMapped, 0, 1);
     cmd->setMemoryDescriptor(bmd);
     cmd->prepare();
 
@@ -1348,16 +1343,9 @@ int IntelWifi::iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
         TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
         return -1;
     }
-//    if (!v_addr) {
-//        IWL_DEBUG_INFO(trans, "Falling back to small chunks of DMA\n");
-//        chunk_sz = PAGE_SIZE;
-//        v_addr = dma_alloc_coherent(trans->dev, chunk_sz,
-//                                    &p_addr, GFP_KERNEL);
-//        if (!v_addr)
-//            return -ENOMEM;
-//    }
-
+    
     for (offset = 0; offset < section->len; offset += chunk_sz) {
+        DebugLog("Writing [%d] with offset %d", section_num, offset);
         u32 copy_size, dst_addr;
         bool extended_addr = false;
 
@@ -1390,7 +1378,7 @@ int IntelWifi::iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
     cmd->complete();
     cmd->clearMemoryDescriptor();
     cmd->release();
-//    dma_free_coherent(trans->dev, chunk_sz, v_addr, p_addr);
+    
     return ret;
 }
 
@@ -1439,7 +1427,6 @@ int IntelWifi::iwl_pcie_load_firmware_chunk(struct iwl_trans *trans,
                                     byte_cnt);
     io->iwl_release_nic_access(&state);
 
-    // TODO: Implement
     IOLockLock(trans_pcie->ucode_write_waitq);
     if (trans_pcie->ucode_write_complete) {
         IOLockUnlock(trans_pcie->ucode_write_waitq);
@@ -1824,19 +1811,19 @@ void IntelWifi::iwl_trans_pcie_configure(struct iwl_trans *trans,
 void IntelWifi::iwl_scd_txq_set_chain(struct iwl_trans *trans,
                                          u16 txq_id)
 {
-    io->iwl_set_bits_prph(SCD_QUEUECHAIN_SEL, BIT(txq_id));
+    io->iwl_set_bits_prph(SCD_QUEUECHAIN_SEL, (u32)BIT(txq_id));
 }
 
 void IntelWifi::iwl_scd_txq_enable_agg(struct iwl_trans *trans,
                                           u16 txq_id)
 {
-    io->iwl_set_bits_prph(SCD_AGGR_SEL, BIT(txq_id));
+    io->iwl_set_bits_prph(SCD_AGGR_SEL, (u32)BIT(txq_id));
 }
 
 void IntelWifi::iwl_scd_txq_disable_agg(struct iwl_trans *trans,
                                            u16 txq_id)
 {
-    io->iwl_clear_bits_prph(SCD_AGGR_SEL, BIT(txq_id));
+    io->iwl_clear_bits_prph(SCD_AGGR_SEL, (u32)BIT(txq_id));
 }
 
 void IntelWifi::iwl_scd_disable_agg(struct iwl_trans *trans)

@@ -828,12 +828,12 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
     /* dram interrupt table not set yet,
      * use legacy interrupt.
      */
-    if (likely(trans_pcie->use_ict))
+    if (trans_pcie->use_ict)
         inta = iwl_pcie_int_cause_ict(trans);
     else
         inta = iwl_pcie_int_cause_non_ict(trans);
     
-    //if (iwl_have_debug_level(IWL_DL_ISR)) {
+    if (iwl_have_debug_level(IWL_DL_ISR)) {
         IWL_DEBUG_ISR(trans,
                       "ISR inta 0x%08x, enabled 0x%08x(sw), enabled(hw) 0x%08x, fh 0x%08x\n",
                       inta, trans_pcie->inta_mask,
@@ -843,7 +843,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
             IWL_DEBUG_ISR(trans,
                           "We got a masked interrupt (0x%08x)\n",
                           inta & (~trans_pcie->inta_mask));
-    //}
+    }
     
     inta &= trans_pcie->inta_mask;
     
@@ -852,7 +852,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
      * This may be due to IRQ shared with another device,
      * or due to sporadic interrupts thrown from our NIC.
      */
-    if (unlikely(!inta)) {
+    if (!inta) {
         IWL_DEBUG_ISR(trans, "Ignore interrupt, inta == 0\n");
         /*
          * Re-enable interrupts here since we don't
@@ -889,7 +889,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
      */
     io->iwl_write32(CSR_INT, inta | ~trans_pcie->inta_mask);
     
-    //if (iwl_have_debug_level(IWL_DL_ISR))
+    if (iwl_have_debug_level(IWL_DL_ISR))
         IWL_DEBUG_ISR(trans, "inta 0x%08x, enabled 0x%08x\n",
                       inta, io->iwl_read32(CSR_INT_MASK));
 
@@ -1013,8 +1013,6 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
                        CSR_INT_PERIODIC_ENA);
         
         isr_stats->rx++;
-        
-        DebugLog("Frame interrupt!");
         
 //        local_bh_disable();
 //        iwl_pcie_rx_handle(trans, 0);

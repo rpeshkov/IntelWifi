@@ -37,7 +37,7 @@ extern "C" {
 #define CONFIG_IWLWIFI_PCIE_RTPM // Powerman
 
 #ifdef DEBUG
-#define CONFIG_IWLWIFI_DEBUG 1
+#define CONFIG_IWLWIFI_DEBUG
 #endif
 
 
@@ -94,7 +94,7 @@ protected:
     
     IONetworkStats *fNetworkStats;
     IOEthernetStats *fEthernetStats;
-    IOInterruptEventSource* fInterruptSource;
+    IOFilterInterruptEventSource* fInterruptSource;
     
     IntelIO* io;
     

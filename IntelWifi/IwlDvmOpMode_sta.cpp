@@ -89,7 +89,7 @@ u8 IwlDvmOpMode::iwl_prep_station(struct iwl_priv *priv, struct iwl_rxon_context
     station->ctxid = ctx->ctxid;
     
     if (sta) {
-        struct iwl_station_priv *sta_priv;
+        //struct iwl_station_priv *sta_priv;
 
         // TODO: Implement
 //        sta_priv = (struct iwl_station_priv *)sta->drv_priv;
@@ -114,7 +114,7 @@ static void iwl_sta_fill_lq(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
 {
     int i, r;
     u32 rate_flags = 0;
-    __le32 rate_n_flags;
+    __le32 rate_n_flags = 0;
     
     //lockdep_assert_held(&priv->mutex);
     

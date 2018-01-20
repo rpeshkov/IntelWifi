@@ -43,7 +43,7 @@
 #include "commands.h"
 
 
-static bool force_cam = true;
+//static bool force_cam = true;
 //module_param(force_cam, bool, 0644);
 //MODULE_PARM_DESC(force_cam, "force continuously aware mode (no power saving at all)");
 

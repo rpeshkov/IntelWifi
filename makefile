@@ -10,6 +10,12 @@ ifeq ($(findstring 64,$(BITS)),64)
     OPTIONS:=$(OPTIONS) -arch x86_64
 endif
 
+.PHONY: all
+all:
+	sudo kextunload $(KEXT)
+	sudo rm -rf $(KEXT)
+	xcodebuild build $(OPTIONS) -configuration Debug
+
 .PHONY: build
 build:
 	xcodebuild build $(OPTIONS) -configuration Debug
@@ -26,6 +32,11 @@ load:
 .PHONY: unload
 unload:
 	sudo kextunload $(KEXT)
+
+.PHONY: reload
+reload:
+	sudo kextunload $(KEXT)
+	sudo kextutil $(KEXT)
 
 .PHONY: clean
 clean:

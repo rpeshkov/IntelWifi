@@ -461,8 +461,7 @@ int IwlDvmOpMode::iwl_init_drv(struct iwl_priv *priv)
     /* Choose which receivers/antennas to use */
     iwlagn_set_rxon_chain(priv, &priv->contexts[IWL_RXON_CTX_BSS]);
     
-    // TODO: Implement
-    //iwl_init_scan_params(priv);
+    iwl_init_scan_params(priv);
     
     /* init bt coex */
     if (priv->lib->bt_params &&
@@ -772,8 +771,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
      * 6. Setup services
      ********************/
 //    iwl_setup_deferred_work(priv);
-//    iwl_setup_rx_handlers(priv);
-    iwl_notification_wait_init(&priv->notif_wait);
+    iwl_setup_rx_handlers(priv);
 
     iwl_power_initialize(priv);
 //    iwl_tt_initialize(priv);

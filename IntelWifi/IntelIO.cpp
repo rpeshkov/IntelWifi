@@ -107,9 +107,9 @@ bool IntelIO::iwl_grab_nic_access(IOInterruptState *state) {
     /* this bit wakes up the NIC */
     __iwl_trans_pcie_set_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
 
-    // TODO: Implement
-//    if (trans->cfg->device_family >= IWL_DEVICE_FAMILY_8000)
-//        udelay(2);
+    
+//    if (fTrans->cfg->device_family >= IWL_DEVICE_FAMILY_8000)
+//        IODelay(2);
     
     /*
      * These bits say the device is running, and should keep running for
@@ -164,6 +164,7 @@ void IntelIO::iwl_release_nic_access(IOInterruptState *state) {
      */
     // original linux code: mmiowb();
     os_compiler_barrier();
+    OSSynchronizeIO();
 
     IOSimpleLockUnlockEnableInterrupt(fTrans->reg_lock, *state);
 }

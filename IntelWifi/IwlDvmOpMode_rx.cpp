@@ -1,156 +1,156 @@
-///******************************************************************************
-// *
-// * Copyright(c) 2003 - 2014 Intel Corporation. All rights reserved.
-// * Copyright(c) 2015 Intel Deutschland GmbH
-// *
-// * Portions of this file are derived from the ipw3945 project, as well
-// * as portionhelp of the ieee80211 subsystem header files.
-// *
-// * This program is free software; you can redistribute it and/or modify it
-// * under the terms of version 2 of the GNU General Public License as
-// * published by the Free Software Foundation.
-// *
-// * This program is distributed in the hope that it will be useful, but WITHOUT
-// * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-// * more details.
-// *
-// * You should have received a copy of the GNU General Public License along with
-// * this program; if not, write to the Free Software Foundation, Inc.,
-// * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
-// *
-// * The full GNU General Public License is included in this distribution in the
-// * file called LICENSE.
-// *
-// * Contact Information:
-// *  Intel Linux Wireless <linuxwifi@intel.com>
-// * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
-// *
-// *****************************************************************************/
+/******************************************************************************
+ *
+ * Copyright(c) 2003 - 2014 Intel Corporation. All rights reserved.
+ * Copyright(c) 2015 Intel Deutschland GmbH
+ *
+ * Portions of this file are derived from the ipw3945 project, as well
+ * as portionhelp of the ieee80211 subsystem header files.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
+ *
+ * The full GNU General Public License is included in this distribution in the
+ * file called LICENSE.
+ *
+ * Contact Information:
+ *  Intel Linux Wireless <linuxwifi@intel.com>
+ * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
+ *
+ *****************************************************************************/
+
 //
-////
-////  IwlDvmOpMode_rx.cpp
-////  IntelWifi
-////
-////  Created by Roman Peshkov on 18/01/2018.
-////  Copyright © 2018 Roman Peshkov. All rights reserved.
-////
+//  IwlDvmOpMode_rx.cpp
+//  IntelWifi
 //
-//#include "IwlDvmOpMode.hpp"
+//  Created by Roman Peshkov on 18/01/2018.
+//  Copyright © 2018 Roman Peshkov. All rights reserved.
 //
-//extern "C" {
-//#include "agn.h"
-//}
-//
-///******************************************************************************
-// *
-// * Generic RX handler implementations
-// *
-// ******************************************************************************/
-//
-//// line 49
-//static void iwlagn_rx_reply_error(struct iwl_priv *priv,
-//                                  struct iwl_rx_cmd_buffer *rxb)
-//{
-//    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
-//    struct iwl_error_resp *err_resp = (struct iwl_error_resp *)pkt->data;
-//
-//    IWL_ERR(priv, "Error Reply type 0x%08X cmd REPLY_ERROR (0x%02X) "
-//            "seq 0x%04X ser 0x%08X\n",
-//            le32_to_cpu(err_resp->error_type),
-//            err_resp->cmd_id,
-//            le16_to_cpu(err_resp->bad_cmd_seq_num),
-//            le32_to_cpu(err_resp->error_info));
-//}
-//
-//// line 63
-//static void iwlagn_rx_csa(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
-//{
-//    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
-//    struct iwl_csa_notification *csa = (struct iwl_csa_notification *)pkt->data;
-//    /*
-//     * MULTI-FIXME
-//     * See iwlagn_mac_channel_switch.
-//     */
-//    struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
-//    struct iwl_rxon_cmd *rxon = (struct iwl_rxon_cmd *)&ctx->active;
-//
-//    if (!test_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status))
-//        return;
-//
-//    if (!le32_to_cpu(csa->status) && csa->channel == priv->switch_channel) {
-//        rxon->channel = csa->channel;
-//        ctx->staging.channel = csa->channel;
-//        IWL_DEBUG_11H(priv, "CSA notif: channel %d\n",
-//                      le16_to_cpu(csa->channel));
-//        // TODO: Implement
-//        //iwl_chswitch_done(priv, true);
-//    } else {
-//        IWL_ERR(priv, "CSA notif (fail) : channel %d\n",
-//                le16_to_cpu(csa->channel));
-//        // TODO: Implement
-//        //iwl_chswitch_done(priv, false);
-//    }
-//}
-//
-//static void iwlagn_rx_spectrum_measure_notif(struct iwl_priv *priv,
-//                                             struct iwl_rx_cmd_buffer *rxb)
-//{
-//    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
-//    struct iwl_spectrum_notification *report = (struct iwl_spectrum_notification *)pkt->data;
-//
-//    if (!report->state) {
-//        IWL_DEBUG_11H(priv,
-//                      "Spectrum Measure Notification: Start\n");
-//        return;
-//    }
-//
-//    memcpy(&priv->measure_report, report, sizeof(*report));
-//    priv->measurement_status |= MEASUREMENT_READY;
-//}
-//
-//static void iwlagn_rx_pm_sleep_notif(struct iwl_priv *priv,
-//                                     struct iwl_rx_cmd_buffer *rxb)
-//{
-//#ifdef CONFIG_IWLWIFI_DEBUG
-//    struct iwl_rx_packet *pkt = rxb_addr(rxb);
-//    struct iwl_sleep_notification *sleep = (void *)pkt->data;
-//    IWL_DEBUG_RX(priv, "sleep mode: %d, src: %d\n",
-//                 sleep->pm_sleep_mode, sleep->pm_wakeup_src);
-//#endif
-//}
-//
-//static void iwlagn_rx_pm_debug_statistics_notif(struct iwl_priv *priv,
-//                                                struct iwl_rx_cmd_buffer *rxb)
-//{
-//    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
-//    u32 len = iwl_rx_packet_len(pkt);
-//    IWL_DEBUG_RADIO(priv, "Dumping %d bytes of unhandled "
-//                    "notification for PM_DEBUG_STATISTIC_NOTIFIC:\n", len);
-//    //iwl_print_hex_dump(priv, IWL_DL_RADIO, pkt->data, len);
-//}
-//
-//static void iwlagn_rx_beacon_notif(struct iwl_priv *priv,
-//                                   struct iwl_rx_cmd_buffer *rxb)
-//{
-//    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
-//    struct iwlagn_beacon_notif *beacon = (struct iwlagn_beacon_notif *)pkt->data;
-//#ifdef CONFIG_IWLWIFI_DEBUG
-//    u16 status = le16_to_cpu(beacon->beacon_notify_hdr.status.status);
-//    u8 rate = iwl_hw_get_rate(beacon->beacon_notify_hdr.rate_n_flags);
-//
-//    IWL_DEBUG_RX(priv, "beacon status %#x, retries:%d ibssmgr:%d "
-//                 "tsf:0x%.8x%.8x rate:%d\n",
-//                 status & TX_STATUS_MSK,
-//                 beacon->beacon_notify_hdr.failure_frame,
-//                 le32_to_cpu(beacon->ibss_mgr_status),
-//                 le32_to_cpu(beacon->high_tsf),
-//                 le32_to_cpu(beacon->low_tsf), rate);
-//#endif
-//
-//    priv->ibss_manager = le32_to_cpu(beacon->ibss_mgr_status);
-//}
-//
+
+#include "IwlDvmOpMode.hpp"
+
+extern "C" {
+#include "agn.h"
+}
+
+/******************************************************************************
+ *
+ * Generic RX handler implementations
+ *
+ ******************************************************************************/
+
+// line 49
+static void iwlagn_rx_reply_error(struct iwl_priv *priv,
+                                  struct iwl_rx_cmd_buffer *rxb)
+{
+    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
+    struct iwl_error_resp *err_resp = (struct iwl_error_resp *)pkt->data;
+
+    IWL_ERR(priv, "Error Reply type 0x%08X cmd REPLY_ERROR (0x%02X) "
+            "seq 0x%04X ser 0x%08X\n",
+            le32_to_cpu(err_resp->error_type),
+            err_resp->cmd_id,
+            le16_to_cpu(err_resp->bad_cmd_seq_num),
+            le32_to_cpu(err_resp->error_info));
+}
+
+// line 63
+static void iwlagn_rx_csa(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
+{
+    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
+    struct iwl_csa_notification *csa = (struct iwl_csa_notification *)pkt->data;
+    /*
+     * MULTI-FIXME
+     * See iwlagn_mac_channel_switch.
+     */
+    struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
+    struct iwl_rxon_cmd *rxon = (struct iwl_rxon_cmd *)&ctx->active;
+
+    if (!test_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status))
+        return;
+
+    if (!le32_to_cpu(csa->status) && csa->channel == priv->switch_channel) {
+        rxon->channel = csa->channel;
+        ctx->staging.channel = csa->channel;
+        IWL_DEBUG_11H(priv, "CSA notif: channel %d\n",
+                      le16_to_cpu(csa->channel));
+        // TODO: Implement
+        //iwl_chswitch_done(priv, true);
+    } else {
+        IWL_ERR(priv, "CSA notif (fail) : channel %d\n",
+                le16_to_cpu(csa->channel));
+        // TODO: Implement
+        //iwl_chswitch_done(priv, false);
+    }
+}
+
+static void iwlagn_rx_spectrum_measure_notif(struct iwl_priv *priv,
+                                             struct iwl_rx_cmd_buffer *rxb)
+{
+    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
+    struct iwl_spectrum_notification *report = (struct iwl_spectrum_notification *)pkt->data;
+
+    if (!report->state) {
+        IWL_DEBUG_11H(priv,
+                      "Spectrum Measure Notification: Start\n");
+        return;
+    }
+
+    memcpy(&priv->measure_report, report, sizeof(*report));
+    priv->measurement_status |= MEASUREMENT_READY;
+}
+
+static void iwlagn_rx_pm_sleep_notif(struct iwl_priv *priv,
+                                     struct iwl_rx_cmd_buffer *rxb)
+{
+#ifdef CONFIG_IWLWIFI_DEBUG
+    struct iwl_rx_packet *pkt = rxb_addr(rxb);
+    struct iwl_sleep_notification *sleep = (void *)pkt->data;
+    IWL_DEBUG_RX(priv, "sleep mode: %d, src: %d\n",
+                 sleep->pm_sleep_mode, sleep->pm_wakeup_src);
+#endif
+}
+
+static void iwlagn_rx_pm_debug_statistics_notif(struct iwl_priv *priv,
+                                                struct iwl_rx_cmd_buffer *rxb)
+{
+    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
+    u32 len = iwl_rx_packet_len(pkt);
+    IWL_DEBUG_RADIO(priv, "Dumping %d bytes of unhandled "
+                    "notification for PM_DEBUG_STATISTIC_NOTIFIC:\n", len);
+    //iwl_print_hex_dump(priv, IWL_DL_RADIO, pkt->data, len);
+}
+
+static void iwlagn_rx_beacon_notif(struct iwl_priv *priv,
+                                   struct iwl_rx_cmd_buffer *rxb)
+{
+    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
+    struct iwlagn_beacon_notif *beacon = (struct iwlagn_beacon_notif *)pkt->data;
+#ifdef CONFIG_IWLWIFI_DEBUG
+    u16 status = le16_to_cpu(beacon->beacon_notify_hdr.status.status);
+    u8 rate = iwl_hw_get_rate(beacon->beacon_notify_hdr.rate_n_flags);
+
+    IWL_DEBUG_RX(priv, "beacon status %#x, retries:%d ibssmgr:%d "
+                 "tsf:0x%.8x%.8x rate:%d\n",
+                 status & TX_STATUS_MSK,
+                 beacon->beacon_notify_hdr.failure_frame,
+                 le32_to_cpu(beacon->ibss_mgr_status),
+                 le32_to_cpu(beacon->high_tsf),
+                 le32_to_cpu(beacon->low_tsf), rate);
+#endif
+
+    priv->ibss_manager = le32_to_cpu(beacon->ibss_mgr_status);
+}
+
 ///**
 // * iwl_good_plcp_health - checks for plcp error.
 // *
@@ -956,29 +956,27 @@
 //    if (old_data)
 //        kfree_rcu(old_data, rcu_head);
 //}
-//
-//
-//
-///** line 945
-// * iwl_setup_rx_handlers - Initialize Rx handler callbacks
-// *
-// * Setup the RX handlers for each of the reply types sent from the uCode
-// * to the host.
-// */
-//void IwlDvmOpMode::iwl_setup_rx_handlers(struct iwl_priv *priv)
-//{
-//    void (**handlers)(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb);
-//
-//    handlers = priv->rx_handlers;
-//
-//    handlers[REPLY_ERROR]            = iwlagn_rx_reply_error;
-//    handlers[CHANNEL_SWITCH_NOTIFICATION]    = iwlagn_rx_csa;
-//    handlers[SPECTRUM_MEASURE_NOTIFICATION]    =
-//    iwlagn_rx_spectrum_measure_notif;
-//    handlers[PM_SLEEP_NOTIFICATION]        = iwlagn_rx_pm_sleep_notif;
-//    handlers[PM_DEBUG_STATISTIC_NOTIFIC]    =
-//    iwlagn_rx_pm_debug_statistics_notif;
-//    handlers[BEACON_NOTIFICATION]        = iwlagn_rx_beacon_notif;
+
+
+
+/** line 945
+ * iwl_setup_rx_handlers - Initialize Rx handler callbacks
+ *
+ * Setup the RX handlers for each of the reply types sent from the uCode
+ * to the host.
+ */
+void IwlDvmOpMode::iwl_setup_rx_handlers(struct iwl_priv *priv)
+{
+    void (**handlers)(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb);
+
+    handlers = priv->rx_handlers;
+
+    handlers[REPLY_ERROR]            = iwlagn_rx_reply_error;
+    handlers[CHANNEL_SWITCH_NOTIFICATION] = iwlagn_rx_csa;
+    handlers[SPECTRUM_MEASURE_NOTIFICATION] = iwlagn_rx_spectrum_measure_notif;
+    handlers[PM_SLEEP_NOTIFICATION] = iwlagn_rx_pm_sleep_notif;
+    handlers[PM_DEBUG_STATISTIC_NOTIFIC] = iwlagn_rx_pm_debug_statistics_notif;
+    handlers[BEACON_NOTIFICATION]        = iwlagn_rx_beacon_notif;
 //    handlers[REPLY_ADD_STA]            = iwl_add_sta_callback;
 //
 //    handlers[REPLY_WIPAN_NOA_NOTIFICATION]    = iwlagn_rx_noa_notification;
@@ -1006,12 +1004,13 @@
 //    iwlagn_rx_reply_compressed_ba;
 //
 //    priv->rx_handlers[REPLY_TX] = iwlagn_rx_reply_tx;
-//
-//    /* set up notification wait support */
-//    iwl_notification_wait_init(&priv->notif_wait);
-//
-//    /* Set up BT Rx handlers */
+
+    /* set up notification wait support */
+    iwl_notification_wait_init(&priv->notif_wait);
+
+    /* Set up BT Rx handlers */
 //    if (priv->lib->bt_params)
 //        iwlagn_bt_rx_handler_setup(priv);
-//}
-//
+}
+
+

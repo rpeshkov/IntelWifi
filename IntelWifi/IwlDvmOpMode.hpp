@@ -104,7 +104,10 @@ private:
     void iwlagn_send_advance_bt_config(struct iwl_priv *priv); // line 224
     
     // rx.c
-    //void iwl_setup_rx_handlers(struct iwl_priv *priv); // line 945
+    void iwl_setup_rx_handlers(struct iwl_priv *priv); // line 945
+    
+    // scan.c
+    void iwl_init_scan_params(struct iwl_priv *priv); // line 929
 
     
     

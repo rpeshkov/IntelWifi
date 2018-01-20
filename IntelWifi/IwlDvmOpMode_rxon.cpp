@@ -375,8 +375,8 @@ static void iwl_calc_basic_rates(struct iwl_priv *priv,
     
     if (ctx->vif) {
         struct ieee80211_supported_band *sband;
-        unsigned long basic = ctx->vif->bss_conf.basic_rates;
-        int i;
+//        unsigned long basic = ctx->vif->bss_conf.basic_rates;
+//        int i;
         
         sband = priv->hw->wiphy->bands[priv->hw->conf.chandef.chan->band];
         

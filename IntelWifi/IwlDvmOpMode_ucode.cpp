@@ -345,7 +345,6 @@ int IwlDvmOpMode::iwl_load_ucode_wait_alive(struct iwl_priv *priv,
                                alive_cmd, ARRAY_SIZE(alive_cmd),
                                iwl_alive_fn, &alive_data);
     
-    //ret = iwl_trans_start_fw(priv->trans, fw, false);
     ret = _ops->start_fw(priv->trans, fw, false);
     if (ret) {
         priv->cur_ucode = old_type;
@@ -449,7 +448,6 @@ error:
     iwl_remove_notification(&priv->notif_wait, &calib_wait);
 out:
     /* Whatever happened, stop the device */
-    //iwl_trans_stop_device(priv->trans);
     _ops->stop_device(priv->trans, true);
     priv->ucode_loaded = false;
     

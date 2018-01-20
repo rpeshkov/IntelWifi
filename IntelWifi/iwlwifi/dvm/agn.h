@@ -377,7 +377,7 @@ int iwlagn_manage_ibss_station(struct iwl_priv *priv,
 /* rate */
 static inline u32 iwl_ant_idx_to_flags(u8 ant_idx)
 {
-	return BIT(ant_idx) << RATE_MCS_ANT_POS;
+	return (u32)BIT(ant_idx) << RATE_MCS_ANT_POS;
 }
 
 static inline u8 iwl_hw_get_rate(__le32 rate_n_flags)

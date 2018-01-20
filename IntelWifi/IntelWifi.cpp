@@ -159,20 +159,17 @@ bool IntelWifi::start(IOService *provider) {
     }
     
     /* if RTPM is in use, enable it in our device */
-    //if (fTrans->runtime_pm_mode != IWL_PLAT_PM_MODE_DISABLED) {
+    if (fTrans->runtime_pm_mode != IWL_PLAT_PM_MODE_DISABLED) {
         /* We explicitly set the device to active here to
          * clear contingent errors.
          */
         PMinit();
         provider->joinPMtree(this);
-        makeUsable();
+        
         changePowerStateTo(kOnPowerState);// Set the public power state to the lowest level
         registerPowerDriver(this, gPowerStates, kNumPowerStates);
         setIdleTimerPeriod(iwlwifi_mod_params.d0i3_timeout);
-    
-    
-    
-    //}
+    }
     
     eeprom = IntelEeprom::withIO(io, const_cast<struct iwl_cfg*>(fConfiguration), fTrans->hw_rev);
     if (!eeprom) {
@@ -191,8 +188,9 @@ bool IntelWifi::start(IOService *provider) {
     fWorkLoop->retain();
     
     int source = findMSIInterruptTypeIndex();
-    fInterruptSource = IOInterruptEventSource::interruptEventSource(this,
+    fInterruptSource = IOFilterInterruptEventSource::filterInterruptEventSource(this,
                                                                     (IOInterruptEventAction) &IntelWifi::interruptOccured,
+                                                                    (IOFilterInterruptAction) &IntelWifi::interruptFilter,
                                                                     provider, source);
     if (!fInterruptSource) {
         TraceLog("InterruptSource init failed!");
@@ -230,8 +228,6 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
-    
-    
 //    if (!attachInterface((IONetworkInterface**)&netif)) {
 //        TraceLog("Interface attach failed!");
 //        releaseAll();
@@ -240,10 +236,7 @@ bool IntelWifi::start(IOService *provider) {
     
 //    netif->registerService();
 
-    
     //registerService();
-    
-    
     
     return true;
 }
@@ -366,12 +359,24 @@ const OSString* IntelWifi::newModelString() const {
 }
 
 bool IntelWifi::interruptFilter(OSObject* owner, IOFilterInterruptEventSource * src) {
-    src->signalInterrupt();
-    return false;
+    IntelWifi* me = (IntelWifi*)owner;
+    
+    if (me == 0) {
+        return false;
+    }
+    
+    /* Disable (but don't clear!) interrupts here to avoid
+     * back-to-back ISRs and sporadic interrupts from our NIC.
+     * If we have something to service, the tasklet will re-enable ints.
+     * If we *don't* have something, we'll re-enable before leaving here.
+     */
+    me->io->iwl_write32(CSR_INT_MASK, 0x00000000);
+    
+    return true;
 }
 
 void IntelWifi::interruptOccured(OSObject* owner, IOInterruptEventSource* sender, int count) {
-    DebugLog("Interrupt");
+//    DebugLog("Interrupt");
     IntelWifi* me = (IntelWifi*)owner;
     
     if (me == 0) {

@@ -44,11 +44,11 @@
 
 static inline bool iwl_have_debug_level(u32 level)
 {
-#ifdef CONFIG_IWLWIFI_DEBUG
+//#ifdef CONFIG_IWLWIFI_DEBUG
     return iwlwifi_mod_params.debug_level & level;
-#else
-    return false;
-#endif
+//#else
+//    return false;
+//#endif
 }
 
 /* 0x0000000F - 0x00000001 */
