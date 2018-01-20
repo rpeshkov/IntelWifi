@@ -47,5 +47,10 @@
 #define IWL_DEBUG_RATE(priv, args...) DebugLog("DEBUG RATE: " args)
 #define IWL_DEBUG_COEX(priv, args...) DebugLog("DEBUG COEX: " args)
 
+#define IWL_DEBUG_RADIO(priv, args...) DebugLog("DEBUG RADIO: " args)
+#define IWL_DEBUG_SCAN(priv, args...) DebugLog("DEBUG SCAN: " args)
+#define IWL_DEBUG_RX(priv, args...) DebugLog("DEBUG RX: " args)
+#define IWL_DEBUG_DROP_LIMIT(priv, args...) DebugLog("DEBUG DROP LIMIT: " args)
+
 
 #endif /* Logging_h */

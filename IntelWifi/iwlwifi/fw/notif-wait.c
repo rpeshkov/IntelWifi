@@ -71,10 +71,8 @@
 
 void iwl_notification_wait_init(struct iwl_notif_wait_data *notif_wait)
 {
-	//spin_lock_init(&notif_wait->notif_wait_lock);
     notif_wait->notif_wait_lock = IOSimpleLockAlloc();
 	INIT_LIST_HEAD(&notif_wait->notif_waits);
-	//init_waitqueue_head(&notif_wait->notif_waitq);
     notif_wait->notif_waitq = IOLockAlloc();
 }
 IWL_EXPORT_SYMBOL(iwl_notification_wait_init);
@@ -87,7 +85,6 @@ bool iwl_notification_wait(struct iwl_notif_wait_data *notif_wait,
 	if (!list_empty(&notif_wait->notif_waits)) {
 		struct iwl_notification_wait *w;
 
-		//spin_lock(&notif_wait->notif_wait_lock);
         IOSimpleLockLock(notif_wait->notif_wait_lock);
 		list_for_each_entry(w, &notif_wait->notif_waits, list) {
 			int i;
@@ -121,7 +118,6 @@ bool iwl_notification_wait(struct iwl_notif_wait_data *notif_wait,
 				triggered = true;
 			}
 		}
-		//spin_unlock(&notif_wait->notif_wait_lock);
         IOSimpleLockUnlock(notif_wait->notif_wait_lock);
 	}
 
@@ -133,13 +129,11 @@ void iwl_abort_notification_waits(struct iwl_notif_wait_data *notif_wait)
 {
 	struct iwl_notification_wait *wait_entry;
 
-	//spin_lock(&notif_wait->notif_wait_lock);
     IOSimpleLockLock(notif_wait->notif_wait_lock);
 	list_for_each_entry(wait_entry, &notif_wait->notif_waits, list)
 		wait_entry->aborted = true;
-	//spin_unlock(&notif_wait->notif_wait_lock);
     IOSimpleLockUnlock(notif_wait->notif_wait_lock);
-
+    
     // TODO: Implement
 	//wake_up_all(&notif_wait->notif_waitq);
     IOLockLock(notif_wait->notif_waitq);
@@ -167,10 +161,8 @@ iwl_init_notification_wait(struct iwl_notif_wait_data *notif_wait,
 	wait_entry->triggered = false;
 	wait_entry->aborted = false;
 
-	//spin_lock_bh(&notif_wait->notif_wait_lock);
     IOSimpleLockLock(notif_wait->notif_wait_lock);
 	list_add(&wait_entry->list, &notif_wait->notif_waits);
-	//spin_unlock_bh(&notif_wait->notif_wait_lock);
     IOSimpleLockUnlock(notif_wait->notif_wait_lock);
 }
 IWL_EXPORT_SYMBOL(iwl_init_notification_wait);
@@ -178,10 +170,8 @@ IWL_EXPORT_SYMBOL(iwl_init_notification_wait);
 void iwl_remove_notification(struct iwl_notif_wait_data *notif_wait,
 			     struct iwl_notification_wait *wait_entry)
 {
-	//spin_lock_bh(&notif_wait->notif_wait_lock);
     IOSimpleLockLock(notif_wait->notif_wait_lock);
 	list_del(&wait_entry->list);
-	//spin_unlock_bh(&notif_wait->notif_wait_lock);
     IOSimpleLockUnlock(notif_wait->notif_wait_lock);
 }
 IWL_EXPORT_SYMBOL(iwl_remove_notification);
@@ -201,7 +191,7 @@ int iwl_wait_notification(struct iwl_notif_wait_data *notif_wait,
     bool event = true;
     
     AbsoluteTime deadline;
-    clock_interval_to_deadline(timeout, kMillisecondScale, (UInt64 *) &deadline);
+    clock_interval_to_deadline((u32)timeout, kMillisecondScale, (UInt64 *) &deadline);
     ret = IOLockSleepDeadline(notif_wait->notif_waitq, &event, *((AbsoluteTime *) &deadline), THREAD_INTERRUPTIBLE);
     iwl_remove_notification(notif_wait, wait_entry);
     IOLockUnlock(notif_wait->notif_waitq);

@@ -54,7 +54,7 @@ extern "C" {
 /*
  *  Calibration
  */
-static int iwl_set_Xtal_calib(struct iwl_priv *priv)
+int IwlDvmOpMode::iwl_set_Xtal_calib(struct iwl_priv *priv)
 {
     struct iwl_calib_xtal_freq_cmd cmd;
     __le16 *xtal_calib = priv->nvm_data->xtal_calib;
@@ -62,12 +62,10 @@ static int iwl_set_Xtal_calib(struct iwl_priv *priv)
     iwl_set_calib_hdr(&cmd.hdr, IWL_PHY_CALIBRATE_CRYSTAL_FRQ_CMD);
     cmd.cap_pin1 = le16_to_cpu(xtal_calib[0]);
     cmd.cap_pin2 = le16_to_cpu(xtal_calib[1]);
-    return 0;
-    // TODO: Implement
-    //return iwl_calib_set(priv, (void *)&cmd, sizeof(cmd));
+    return iwl_calib_set(priv, (struct iwl_calib_hdr *)&cmd, sizeof(cmd));
 }
 
-static int iwl_set_temperature_offset_calib(struct iwl_priv *priv)
+int IwlDvmOpMode::iwl_set_temperature_offset_calib(struct iwl_priv *priv)
 {
     struct iwl_calib_temperature_offset_cmd cmd;
     
@@ -79,12 +77,11 @@ static int iwl_set_temperature_offset_calib(struct iwl_priv *priv)
     
     IWL_DEBUG_CALIB(priv, "Radio sensor offset: %d\n",
                     le16_to_cpu(cmd.radio_sensor_offset));
-    return 0;
-    // TODO: Implement
-    //return iwl_calib_set(priv, (void *)&cmd, sizeof(cmd));
+    
+    return iwl_calib_set(priv, (struct iwl_calib_hdr *)&cmd, sizeof(cmd));
 }
 
-static int iwl_set_temperature_offset_calib_v2(struct iwl_priv *priv)
+int IwlDvmOpMode::iwl_set_temperature_offset_calib_v2(struct iwl_priv *priv)
 {
     struct iwl_calib_temperature_offset_v2_cmd cmd;
     
@@ -106,12 +103,10 @@ static int iwl_set_temperature_offset_calib_v2(struct iwl_priv *priv)
     IWL_DEBUG_CALIB(priv, "Voltage Ref: %d\n",
                     le16_to_cpu(cmd.burntVoltageRef));
     
-    return 0;
-    // TODO: Implement
-    //return iwl_calib_set(priv, (void *)&cmd, sizeof(cmd));
+    return iwl_calib_set(priv, (struct iwl_calib_hdr *)&cmd, sizeof(cmd));
 }
 
-static int iwl_send_calib_cfg(struct iwl_priv *priv)
+int IwlDvmOpMode::iwl_send_calib_cfg(struct iwl_priv *priv)
 {
     struct iwl_calib_cfg_cmd calib_cfg_cmd;
     struct iwl_host_cmd cmd = {
@@ -127,9 +122,7 @@ static int iwl_send_calib_cfg(struct iwl_priv *priv)
     calib_cfg_cmd.ucd_calib_cfg.flags =
     IWL_CALIB_CFG_FLAG_SEND_COMPLETE_NTFY_MSK;
     
-    return 0;
-    // TODO: Implement
-    //return iwl_dvm_send_cmd(priv, &cmd);
+    return iwl_dvm_send_cmd(priv, &cmd);
 }
 
 int IwlDvmOpMode::iwl_init_alive_start(struct iwl_priv *priv)
@@ -169,19 +162,16 @@ int IwlDvmOpMode::iwl_init_alive_start(struct iwl_priv *priv)
     return 0;
 }
 
-static int iwl_send_wimax_coex(struct iwl_priv *priv)
+int IwlDvmOpMode::iwl_send_wimax_coex(struct iwl_priv *priv)
 {
     struct iwl_wimax_coex_cmd coex_cmd;
     
     /* coexistence is disabled */
     memset(&coex_cmd, 0, sizeof(coex_cmd));
     
-    return 0;
-    
-    // TODO: Implement
-    //    return iwl_dvm_send_cmd_pdu(priv,
-    //                COEX_PRIORITY_TABLE_CMD, 0,
-    //                sizeof(coex_cmd), &coex_cmd);
+    return iwl_dvm_send_cmd_pdu(priv,
+                COEX_PRIORITY_TABLE_CMD, 0,
+                sizeof(coex_cmd), &coex_cmd);
 }
 
 static const u8 iwl_bt_prio_tbl[BT_COEX_PRIO_TBL_EVT_MAX] = {
@@ -212,11 +202,11 @@ void IwlDvmOpMode::iwl_send_prio_tbl(struct iwl_priv *priv)
     
     memcpy(prio_tbl_cmd.prio_tbl, iwl_bt_prio_tbl,
            sizeof(iwl_bt_prio_tbl));
-    // TODO: Implement
-    //    if (iwl_dvm_send_cmd_pdu(priv,
-    //                REPLY_BT_COEX_PRIO_TABLE, 0,
-    //                sizeof(prio_tbl_cmd), &prio_tbl_cmd))
-    //        IWL_ERR(priv, "failed to send BT prio tbl command\n");
+    
+    if (iwl_dvm_send_cmd_pdu(priv,
+                REPLY_BT_COEX_PRIO_TABLE, 0,
+                sizeof(prio_tbl_cmd), &prio_tbl_cmd))
+        IWL_ERR(priv, "failed to send BT prio tbl command\n");
 }
 
 int IwlDvmOpMode::iwl_send_bt_env(struct iwl_priv *priv, u8 action, u8 type)
@@ -227,14 +217,12 @@ int IwlDvmOpMode::iwl_send_bt_env(struct iwl_priv *priv, u8 action, u8 type)
     env_cmd.action = action;
     env_cmd.type = type;
     
-    return 0;
-    // TODO: Implement
-    //    ret = iwl_dvm_send_cmd_pdu(priv,
-    //                   REPLY_BT_COEX_PROT_ENV, 0,
-    //                   sizeof(env_cmd), &env_cmd);
-    //    if (ret)
-    //        IWL_ERR(priv, "failed to send BT env command\n");
-    //    return ret;
+    ret = iwl_dvm_send_cmd_pdu(priv,
+                   REPLY_BT_COEX_PROT_ENV, 0,
+                   sizeof(env_cmd), &env_cmd);
+    if (ret)
+        IWL_ERR(priv, "failed to send BT env command\n");
+    return ret;
 }
 
 static const u8 iwlagn_default_queue_to_tx_fifo[] = {
@@ -295,9 +283,7 @@ int IwlDvmOpMode::iwl_alive_notify(struct iwl_priv *priv)
             return ret;
     }
     
-    return 0;
-    // TODO: Implement
-    //return iwl_send_calib_results(priv);
+    return iwl_send_calib_results(priv);
 }
 
 struct iwl_alive_data {
@@ -402,7 +388,7 @@ int IwlDvmOpMode::iwl_load_ucode_wait_alive(struct iwl_priv *priv,
     return 0;
 }
 
-static bool iwlagn_wait_calib(struct iwl_notif_wait_data *notif_wait,
+bool IwlDvmOpMode::iwlagn_wait_calib(struct iwl_notif_wait_data *notif_wait,
                               struct iwl_rx_packet *pkt, void *data)
 {
     struct iwl_priv *priv = (struct iwl_priv *)data;
@@ -415,10 +401,9 @@ static bool iwlagn_wait_calib(struct iwl_notif_wait_data *notif_wait,
     
     hdr = (struct iwl_calib_hdr *)pkt->data;
     
-    // TODO: Implement
-    //    if (iwl_calib_set(priv, hdr, iwl_rx_packet_payload_len(pkt)))
-    //        IWL_ERR(priv, "Failed to record calibration data %d\n",
-    //            hdr->op_code);
+    if (iwl_calib_set(priv, hdr, iwl_rx_packet_payload_len(pkt)))
+        IWL_ERR(priv, "Failed to record calibration data %d\n",
+            hdr->op_code);
     
     return false;
 }

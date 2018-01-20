@@ -366,7 +366,7 @@ int IntelWifi::iwl_pcie_rx_alloc(struct iwl_trans *trans)
     struct iwl_rb_allocator *rba = &trans_pcie->rba;
     //struct device *dev = trans->dev;
     int i;
-    //int free_size = trans->cfg->mq_rx_supported ? sizeof(__le64) : sizeof(__le32);
+    int free_size = trans->cfg->mq_rx_supported ? sizeof(__le64) : sizeof(__le32);
     
     if (WARN_ON(trans_pcie->rxq))
         return -EINVAL;
@@ -374,18 +374,17 @@ int IntelWifi::iwl_pcie_rx_alloc(struct iwl_trans *trans)
 //    trans_pcie->rxq = kcalloc(trans->num_rx_queues, sizeof(struct iwl_rxq),
 //                              GFP_KERNEL);
     trans_pcie->rxq = (struct iwl_rxq *)IOMalloc(sizeof(struct iwl_rxq) * trans->num_rx_queues);
-    memset(trans_pcie->rxq, 0, sizeof(struct iwl_rxq) * trans->num_rx_queues);
     
     if (!trans_pcie->rxq)
         return -EINVAL;
     
-    //spin_lock_init(&rba->lock);
+    memset(trans_pcie->rxq, 0, sizeof(struct iwl_rxq) * trans->num_rx_queues);
+    
     rba->lock = IOSimpleLockAlloc();
     
     for (i = 0; i < trans->num_rx_queues; i++) {
         struct iwl_rxq *rxq = &trans_pcie->rxq[i];
         
-        //spin_lock_init(&rxq->lock);
         rxq->lock = IOSimpleLockAlloc();
         if (trans->cfg->mq_rx_supported)
             rxq->queue_size = MQ_RX_TABLE_SIZE;
@@ -412,6 +411,55 @@ int IntelWifi::iwl_pcie_rx_alloc(struct iwl_trans *trans)
 //            if (!rxq->used_bd)
 //                goto err;
 //        }
+        IOBufferMemoryDescriptor *rxqBd =
+        IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionInOut | kIOMemoryPhysicallyContiguous | kIOMapInhibitCache), free_size * rxq->queue_size, 0x00000000FFFFFFFFULL);
+        
+        IODMACommand *rxqBdCmd = IODMACommand::withSpecification(kIODMACommandOutputHost64, 64, 0, IODMACommand::kMapped, 0, 1);
+        rxqBdCmd->setMemoryDescriptor(rxqBd);
+        rxqBdCmd->prepare();
+        
+        IODMACommand::Segment64 rxqBdSeg;
+        UInt64 rxqBdOfs = 0;
+        UInt32 rxqBdNumSegs = 1;
+        
+        if (rxqBdCmd->gen64IOVMSegments(&rxqBdOfs, &rxqBdSeg, &rxqBdNumSegs) != kIOReturnSuccess) {
+            TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
+            return -1;
+        }
+        rxq->bd = rxqBd->getBytesNoCopy();
+        rxq->bd_dma = rxqBdSeg.fIOVMAddr;
+        bzero(rxq->bd, free_size * rxq->queue_size);
+        
+        //        if (trans->cfg->mq_rx_supported) {
+        //            rxq->used_bd = dma_zalloc_coherent(dev,
+        //                                               sizeof(__le32) *
+        //                                               rxq->queue_size,
+        //                                               &rxq->used_bd_dma,
+        //                                               GFP_KERNEL);
+        if (trans->cfg->mq_rx_supported) {
+            IOBufferMemoryDescriptor *usedBd =
+            IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionInOut | kIOMemoryPhysicallyContiguous | kIOMapInhibitCache), sizeof(__le32) * rxq->queue_size, 0x00000000FFFFFFFFULL);
+            
+            IODMACommand *usedBdCmd = IODMACommand::withSpecification(kIODMACommandOutputHost64, 64, 0, IODMACommand::kMapped, 0, 1);
+            usedBdCmd->setMemoryDescriptor(usedBd);
+            usedBdCmd->prepare();
+            
+            IODMACommand::Segment64 usedBdSeg;
+            UInt64 usedBdOfs = 0;
+            UInt32 usedBdNumSegs = 1;
+            
+            if (usedBdCmd->gen64IOVMSegments(&usedBdOfs, &usedBdSeg, &usedBdNumSegs) != kIOReturnSuccess) {
+                TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
+                return -1;
+            }
+            rxq->used_bd = (__le32 *)usedBd->getBytesNoCopy();
+            rxq->used_bd_dma = usedBdSeg.fIOVMAddr;
+            bzero(rxq->used_bd, free_size * rxq->queue_size);
+        }
+        
+        
+        
+        
         
         /*Allocate the driver's pointer to receive buffer status */
         // TODO: Implement

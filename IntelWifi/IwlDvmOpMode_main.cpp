@@ -759,7 +759,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
             i != IWL_DEFAULT_CMD_QUEUE_NUM &&
             i != IWL_IPAN_CMD_QUEUE_NUM)
             priv->queue_to_mac80211[i] = i;
-        //atomic_set(&priv->queue_stop_count[i], 0);
+        
         priv->queue_stop_count[i] = 0;
     }
 
@@ -862,7 +862,7 @@ void IwlDvmOpMode::iwl_nic_config(struct iwl_priv *priv)
                  priv->nvm_data->radio_cfg_step,
                  priv->nvm_data->radio_cfg_dash);
     } else {
-        WARN_ON(1);
+        //WARN_ON(1);
     }
     
     /* set CSR_HW_CONFIG_REG for uCode use */

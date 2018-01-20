@@ -57,6 +57,13 @@ private:
     int iwl_run_init_ucode(struct iwl_priv *priv);
     int iwl_alive_notify(struct iwl_priv *priv);
     void iwl_nic_config(struct iwl_priv *priv);
+    int iwl_set_Xtal_calib(struct iwl_priv *priv);
+    int iwl_send_calib_cfg(struct iwl_priv *priv);
+    int iwl_set_temperature_offset_calib(struct iwl_priv *priv);
+    int iwl_set_temperature_offset_calib_v2(struct iwl_priv *priv);
+    int iwl_send_wimax_coex(struct iwl_priv *priv);
+    static bool iwlagn_wait_calib(struct iwl_notif_wait_data *notif_wait,
+                           struct iwl_rx_packet *pkt, void *data);
     
     // sta.c
     u8 iwl_prep_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
@@ -80,6 +87,9 @@ private:
     int iwlagn_commit_rxon(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 1025
     
     // calib.c
+    int iwl_send_calib_results(struct iwl_priv *priv); // line 93
+    static int iwl_calib_set(struct iwl_priv *priv,
+                      const struct iwl_calib_hdr *cmd, int len); // line 117
     void iwl_reset_run_time_calib(struct iwl_priv *priv); // line 1098
     
     // power.c
@@ -92,6 +102,9 @@ private:
     // lib.c
     int iwlagn_send_tx_power(struct iwl_priv *priv); // line 49
     void iwlagn_send_advance_bt_config(struct iwl_priv *priv); // line 224
+    
+    // rx.c
+    //void iwl_setup_rx_handlers(struct iwl_priv *priv); // line 945
 
     
     

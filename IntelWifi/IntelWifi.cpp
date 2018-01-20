@@ -159,17 +159,20 @@ bool IntelWifi::start(IOService *provider) {
     }
     
     /* if RTPM is in use, enable it in our device */
-    if (fTrans->runtime_pm_mode != IWL_PLAT_PM_MODE_DISABLED) {
+    //if (fTrans->runtime_pm_mode != IWL_PLAT_PM_MODE_DISABLED) {
         /* We explicitly set the device to active here to
          * clear contingent errors.
          */
         PMinit();
         provider->joinPMtree(this);
-        setIdleTimerPeriod(iwlwifi_mod_params.d0i3_timeout);
-        changePowerStateTo(kOffPowerState);// Set the public power state to the lowest level
-        registerPowerDriver(this, gPowerStates, kNumPowerStates);
         makeUsable();
-    }
+        changePowerStateTo(kOnPowerState);// Set the public power state to the lowest level
+        registerPowerDriver(this, gPowerStates, kNumPowerStates);
+        setIdleTimerPeriod(iwlwifi_mod_params.d0i3_timeout);
+    
+    
+    
+    //}
     
     eeprom = IntelEeprom::withIO(io, const_cast<struct iwl_cfg*>(fConfiguration), fTrans->hw_rev);
     if (!eeprom) {
@@ -187,7 +190,7 @@ bool IntelWifi::start(IOService *provider) {
     
     fWorkLoop->retain();
     
-    int source = findMSIInterruptTypeIndex(); // Currently not using MSI because I want to see a lot of ignored interrupts in console
+    int source = findMSIInterruptTypeIndex();
     fInterruptSource = IOInterruptEventSource::interruptEventSource(this,
                                                                     (IOInterruptEventAction) &IntelWifi::interruptOccured,
                                                                     provider, source);
@@ -220,24 +223,6 @@ bool IntelWifi::start(IOService *provider) {
     /* Set is_down to false here so that...*/
     trans_pcie->is_down = false;
     
-
-    
-    
-//    fNvmData = eeprom->parse();
-//    if (!fNvmData) {
-//        TraceLog("EEPROM parse failed!");
-//        releaseAll();
-//        return false;
-//    }
-    
-//    DebugLog("MAC: " MAC_FMT "\n"
-//             "Num addr: %d\n"
-//             "Calib: version - %d, voltage - %d\n"
-//             "Raw temperature: %u",
-//             MAC_BYTES(fNvmData->hw_addr),
-//             fNvmData->n_hw_addrs,
-//             fNvmData->calib_version, fNvmData->calib_voltage,
-//             fNvmData->raw_temperature);
     
     if (!createMediumDict()) {
         TraceLog("MediumDict creation failed!");
@@ -252,11 +237,6 @@ bool IntelWifi::start(IOService *provider) {
 //        releaseAll();
 //        return false;
 //    }
-    
-    
-//    const struct fw_img *fw = iwl_get_ucode_image(&fTrans->drv->fw, IWL_UCODE_INIT);
-//
-//    iwl_trans_pcie_start_fw(fTrans, fw, false);
     
 //    netif->registerService();
 

@@ -19,7 +19,7 @@
 #include <IOKit/IOLib.h>
 
 #define __aligned(x)        __attribute__((aligned(x)))
-# define __rcu        __attribute__((noderef, address_space(4)))
+#define __rcu
 
 
 

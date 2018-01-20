@@ -117,7 +117,7 @@ void IwlDvmOpMode::iwlagn_send_advance_bt_config(struct iwl_priv *priv)
             bt_cmd_v2.rx_prio_boost = 0;
         } else {
             /* older version only has 8 bits */
-            WARN_ON(priv->lib->bt_params->bt_prio_boost & ~0xFF);
+            //WARN_ON(priv->lib->bt_params->bt_prio_boost & ~0xFF);
             bt_cmd_v1.prio_boost =
             priv->lib->bt_params->bt_prio_boost;
             bt_cmd_v1.tx_prio_boost = 0;
@@ -339,8 +339,8 @@ void IwlDvmOpMode::iwlagn_set_rxon_chain(struct iwl_priv *priv, struct iwl_rxon_
                     ctx->staging.rx_chain,
                     active_rx_cnt, idle_rx_cnt);
     
-    WARN_ON(active_rx_cnt == 0 || idle_rx_cnt == 0 ||
-            active_rx_cnt < idle_rx_cnt);
+//    WARN_ON(active_rx_cnt == 0 || idle_rx_cnt == 0 ||
+//            active_rx_cnt < idle_rx_cnt);
 }
 
 

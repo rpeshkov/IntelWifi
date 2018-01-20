@@ -13,6 +13,20 @@
 #include <linux/types.h>
 #include <linux/netdevice.h>
 
+#define IEEE80211_FCTL_VERS        0x0003
+#define IEEE80211_FCTL_FTYPE        0x000c
+#define IEEE80211_FCTL_STYPE        0x00f0
+#define IEEE80211_FCTL_TODS        0x0100
+#define IEEE80211_FCTL_FROMDS        0x0200
+#define IEEE80211_FCTL_MOREFRAGS    0x0400
+#define IEEE80211_FCTL_RETRY        0x0800
+#define IEEE80211_FCTL_PM        0x1000
+#define IEEE80211_FCTL_MOREDATA        0x2000
+#define IEEE80211_FCTL_PROTECTED    0x4000
+#define IEEE80211_FCTL_ORDER        0x8000
+#define IEEE80211_FCTL_CTL_EXT        0x0f00
+
+
 // line 149
 /* miscellaneous IEEE 802.11 constants */
 #define IEEE80211_MAX_FRAG_THRESHOLD    2352

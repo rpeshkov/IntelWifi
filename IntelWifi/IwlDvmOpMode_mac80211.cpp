@@ -27,14 +27,14 @@ int IwlDvmOpMode::__iwl_up(struct iwl_priv *priv)
         return -EIO;
     }
     
-    for_each_context(priv, ctx) {
-        ret = iwlagn_alloc_bcast_station(priv, ctx);
-        if (ret) {
-            // TODO: Implement
-            //iwl_dealloc_bcast_stations(priv);
-            return ret;
-        }
-    }
+//    for_each_context(priv, ctx) {
+//        ret = iwlagn_alloc_bcast_station(priv, ctx);
+//        if (ret) {
+//            // TODO: Implement
+//            //iwl_dealloc_bcast_stations(priv);
+//            return ret;
+//        }
+//    }
     
     ret = _ops->start_hw(priv->trans, true);
     if (ret) {
@@ -60,9 +60,9 @@ int IwlDvmOpMode::__iwl_up(struct iwl_priv *priv)
         goto error;
     }
 
-    ret = iwl_alive_start(priv);
-    if (ret)
-        goto error;
+//    ret = iwl_alive_start(priv);
+//    if (ret)
+//        goto error;
     return 0;
     
 error:
