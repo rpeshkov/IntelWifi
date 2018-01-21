@@ -436,6 +436,61 @@ int IwlDvmOpMode::iwl_alive_start(struct iwl_priv *priv)
     return iwl_power_update_mode(priv, true);
 }
 
+// line 916
+void IwlDvmOpMode::iwl_down(struct iwl_priv *priv)
+{
+    int exit_pending;
+    
+    IWL_DEBUG_INFO(priv, DRV_NAME " is going down\n");
+    
+    //lockdep_assert_held(&priv->mutex);
+    
+    iwl_scan_cancel_timeout(priv, 200);
+    
+    exit_pending = test_and_set_bit(STATUS_EXIT_PENDING, &priv->status);
+    
+//    iwl_clear_ucode_stations(priv, NULL);
+//    iwl_dealloc_bcast_stations(priv);
+//    iwl_clear_driver_stations(priv);
+    
+    /* reset BT coex data */
+    priv->bt_status = 0;
+    priv->cur_rssi_ctx = NULL;
+    priv->bt_is_sco = 0;
+    if (priv->lib->bt_params)
+        priv->bt_traffic_load = priv->lib->bt_params->bt_init_traffic_load;
+    else
+        priv->bt_traffic_load = 0;
+    priv->bt_full_concurrent = false;
+    priv->bt_ci_compliance = 0;
+    
+    /* Wipe out the EXIT_PENDING status bit if we are not actually
+     * exiting the module */
+    if (!exit_pending)
+        clear_bit(STATUS_EXIT_PENDING, &priv->status);
+    
+//    if (priv->mac80211_registered)
+//        ieee80211_stop_queues(priv->hw);
+    
+    priv->ucode_loaded = false;
+    
+    //iwl_trans_stop_device(priv->trans);
+    
+    /* Set num_aux_in_flight must be done after the transport is stopped */
+    //atomic_set(&priv->num_aux_in_flight, 0);
+    priv->num_aux_in_flight = 0;
+    
+    /* Clear out all status bits but a few that are stable across reset */
+    priv->status &= test_bit(STATUS_RF_KILL_HW, &priv->status) <<
+                            STATUS_RF_KILL_HW |
+                    test_bit(STATUS_FW_ERROR, &priv->status) <<
+                            STATUS_FW_ERROR |
+                    test_bit(STATUS_EXIT_PENDING, &priv->status) <<
+                            STATUS_EXIT_PENDING;
+    
+    //dev_kfree_skb(priv->beacon_skb);
+    //priv->beacon_skb = NULL;
+}
 
 
 // line 1112
@@ -477,6 +532,18 @@ int IwlDvmOpMode::iwl_init_drv(struct iwl_priv *priv)
     return 0;
 }
 
+// line 1150
+static void iwl_uninit_drv(struct iwl_priv *priv)
+{
+//    kfree(priv->scan_cmd);
+//    kfree(priv->beacon_cmd);
+//    kfree(rcu_dereference_raw(priv->noa_data));
+//    iwl_calib_free_results(priv);
+//#ifdef CONFIG_IWLWIFI_DEBUGFS
+//    kfree(priv->wowlan_sram);
+//#endif
+}
+
 
 // line 1161
 static void iwl_set_hw_params(struct iwl_priv *priv)
@@ -488,6 +555,30 @@ static void iwl_set_hw_params(struct iwl_priv *priv)
     /* Device-specific setup */
     priv->lib->set_hw_params(priv);
 }
+
+// line 1173
+/* show what optional capabilities we have */
+static void iwl_option_config(struct iwl_priv *priv)
+{
+#ifdef CONFIG_IWLWIFI_DEBUG
+    IWL_INFO(priv, "CONFIG_IWLWIFI_DEBUG enabled\n");
+#else
+    IWL_INFO(priv, "CONFIG_IWLWIFI_DEBUG disabled\n");
+#endif
+    
+#ifdef CONFIG_IWLWIFI_DEBUGFS
+    IWL_INFO(priv, "CONFIG_IWLWIFI_DEBUGFS enabled\n");
+#else
+    IWL_INFO(priv, "CONFIG_IWLWIFI_DEBUGFS disabled\n");
+#endif
+    
+#ifdef CONFIG_IWLWIFI_DEVICE_TRACING
+    IWL_INFO(priv, "CONFIG_IWLWIFI_DEVICE_TRACING enabled\n");
+#else
+    IWL_INFO(priv, "CONFIG_IWLWIFI_DEVICE_TRACING disabled\n");
+#endif
+}
+
 
 
 // line 1195
@@ -637,8 +728,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     
     trans_cfg.cmd_fifo = IWLAGN_CMD_FIFO_NUM;
     // TODO: Implement
-//    trans_cfg.cb_data_offs = offsetof(struct ieee80211_tx_info,
-//                                      driver_data[2]);
+    trans_cfg.cb_data_offs = 0;//offsetof(struct ieee80211_tx_info, driver_data[2]);
     
 //    WARN_ON(sizeof(priv->transport_queue_stop) * BITS_PER_BYTE <
 //            priv->cfg->base_params->num_of_queues);
@@ -654,7 +744,6 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     }
     
     /* Configure transport layer */
-    //iwl_trans_configure(priv->trans, &trans_cfg);
     _ops->configure(priv->trans, &trans_cfg);
     
     trans->rx_mpdu_cmd = REPLY_RX_MPDU_CMD;
@@ -666,9 +755,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     
     //SET_IEEE80211_DEV(priv->hw, priv->trans->dev);
     
-    // TODO: Implement
-    // Only logging here, so lowest priority
-    //iwl_option_config(priv);
+    iwl_option_config(priv);
     
     IWL_DEBUG_INFO(priv, "*** LOAD DRIVER ***\n");
     
@@ -822,6 +909,36 @@ out:
     op_mode = NULL;
     return NULL;
 }
+
+// line 1524
+void IwlDvmOpMode::iwl_op_mode_dvm_stop(struct iwl_priv* priv)
+{
+    IWL_DEBUG_INFO(priv, "*** UNLOAD DRIVER ***\n");
+    
+//    iwlagn_mac_unregister(priv);
+//
+//    iwl_tt_exit(priv);
+//
+//    kfree(priv->eeprom_blob);
+//    kfree(priv->nvm_data);
+//
+//    /*netif_stop_queue(dev); */
+//    flush_workqueue(priv->workqueue);
+//
+//    /* ieee80211_unregister_hw calls iwlagn_mac_stop, which flushes
+//     * priv->workqueue... so we can't take down the workqueue
+//     * until now... */
+//    destroy_workqueue(priv->workqueue);
+//    priv->workqueue = NULL;
+//
+//    iwl_uninit_drv(priv);
+//
+//    dev_kfree_skb(priv->beacon_skb);
+//
+//    iwl_trans_op_mode_leave(priv->trans);
+//    ieee80211_free_hw(priv->hw);
+}
+
 
 #define EEPROM_RF_CONFIG_TYPE_MAX      0x3
 

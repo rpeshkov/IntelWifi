@@ -9,6 +9,7 @@
 #include <IOKit/network/IOEthernetController.h>
 #include <IOKit/network/IOEthernetInterface.h>
 #include <IOKit/network/IOPacketQueue.h>
+#include <IOKit/IOMemoryCursor.h>
 
 
 
@@ -60,6 +61,7 @@ public:
                                const struct iwl_trans_txq_scd_cfg *cfg,
                                        unsigned int queue_wdg_timeout) override;
     virtual void txq_disable(struct iwl_trans *trans, int queue, bool configure_scd) override;
+    int send_cmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd) override;
 
     
     virtual bool init(OSDictionary *properties) override;
@@ -271,6 +273,13 @@ private:
     void iwl_trans_pcie_txq_set_shared_mode(struct iwl_trans *trans, u32 txq_id,
                                             bool shared_mode);
     void iwl_trans_pcie_txq_disable(struct iwl_trans *trans, int txq_id, bool configure_scd); // line 1404
+    int iwl_pcie_enqueue_hcmd(struct iwl_trans *trans,
+                                         struct iwl_host_cmd *cmd); // line 1440
+    int iwl_pcie_send_hcmd_async(struct iwl_trans *trans,
+                                 struct iwl_host_cmd *cmd);
+    int iwl_pcie_send_hcmd_sync(struct iwl_trans *trans,
+                                struct iwl_host_cmd *cmd); // line 1829
+    int iwl_trans_pcie_send_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd); // line 1935
     int iwl_trans_pcie_tx(struct iwl_trans *trans, struct sk_buff *skb,
                           struct iwl_device_cmd *dev_cmd, int txq_id); // line 2256
     
@@ -339,6 +348,7 @@ private:
     UInt16 fSubsystemId;
     
     IwlOpModeOps *opmode;
+    struct ieee80211_hw *hw;
     
     
 };

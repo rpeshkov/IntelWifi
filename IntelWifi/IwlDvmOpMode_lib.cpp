@@ -9,8 +9,9 @@
 #include "IwlDvmOpMode.hpp"
 
 extern "C" {
+    #include "iwl-trans.h"
 #include "agn.h"
-#include "iwl-trans.h"
+
 }
 
 // line 49
@@ -355,8 +356,8 @@ int IwlDvmOpMode::iwl_dvm_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *c
     }
     
     if (test_bit(STATUS_FW_ERROR, &priv->status)) {
-//        IWL_ERR(priv, "Command %s failed: FW Error\n",
-//                iwl_get_cmd_string(priv->trans, cmd->id));
+        //const char* str = iwl_get_cmd_string(priv->trans, cmd->id);
+        IWL_ERR(priv, "Command %d failed: FW Error\n", cmd->id);
         return -EIO;
     }
     
@@ -379,7 +380,7 @@ int IwlDvmOpMode::iwl_dvm_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *c
 //        lockdep_assert_held(&priv->mutex);
     
     // TODO: Implement
-    //return iwl_trans_send_cmd(priv->trans, cmd);
+    return _ops->iwl_trans_send_cmd(priv->trans, cmd);
     return 0;
 }
 

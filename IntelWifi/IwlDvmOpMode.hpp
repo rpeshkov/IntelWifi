@@ -20,19 +20,16 @@ extern "C" {
 class IwlDvmOpMode : public IwlOpModeOps {
 public:
     IwlDvmOpMode(IwlTransOps *ops, IntelIO *io, IntelEeprom *eeprom);
-    virtual struct iwl_priv *start(struct iwl_trans *trans,
+    virtual struct ieee80211_hw *start(struct iwl_trans *trans,
                                 const struct iwl_cfg *cfg,
                                 const struct iwl_fw *fw,
                                 struct dentry *dbgfs_dir) override;
     virtual void nic_config(struct iwl_priv *priv) override;
+    
+    virtual void stop(struct iwl_priv *priv) override;
 
     
 private:
-    struct iwl_priv *iwl_op_mode_dvm_start(struct iwl_trans *trans,
-                                        const struct iwl_cfg *cfg,
-                                        const struct iwl_fw *fw,
-                                        struct dentry *dbgfs_dir); // line 1232
-    
     // main.c
     int iwl_send_statistics_request(struct iwl_priv *priv, u8 flags, bool clear); // line 374
     void iwl_rf_kill_ct_config(struct iwl_priv *priv); // line 678
@@ -40,7 +37,13 @@ private:
     int iwlagn_send_tx_ant_config(struct iwl_priv *priv, u8 valid_tx_ant); // line 740
     void iwl_send_bt_config(struct iwl_priv *priv); // line 757
     int iwl_alive_start(struct iwl_priv *priv); // line 780
+    void iwl_down(struct iwl_priv *priv); // line 916
     int iwl_init_drv(struct iwl_priv *priv); // line 1112
+    struct iwl_priv *iwl_op_mode_dvm_start(struct iwl_trans *trans,
+                                           const struct iwl_cfg *cfg,
+                                           const struct iwl_fw *fw,
+                                           struct dentry *dbgfs_dir); // line 1232
+    void iwl_op_mode_dvm_stop(struct iwl_priv* priv); // line 1524
     
     // mac80211.c
     int __iwl_up(struct iwl_priv *priv); // line 238
@@ -85,6 +88,7 @@ private:
                                 enum nl80211_band band,
                                 struct ieee80211_vif *vif); // line 736
     int iwlagn_commit_rxon(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 1025
+    void iwlagn_post_scan(struct iwl_priv *priv); // line 1547
     
     // calib.c
     int iwl_send_calib_results(struct iwl_priv *priv); // line 93
@@ -107,6 +111,11 @@ private:
     void iwl_setup_rx_handlers(struct iwl_priv *priv); // line 945
     
     // scan.c
+    int iwl_send_scan_abort(struct iwl_priv *priv); // line 57
+    void iwl_process_scan_complete(struct iwl_priv *priv); // line 112
+    void iwl_force_scan_end(struct iwl_priv *priv); // line 165
+    void iwl_do_scan_abort(struct iwl_priv *priv); // line 182
+    void iwl_scan_cancel_timeout(struct iwl_priv *priv, unsigned long ms); // line 216
     void iwl_init_scan_params(struct iwl_priv *priv); // line 929
 
     

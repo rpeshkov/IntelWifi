@@ -279,6 +279,29 @@ struct iwl_txq {
 };
 
 
+static inline dma_addr_t
+iwl_pcie_get_first_tb_dma(struct iwl_txq *txq, int idx)
+{
+    return txq->first_tb_dma +
+    sizeof(struct iwl_pcie_first_tb_buf) * idx;
+}
+
+static inline u16 iwl_pcie_tfd_tb_get_len(struct iwl_trans *trans, void *_tfd,
+                                          u8 idx)
+{
+    if (trans->cfg->use_tfh) {
+        struct iwl_tfh_tfd *tfd = (struct iwl_tfh_tfd *)_tfd;
+        struct iwl_tfh_tb *tb = &tfd->tbs[idx];
+        
+        return le16_to_cpu(tb->tb_len);
+    } else {
+        struct iwl_tfd *tfd = (struct iwl_tfd *)_tfd;
+        struct iwl_tfd_tb *tb = &tfd->tbs[idx];
+        
+        return le16_to_cpu(tb->hi_n_len) >> 4;
+    }
+}
+
 
 
 
@@ -361,6 +384,20 @@ static inline bool iwl_queue_used(const struct iwl_txq *q, int i)
     (i >= q->read_ptr && i < q->write_ptr) :
     !(i < q->read_ptr && i >= q->write_ptr);
 }
+
+static inline u8 iwl_pcie_get_cmd_index(struct iwl_txq *q, u32 index)
+{
+    return index & (q->n_window - 1);
+}
+
+static inline void *iwl_pcie_get_tfd(struct iwl_trans_pcie *trans_pcie,
+                                     struct iwl_txq *txq, int idx)
+{
+    return (u8*)txq->tfds + trans_pcie->tfd_size * iwl_pcie_get_cmd_index(txq,
+                                                                     idx);
+}
+
+
 
 
 #endif /* iwl_trans_pcie_h */

@@ -1350,28 +1350,29 @@ int IntelWifi::iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
 
     IWL_DEBUG_FW(trans, "[%d] uCode section being loaded...\n",
                  section_num);
-
+    
     IOBufferMemoryDescriptor *bmd =
+    
     IOBufferMemoryDescriptor::inTaskWithPhysicalMask(
                                                      // task to hold the memory
                                                      kernel_task,
                                                      // options
-                                                     kIOMemoryPhysicallyContiguous,
+                                                     kIODirectionOutIn | kIOMemoryPhysicallyContiguous,
                                                      // size
-                                                     chunk_sz,
+                                                     section->len,
                                                      // physicalMask - 32 bit addressable and page aligned
                                                      0x00000000FFFFFFFFULL);
     
 
-    IODMACommand *cmd = IODMACommand::withSpecification(kIODMACommandOutputHost64, 64, chunk_sz, IODMACommand::kMapped, 0, 1);
+    IODMACommand *cmd = IODMACommand::withSpecification(kIODMACommandOutputHost32, 32, 0, IODMACommand::kMapped, 0, 1);
     cmd->setMemoryDescriptor(bmd);
     cmd->prepare();
 
-    IODMACommand::Segment64 seg;
+    IODMACommand::Segment32 seg;
     UInt64 ofs = 0;
     UInt32 numSegs = 1;
 
-    if (cmd->gen64IOVMSegments(&ofs, &seg, &numSegs) != kIOReturnSuccess) {
+    if (cmd->gen32IOVMSegments(&ofs, &seg, &numSegs) != kIOReturnSuccess) {
         TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
         return -1;
     }
@@ -1392,9 +1393,9 @@ int IntelWifi::iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
             io->iwl_set_bits_prph(LMPM_CHICK,
                               LMPM_CHICK_EXTENDED_ADDR_SPACE);
         
-        cmd->writeBytes(0, (u8 *)section->data + offset, copy_size);
-        ret = iwl_pcie_load_firmware_chunk(trans, dst_addr, seg.fIOVMAddr, copy_size);
+        cmd->writeBytes(offset, (u8 *)section->data + offset, copy_size);
 
+        ret = iwl_pcie_load_firmware_chunk(trans, dst_addr, seg.fIOVMAddr, copy_size);
         
         if (extended_addr)
             io->iwl_clear_bits_prph(LMPM_CHICK,

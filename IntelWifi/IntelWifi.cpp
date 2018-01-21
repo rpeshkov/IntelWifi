@@ -9,6 +9,8 @@ extern "C" {
 #include <IOKit/IOInterruptController.h>
 
 
+
+
 #include <sys/errno.h>
 
 #define super IOEthernetController
@@ -158,6 +160,24 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
+    
+    
+    eeprom = IntelEeprom::withIO(io, const_cast<struct iwl_cfg*>(fConfiguration), fTrans->hw_rev);
+    if (!eeprom) {
+        TraceLog("EEPROM init failed!");
+        releaseAll();
+        return false;
+    }
+    
+    opmode = new IwlDvmOpMode(this, io, eeprom);
+    hw = opmode->start(fTrans, fTrans->cfg, &fTrans->drv->fw, NULL);
+    
+    if (!hw) {
+        //TraceLog("ERROR: Error while preparing HW: %d", err);
+        releaseAll();
+        return false;
+    }
+    
     /* if RTPM is in use, enable it in our device */
     if (fTrans->runtime_pm_mode != IWL_PLAT_PM_MODE_DISABLED) {
         /* We explicitly set the device to active here to
@@ -169,51 +189,6 @@ bool IntelWifi::start(IOService *provider) {
         changePowerStateTo(kOffPowerState);// Set the public power state to the lowest level
         registerPowerDriver(this, gPowerStates, kNumPowerStates);
         setIdleTimerPeriod(iwlwifi_mod_params.d0i3_timeout);
-    }
-    
-    eeprom = IntelEeprom::withIO(io, const_cast<struct iwl_cfg*>(fConfiguration), fTrans->hw_rev);
-    if (!eeprom) {
-        TraceLog("EEPROM init failed!");
-        releaseAll();
-        return false;
-    }
-    
-//    fWorkLoop = getWorkLoop();
-//    if (!fWorkLoop) {
-//        TraceLog("getWorkLoop failed!");
-//        releaseAll();
-//        return false;
-//    }
-//    
-//    fWorkLoop->retain();
-//    
-//    int source = findMSIInterruptTypeIndex();
-//    fInterruptSource = IOFilterInterruptEventSource::filterInterruptEventSource(this,
-//                                                                    (IOInterruptEventAction) &IntelWifi::interruptOccured,
-//                                                                    (IOFilterInterruptAction) &IntelWifi::interruptFilter,
-//                                                                    provider, source);
-//    if (!fInterruptSource) {
-//        TraceLog("InterruptSource init failed!");
-//        releaseAll();
-//        return false;
-//    }
-//    
-//    if (fWorkLoop->addEventSource(fInterruptSource) != kIOReturnSuccess) {
-//        TraceLog("EventSource registration failed");
-//        releaseAll();
-//        return false;
-//    }
-//    
-//    fInterruptSource->enable();
-    
-    
-    opmode = new IwlDvmOpMode(this, io, eeprom);
-    opmode = (IwlDvmOpMode *)opmode->start(fTrans, fTrans->cfg, &fTrans->drv->fw, NULL);
-    
-    if (!opmode) {
-        //TraceLog("ERROR: Error while preparing HW: %d", err);
-        releaseAll();
-        return false;
     }
     
     struct iwl_trans_pcie* trans_pcie = IWL_TRANS_GET_PCIE_TRANS(fTrans);
@@ -228,13 +203,13 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
-//    if (!attachInterface((IONetworkInterface**)&netif)) {
-//        TraceLog("Interface attach failed!");
-//        releaseAll();
-//        return false;
-//    }
+    if (!attachInterface((IONetworkInterface**)&netif)) {
+        TraceLog("Interface attach failed!");
+        releaseAll();
+        return false;
+    }
     
-//    netif->registerService();
+    netif->registerService();
 
     //registerService();
     
@@ -242,6 +217,15 @@ bool IntelWifi::start(IOService *provider) {
 }
 
 void IntelWifi::stop(IOService *provider) {
+    
+    if (fWorkLoop) {
+        if (fInterruptSource) {
+            fInterruptSource->disable();
+            fWorkLoop->removeEventSource(fInterruptSource);
+        }
+    }
+    
+    //opmode->stop(0);
     
     iwl_trans_pcie_stop_device(fTrans, true);
     
@@ -254,12 +238,7 @@ void IntelWifi::stop(IOService *provider) {
         netif = NULL;
     }
     
-    if (fWorkLoop) {
-        if (fInterruptSource) {
-            fInterruptSource->disable();
-            fWorkLoop->removeEventSource(fInterruptSource);
-        }
-    }
+    
     
     PMstop();
     
@@ -313,7 +292,7 @@ IOReturn IntelWifi::disable(IONetworkInterface *netif) {
 
 
 IOReturn IntelWifi::getHardwareAddress(IOEthernetAddress *addrP) {
-//    memcpy(addrP->bytes, fNvmData->hw_addr, 6);
+    memcpy(addrP->bytes, &hw->wiphy->addresses[0], ETH_ALEN);
     return kIOReturnSuccess;
 }
 
@@ -376,7 +355,7 @@ bool IntelWifi::interruptFilter(OSObject* owner, IOFilterInterruptEventSource * 
 }
 
 void IntelWifi::interruptOccured(OSObject* owner, IOInterruptEventSource* sender, int count) {
-//    DebugLog("Interrupt");
+    DebugLog("Interrupt %d", count);
     IntelWifi* me = (IntelWifi*)owner;
     
     if (me == 0) {

@@ -13,6 +13,8 @@ int IntelWifi::start_hw(struct iwl_trans *trans, bool low_power) {
 }
 
 int IntelWifi::start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill) {
+    clear_bit(STATUS_FW_ERROR, &trans->status);
+
     return iwl_trans_pcie_start_fw(trans, fw, run_in_rfkill);
 }
 
@@ -35,6 +37,8 @@ void IntelWifi::fw_alive(struct iwl_trans *trans, u32 scd_addr) {
 
 void IntelWifi::stop_device(struct iwl_trans *trans, bool low_power) {
     iwl_trans_pcie_stop_device(trans, low_power);
+    trans->state = IWL_TRANS_NO_FW;
+
 }
 
 bool IntelWifi::txq_enable(struct iwl_trans *trans, int queue, u16 ssn,
@@ -44,5 +48,9 @@ bool IntelWifi::txq_enable(struct iwl_trans *trans, int queue, u16 ssn,
 }
 void IntelWifi::txq_disable(struct iwl_trans *trans, int queue, bool configure_scd) {
     iwl_trans_pcie_txq_disable(trans, queue, configure_scd);
+}
+
+int IntelWifi::send_cmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd) {
+    return iwl_trans_pcie_send_hcmd(trans, cmd);
 }
 

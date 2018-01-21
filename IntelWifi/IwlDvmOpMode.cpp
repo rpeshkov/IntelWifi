@@ -8,6 +8,8 @@
 
 #include "IwlDvmOpMode.hpp"
 
+#include "dev.h"
+
 IwlDvmOpMode::IwlDvmOpMode(IwlTransOps *ops, IntelIO *io, IntelEeprom *eeprom) {
     _io = io;
     _ops = ops;
@@ -15,14 +17,18 @@ IwlDvmOpMode::IwlDvmOpMode(IwlTransOps *ops, IntelIO *io, IntelEeprom *eeprom) {
 }
 
 
-struct iwl_priv *IwlDvmOpMode::start(struct iwl_trans *trans, const struct iwl_cfg *cfg, const struct iwl_fw *fw, struct dentry *dbgfs_dir) {
+struct ieee80211_hw *IwlDvmOpMode::start(struct iwl_trans *trans, const struct iwl_cfg *cfg, const struct iwl_fw *fw, struct dentry *dbgfs_dir) {
     priv = iwl_op_mode_dvm_start(trans, cfg, fw, dbgfs_dir);
     iwlagn_mac_start(priv);
-    return priv;
+    return priv->hw;
 }
 
 void IwlDvmOpMode::nic_config(struct iwl_priv *priv) {
     
     iwl_nic_config(this->priv);
+}
+
+void IwlDvmOpMode::stop(struct iwl_priv *priv) {
+    iwl_op_mode_dvm_stop(priv);
 }
 

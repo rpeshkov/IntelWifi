@@ -363,13 +363,13 @@ int IwlDvmOpMode::iwl_load_ucode_wait_alive(struct iwl_priv *priv,
         return ret;
     }
 
-    IODelay(500);
+//    IODelay(1500);
     
-//    if (!alive_data.valid) {
-//        IWL_ERR(priv, "Loaded ucode is not valid!\n");
-//        priv->cur_ucode = old_type;
-//        return -EIO;
-//    }
+    if (!alive_data.valid) {
+        IWL_ERR(priv, "Loaded ucode is not valid!\n");
+        priv->cur_ucode = old_type;
+        return -EIO;
+    }
     
     priv->ucode_loaded = true;
     

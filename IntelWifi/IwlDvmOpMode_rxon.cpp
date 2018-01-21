@@ -588,4 +588,27 @@ int IwlDvmOpMode::iwlagn_commit_rxon(struct iwl_priv *priv, struct iwl_rxon_cont
     return 0;
 }
 
+// line 1547
+void IwlDvmOpMode::iwlagn_post_scan(struct iwl_priv *priv)
+{
+    struct iwl_rxon_context *ctx;
+    
+    /*
+     * We do not commit power settings while scan is pending,
+     * do it now if the settings changed.
+     */
+    iwl_power_set_mode(priv, &priv->power_data.sleep_cmd_next, false);
+    iwl_set_tx_power(priv, priv->tx_power_next, false);
+    
+    /*
+     * Since setting the RXON may have been deferred while
+     * performing the scan, fire one off if needed
+     */
+    for_each_context(priv, ctx)
+    if (memcmp(&ctx->staging, &ctx->active, sizeof(ctx->staging)))
+        iwlagn_commit_rxon(priv, ctx);
+    
+    //iwlagn_set_pan_params(priv);
+}
+
 

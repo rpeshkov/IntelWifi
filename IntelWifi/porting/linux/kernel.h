@@ -41,6 +41,13 @@
 #define ERECALLCONFLICT    530    /* conflict with recalled state */
 
 
+#define min_t(type,x,y) \
+({ type __x = (x); type __y = (y); __x < __y ? __x: __y; })
+
+#define max_t(type, x, y) \
+({ type __x = (x); type __y = (y); __x > __y ? __x: __y; })
+
+
 
 #define WARN_ON(x) (x)
 #define STR(x) #x

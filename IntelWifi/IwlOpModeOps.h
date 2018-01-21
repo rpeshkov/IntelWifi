@@ -20,17 +20,14 @@ extern "C" {
 class IwlOpModeOps {
 public:
     
-    virtual struct iwl_priv *start(struct iwl_trans *trans,
+    virtual struct ieee80211_hw *start(struct iwl_trans *trans,
                                  const struct iwl_cfg *cfg,
                                  const struct iwl_fw *fw,
                                  struct dentry *dbgfs_dir) = 0;
     virtual void nic_config(struct iwl_priv *priv) = 0;
+    virtual void stop(struct iwl_priv *priv) = 0;
 
     
-//    struct iwl_op_mode *(*start)(struct iwl_trans *trans,
-//                                 const struct iwl_cfg *cfg,
-//                                 const struct iwl_fw *fw,
-//                                 struct dentry *dbgfs_dir);
 //    void (*stop)(struct iwl_op_mode *op_mode);
 //    void (*rx)(struct iwl_op_mode *op_mode, struct napi_struct *napi,
 //               struct iwl_rx_cmd_buffer *rxb);
