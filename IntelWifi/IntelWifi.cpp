@@ -18,19 +18,6 @@ OSDefineMetaClassAndStructors(IntelWifi, IOEthernetController)
 
 
 
-enum {
-    kOffPowerState,
-    kOnPowerState,
-    kNumPowerStates
-};
-
-static IOPMPowerState gPowerStates[kNumPowerStates] = {
-    // kOffPowerState
-    {kIOPMPowerStateVersion1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-    // kOnPowerState
-    {kIOPMPowerStateVersion1, (kIOPMPowerOn | kIOPMDeviceUsable), kIOPMPowerOn, kIOPMPowerOn, 0, 0, 0, 0, 0, 0, 0, 0}
-};
-
 
 static struct MediumTable
 {
@@ -169,15 +156,6 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
-    opmode = new IwlDvmOpMode(this, io, eeprom);
-    hw = opmode->start(fTrans, fTrans->cfg, &fTrans->drv->fw, NULL);
-    
-    if (!hw) {
-        //TraceLog("ERROR: Error while preparing HW: %d", err);
-        releaseAll();
-        return false;
-    }
-    
     /* if RTPM is in use, enable it in our device */
     if (fTrans->runtime_pm_mode != IWL_PLAT_PM_MODE_DISABLED) {
         /* We explicitly set the device to active here to
@@ -188,13 +166,19 @@ bool IntelWifi::start(IOService *provider) {
         
         changePowerStateTo(kOffPowerState);// Set the public power state to the lowest level
         registerPowerDriver(this, gPowerStates, kNumPowerStates);
-        setIdleTimerPeriod(iwlwifi_mod_params.d0i3_timeout);
+        //setIdleTimerPeriod(iwlwifi_mod_params.d0i3_timeout);
     }
     
-    struct iwl_trans_pcie* trans_pcie = IWL_TRANS_GET_PCIE_TRANS(fTrans);
+    opmode = new IwlDvmOpMode(this, io, eeprom);
+    hw = opmode->start(fTrans, fTrans->cfg, &fTrans->drv->fw, NULL);
     
-    /* Set is_down to false here so that...*/
-    trans_pcie->is_down = false;
+    if (!hw) {
+        //TraceLog("ERROR: Error while preparing HW: %d", err);
+        releaseAll();
+        return false;
+    }
+    
+    
     
     
     if (!createMediumDict()) {

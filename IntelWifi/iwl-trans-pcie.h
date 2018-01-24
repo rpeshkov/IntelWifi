@@ -58,7 +58,7 @@ enum iwl_shared_irq_flags {
  */
 struct iwl_rx_mem_buffer {
     dma_addr_t page_dma;
-    //struct page *page;
+    void *page;
     u16 vid;
     bool invalid;
     struct list_head list;

@@ -45,6 +45,21 @@ extern "C" {
 #define    RELEASE(x)    if(x){(x)->release();(x)=NULL;}
 
 
+enum {
+    kOffPowerState,
+    kOnPowerState,
+    kNumPowerStates
+};
+
+static IOPMPowerState gPowerStates[kNumPowerStates] = {
+    // kOffPowerState
+    {kIOPMPowerStateVersion1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    // kOnPowerState
+    {kIOPMPowerStateVersion1, (kIOPMPowerOn | kIOPMDeviceUsable), kIOPMPowerOn, kIOPMPowerOn, 0, 0, 0, 0, 0, 0, 0, 0}
+};
+
+
+
 class IntelWifi : public IOEthernetController, public IwlTransOps
 {
     OSDeclareDefaultStructors(IntelWifi)
@@ -244,6 +259,11 @@ private:
     u32 iwl_pcie_int_cause_ict(struct iwl_trans *trans);
     void iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq);
     int iwl_pcie_rx_init(struct iwl_trans *trans);
+    void iwl_pcie_rx_handle(struct iwl_trans *trans, int queue);
+    void iwl_pcie_rx_handle_rb(struct iwl_trans *trans,
+                                          struct iwl_rxq *rxq,
+                                          struct iwl_rx_mem_buffer *rxb,
+                                          bool emergency);
     
     // tx.c
     int iwl_queue_space(const struct iwl_txq *q);

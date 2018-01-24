@@ -126,25 +126,25 @@ test_bit(int nr, const volatile unsigned long *addr)
 static inline void
 clear_bit(unsigned int nr, volatile unsigned long *addr)
 {
-    OSTestAndClear(nr, (volatile UInt8 *)addr);
+    OSTestAndClear(7 - nr, (volatile UInt8 *)addr);
 }
 
 static inline int
 test_and_clear_bit(unsigned int nr, volatile unsigned long *addr)
 {
-    return !OSTestAndClear(nr, (volatile UInt8 *)addr);
+    return !OSTestAndClear(7 - nr, (volatile UInt8 *)addr);
 }
 
 static inline int
 test_and_set_bit(unsigned int nr, volatile unsigned long *addr)
 {
-    return OSTestAndSet(nr, (volatile UInt8 *)addr);
+    return OSTestAndSet(7 - nr, (volatile UInt8 *)addr);
 }
 
 static inline void
 set_bit(unsigned int nr, volatile unsigned long *addr)
 {
-    OSTestAndSet(nr, (volatile UInt8 *)addr);
+    OSTestAndSet(7 - nr, (volatile UInt8 *)addr);
 }
 
 #define __set_bit set_bit

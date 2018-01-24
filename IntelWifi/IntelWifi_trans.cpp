@@ -209,6 +209,9 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
         
     } else {
         ret = iwl_pcie_alloc_ict(trans);
+        if (ret) {
+            return NULL;
+        }
         
         
 
@@ -354,6 +357,11 @@ int IntelWifi::_iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power)
 //    if (low_power)
 //        pm_runtime_resume(trans->dev);
     
+    if (low_power) {
+        makeUsable();
+        changePowerStateTo(kOnPowerState);
+    }
+    
     return 0;
 }
 
@@ -481,6 +489,13 @@ int IntelWifi::iwl_pcie_apm_init(struct iwl_trans* trans)
     }
     
     set_bit(STATUS_DEVICE_ENABLED, &trans->status);
+//    set_bit(0, &trans->status);
+//    set_bit(1, &trans->status);
+//    trans->status = 0;
+//    set_bit(STATUS_DEVICE_ENABLED, &trans->status);
+//
+//
+    DebugLog("STATUS: %lu; %d; %d\n", trans->status, STATUS_DEVICE_ENABLED, test_bit(STATUS_DEVICE_ENABLED, &trans->status));
     
     return 0;
 }
@@ -1023,6 +1038,7 @@ int IntelWifi::iwl_trans_pcie_start_fw(struct iwl_trans *trans, const struct fw_
     /* Make sure it finished running */
     // TODO: Implement
     //iwl_pcie_synchronize_irqs(trans);
+    //IOSleep(1000);
 
     IOLockLock(trans_pcie->mutex);
     
@@ -1093,13 +1109,17 @@ int IntelWifi::iwl_pcie_nic_init(struct iwl_trans *trans)
     IOSimpleLockLock(trans_pcie->irq_lock);
     ret = iwl_pcie_apm_init(trans);
     IOSimpleLockUnlock(trans_pcie->irq_lock);
+    DebugLog("iwl_pcie_apm_init(trans); status: %lu", trans->status);
     
     if (ret)
         return ret;
     
     iwl_pcie_set_pwr(trans, false);
+    DebugLog("iwl_pcie_set_pwr(trans, false); status: %lu", trans->status);
     
     opmode->nic_config(0);
+    
+    DebugLog("opmode->nic_config(0); status: %lu", trans->status);
     
     /* Allocate the RX queue, or reset if it is already allocated */
     iwl_pcie_rx_init(trans);
@@ -1122,7 +1142,6 @@ void IntelWifi::iwl_enable_fw_load_int(struct iwl_trans *trans)
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
     IWL_DEBUG_ISR(trans, "Enabling FW load interrupt\n");
-    // TODO: Implement msix
     if (!trans_pcie->msix_enabled) {
         trans_pcie->inta_mask = CSR_INT_BIT_FH_TX;
         io->iwl_write32(CSR_INT_MASK, trans_pcie->inta_mask);
@@ -1357,13 +1376,15 @@ int IntelWifi::iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
                                                      // task to hold the memory
                                                      kernel_task,
                                                      // options
-                                                     kIODirectionOutIn | kIOMemoryPhysicallyContiguous,
+                                                     0,//kIODirectionIn | kIOMemoryPhysicallyContiguous,
                                                      // size
                                                      section->len,
                                                      // physicalMask - 32 bit addressable and page aligned
-                                                     0x00000000FFFFFFFFULL);
+                                                     0x00000000ffffffffULL);
     
-
+    bmd->prepare();
+    
+    
     IODMACommand *cmd = IODMACommand::withSpecification(kIODMACommandOutputHost32, 32, 0, IODMACommand::kMapped, 0, 1);
     cmd->setMemoryDescriptor(bmd);
     cmd->prepare();

@@ -44,6 +44,7 @@
 
 extern "C" {
 #include "iwl-fh.h"
+#include "iwl-trans.h"
 }
 
 /******************************************************************************
@@ -216,6 +217,10 @@ void IntelWifi::iwl_pcie_rxq_inc_wr_ptr(struct iwl_trans *trans, struct iwl_rxq 
     }
     
     rxq->write_actual = round_down(rxq->write, 8);
+    //rxq->write_actual = 8;
+    
+    //DebugLog("WRITE ACTUAL: %u\n", rxq->write);
+    
     if (trans->cfg->mq_rx_supported)
         io->iwl_write32(RFH_Q_FRBDCB_WIDX_TRG(rxq->id),
                     rxq->write_actual);
@@ -271,7 +276,9 @@ void IntelWifi::iwl_pcie_rxmq_restock(struct iwl_trans *trans,
         rxb->invalid = false;
         /* 12 first bits are expected to be empty */
         
-        //WARN_ON(rxb->page_dma & DMA_BIT_MASK(12));
+        if (rxb->page_dma & DMA_BIT_MASK(12)) {
+            DebugLog("12 first bits are expected to be empty");
+        }
         /* Point to Rx buffer via next RBD in circular buffer */
         bd[rxq->write] = cpu_to_le64(rxb->page_dma | rxb->vid);
         rxq->write = (rxq->write + 1) & MQ_RX_TABLE_MASK;
@@ -297,6 +304,8 @@ void IntelWifi::iwl_pcie_rxsq_restock(struct iwl_trans *trans,
                                   struct iwl_rxq *rxq)
 {
     struct iwl_rx_mem_buffer *rxb;
+
+    DebugLog("Current status: %lu", trans->status);
     
     /*
      * If the device isn't enabled - not need to try to add buffers...
@@ -306,8 +315,13 @@ void IntelWifi::iwl_pcie_rxsq_restock(struct iwl_trans *trans,
      * stopped, we cannot access the HW (in particular not prph).
      * So don't try to restock if the APM has been already stopped.
      */
-    if (!test_bit(STATUS_DEVICE_ENABLED, &trans->status))
+    if (!test_bit(STATUS_DEVICE_ENABLED, &trans->status)) {
+        DebugLog("It's disabled!");
         return;
+    }
+    
+    
+
     
     IOSimpleLockLock(rxq->lock);
     while ((iwl_rxq_space(rxq) > 0) && (rxq->free_count)) {
@@ -368,6 +382,8 @@ int IntelWifi::iwl_pcie_rx_alloc(struct iwl_trans *trans)
     int i;
     int free_size = trans->cfg->mq_rx_supported ? sizeof(__le64) : sizeof(__le32);
     
+    DebugLog("QUEUES NUM: %d", trans->num_rx_queues);
+    
     if (WARN_ON(trans_pcie->rxq))
         return -EINVAL;
     
@@ -378,7 +394,7 @@ int IntelWifi::iwl_pcie_rx_alloc(struct iwl_trans *trans)
     if (!trans_pcie->rxq)
         return -EINVAL;
     
-    memset(trans_pcie->rxq, 0, sizeof(struct iwl_rxq) * trans->num_rx_queues);
+    bzero(trans_pcie->rxq, sizeof(struct iwl_rxq) * trans->num_rx_queues);
     
     rba->lock = IOSimpleLockAlloc();
     
@@ -395,50 +411,40 @@ int IntelWifi::iwl_pcie_rx_alloc(struct iwl_trans *trans)
          * Allocate the circular buffer of Read Buffer Descriptors
          * (RBDs)
          */
-        // TODO: Implement
-//        rxq->bd = dma_zalloc_coherent(dev,
-//                                      free_size * rxq->queue_size,
-//                                      &rxq->bd_dma, GFP_KERNEL);
-//        if (!rxq->bd)
-//            goto err;
-//
-//        if (trans->cfg->mq_rx_supported) {
-//            rxq->used_bd = dma_zalloc_coherent(dev,
-//                                               sizeof(__le32) *
-//                                               rxq->queue_size,
-//                                               &rxq->used_bd_dma,
-//                                               GFP_KERNEL);
-//            if (!rxq->used_bd)
-//                goto err;
-//        }
         IOBufferMemoryDescriptor *rxqBd =
-        IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionInOut | kIOMemoryPhysicallyContiguous | kIOMapInhibitCache), free_size * rxq->queue_size, 0x00000000FFFFFFFFULL);
+        IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionOut | kIOMemoryPhysicallyContiguous), free_size * rxq->queue_size, 0x00000000FFFFFFFFULL);
         
+        if (rxqBd->prepare() != kIOReturnSuccess) {
+            DebugLog("rxqBd->prepare() failed.\n");
+            return -1;
+        }
+
+        rxq->bd = rxqBd->getBytesNoCopy();
+
         IODMACommand *rxqBdCmd = IODMACommand::withSpecification(kIODMACommandOutputHost32, 32, 0, IODMACommand::kMapped, 0, 1);
-        rxqBdCmd->setMemoryDescriptor(rxqBd);
+        if (rxqBdCmd->setMemoryDescriptor(rxqBd) != kIOReturnSuccess) {
+            DebugLog("rxqBdCmd->setMemoryDescriptor(rxqBd) failed.\n");
+            return -1;
+        }
+
         rxqBdCmd->prepare();
-        
+
         IODMACommand::Segment32 rxqBdSeg;
         UInt64 rxqBdOfs = 0;
         UInt32 rxqBdNumSegs = 1;
+
         
         if (rxqBdCmd->gen32IOVMSegments(&rxqBdOfs, &rxqBdSeg, &rxqBdNumSegs) != kIOReturnSuccess) {
             TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
             return -1;
         }
-        rxq->bd = rxqBd->getBytesNoCopy();
+
         rxq->bd_dma = rxqBdSeg.fIOVMAddr;
         bzero(rxq->bd, free_size * rxq->queue_size);
         
-        //        if (trans->cfg->mq_rx_supported) {
-        //            rxq->used_bd = dma_zalloc_coherent(dev,
-        //                                               sizeof(__le32) *
-        //                                               rxq->queue_size,
-        //                                               &rxq->used_bd_dma,
-        //                                               GFP_KERNEL);
         if (trans->cfg->mq_rx_supported) {
             IOBufferMemoryDescriptor *usedBd =
-            IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionInOut | kIOMemoryPhysicallyContiguous | kIOMapInhibitCache), sizeof(__le32) * rxq->queue_size, 0x00000000FFFFFFFFULL);
+            IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionIn| kIOMemoryPhysicallyContiguous), sizeof(__le32) * rxq->queue_size, 0x00000000FFFFFFFFULL);
             
             IODMACommand *usedBdCmd = IODMACommand::withSpecification(kIODMACommandOutputHost32, 32, 0, IODMACommand::kMapped, 0, 1);
             usedBdCmd->setMemoryDescriptor(usedBd);
@@ -454,18 +460,15 @@ int IntelWifi::iwl_pcie_rx_alloc(struct iwl_trans *trans)
             }
             rxq->used_bd = (__le32 *)usedBd->getBytesNoCopy();
             rxq->used_bd_dma = usedBdSeg.fIOVMAddr;
-            bzero(rxq->used_bd, free_size * rxq->queue_size);
+            bzero(rxq->used_bd, sizeof(__le32) * rxq->queue_size);
         }
         
-        
-        
-        
-        
         /*Allocate the driver's pointer to receive buffer status */
-        // TODO: Implement
-        
+     
         IOBufferMemoryDescriptor *bmd =
-        IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionInOut | kIOMemoryPhysicallyContiguous | kIOMapInhibitCache), sizeof(*rxq->rb_stts), 0x00000000FFFFFFFFULL);
+        IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionIn | kIOMemoryPhysicallyContiguous), sizeof(*rxq->rb_stts), 0x00000000FFFFFFFFULL);
+        bmd->prepare();
+        rxq->rb_stts = (struct iwl_rb_status*)bmd->getBytesNoCopy();
         
         IODMACommand *cmd = IODMACommand::withSpecification(kIODMACommandOutputHost32, 32, 0, IODMACommand::kMapped, 0, 1);
         cmd->setMemoryDescriptor(bmd);
@@ -480,13 +483,9 @@ int IntelWifi::iwl_pcie_rx_alloc(struct iwl_trans *trans)
             return -1;
         }
         
-        rxq->rb_stts = (struct iwl_rb_status*)bmd->getBytesNoCopy();
         rxq->rb_stts_dma = seg.fIOVMAddr;
         bzero(rxq->rb_stts, sizeof(struct iwl_rb_status));
-        
-//        rxq->rb_stts = dma_zalloc_coherent(dev, sizeof(*rxq->rb_stts),
-//                                           &rxq->rb_stts_dma,
-//                                           GFP_KERNEL);
+
         if (!rxq->rb_stts) {
             //goto err;
             return -ENOMEM;
@@ -522,6 +521,132 @@ int IntelWifi::iwl_pcie_rx_alloc(struct iwl_trans *trans)
     return -ENOMEM;
 }
 
+/* line 352
+ * iwl_pcie_rx_alloc_page - allocates and returns a page.
+ *
+ */
+static void *iwl_pcie_rx_alloc_page(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    //struct page *page;
+    void *page;
+    
+    
+//    if (trans_pcie->rx_page_order > 0)
+//        gfp_mask |= __GFP_COMP;
+    
+    /* Alloc a new receive buffer */
+    page = IOMalloc(PAGE_SIZE);  //alloc_pages(gfp_mask, trans_pcie->rx_page_order);
+    if (!page) {
+//        if (net_ratelimit())
+//            IWL_DEBUG_INFO(trans, "alloc_pages failed, order: %d\n",
+//                           trans_pcie->rx_page_order);
+        /*
+         * Issue an error if we don't have enough pre-allocated
+         * buffers.
+         `         */
+//        if (!(gfp_mask & __GFP_NOWARN) && net_ratelimit())
+//            IWL_CRIT(trans,
+//                     "Failed to alloc_pages\n");
+        return NULL;
+    }
+    return page;
+}
+
+
+
+/* line 384
+ * iwl_pcie_rxq_alloc_rbs - allocate a page for each used RBD
+ *
+ * A used RBD is an Rx buffer that has been given to the stack. To use it again
+ * a page must be allocated and the RBD must point to the page. This function
+ * doesn't change the HW pointer but handles the list of pages that is used by
+ * iwl_pcie_rxq_restock. The latter function will update the HW to use the newly
+ * allocated buffers.
+ */
+static void iwl_pcie_rxq_alloc_rbs(struct iwl_trans *trans, struct iwl_rxq *rxq)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    struct iwl_rx_mem_buffer *rxb;
+    void *page;
+    
+    while (1) {
+        IOSimpleLockLock(rxq->lock);
+        if (list_empty(&rxq->rx_used)) {
+            IOSimpleLockUnlock(rxq->lock);
+            return;
+        }
+        //spin_unlock(&rxq->lock);
+        IOSimpleLockUnlock(rxq->lock);
+        
+        /* Alloc a new receive buffer */
+        page = iwl_pcie_rx_alloc_page(trans);
+        if (!page)
+            return;
+        
+        //spin_lock(&rxq->lock);
+        IOSimpleLockLock(rxq->lock);
+        
+        if (list_empty(&rxq->rx_used)) {
+            //spin_unlock(&rxq->lock);
+            IOSimpleLockUnlock(rxq->lock);
+            //__free_pages(page, trans_pcie->rx_page_order);
+            IOFree(page, PAGE_SIZE);
+            return;
+        }
+        rxb = list_first_entry(&rxq->rx_used, struct iwl_rx_mem_buffer,
+                               list);
+        list_del(&rxb->list);
+        //spin_unlock(&rxq->lock);
+        IOSimpleLockUnlock(rxq->lock);
+        
+        //BUG_ON(rxb->page);
+        rxb->page = page;
+        /* Get physical address of the RB */
+        rxb->page_dma = 0;
+        
+//        rxb->page_dma =
+//        dma_map_page(trans->dev, page, 0,
+//                     PAGE_SIZE << trans_pcie->rx_page_order,
+//                     DMA_FROM_DEVICE);
+//        if (dma_mapping_error(trans->dev, rxb->page_dma)) {
+//            rxb->page = NULL;
+//            spin_lock(&rxq->lock);
+//            list_add(&rxb->list, &rxq->rx_used);
+//            spin_unlock(&rxq->lock);
+//            __free_pages(page, trans_pcie->rx_page_order);
+//            return;
+//        }
+        
+        //spin_lock(&rxq->lock);
+        IOSimpleLockLock(rxq->lock);
+        
+        list_add_tail(&rxb->list, &rxq->rx_free);
+        rxq->free_count++;
+        
+        //spin_unlock(&rxq->lock);
+        IOSimpleLockUnlock(rxq->lock);
+    }
+}
+
+
+static void iwl_pcie_free_rbs_pool(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    int i;
+    
+    for (i = 0; i < RX_POOL_SIZE; i++) {
+        if (!trans_pcie->rx_pool[i].page)
+            continue;
+//        dma_unmap_page(trans->dev, trans_pcie->rx_pool[i].page_dma,
+//                       PAGE_SIZE << trans_pcie->rx_page_order,
+//                       DMA_FROM_DEVICE);
+//        __free_pages(trans_pcie->rx_pool[i].page,
+//                     trans_pcie->rx_page_order);
+        IOFreePageable(trans_pcie->rx_pool[i].page, PAGE_SIZE);
+        trans_pcie->rx_pool[i].page = NULL;
+    }
+}
 
 
 
@@ -675,7 +800,7 @@ int IntelWifi::_iwl_pcie_rx_init(struct iwl_trans *trans)
     
     /* free all first - we might be reconfigured for a different size */
     // TODO: Implement
-    //iwl_pcie_free_rbs_pool(trans);
+    iwl_pcie_free_rbs_pool(trans);
     
     for (i = 0; i < RX_QUEUE_SIZE; i++)
         def_rxq->queue[i] = NULL;
@@ -708,9 +833,9 @@ int IntelWifi::_iwl_pcie_rx_init(struct iwl_trans *trans)
     
     /* move the pool to the default queue and allocator ownerships */
     queue_size = trans->cfg->mq_rx_supported ?
-    MQ_RX_NUM_RBDS : RX_QUEUE_SIZE;
+                MQ_RX_NUM_RBDS : RX_QUEUE_SIZE;
     allocator_pool_size = trans->num_rx_queues *
-    (RX_CLAIM_REQ_ALLOC - RX_POST_REQ_ALLOC);
+                (RX_CLAIM_REQ_ALLOC - RX_POST_REQ_ALLOC);
     num_alloc = queue_size + allocator_pool_size;
     for (i = 0; i < num_alloc; i++) {
         struct iwl_rx_mem_buffer *rxb = &trans_pcie->rx_pool[i];
@@ -725,7 +850,7 @@ int IntelWifi::_iwl_pcie_rx_init(struct iwl_trans *trans)
     }
     
     // TODO: Implement
-    //iwl_pcie_rxq_alloc_rbs(trans, GFP_KERNEL, def_rxq);
+    iwl_pcie_rxq_alloc_rbs(trans, def_rxq);
     
     return 0;
 }
@@ -770,12 +895,10 @@ int IntelWifi::iwl_pcie_alloc_ict(struct iwl_trans *trans)
     trans_pcie->ict_tbl = (__le32*)bmd->getBytesNoCopy();
     trans_pcie->ict_tbl_dma = seg.fIOVMAddr;
     
-//    trans_pcie->ict_tbl =
-//    dma_zalloc_coherent(trans->dev, ICT_SIZE,
-//                        &trans_pcie->ict_tbl_dma,
-//                        GFP_KERNEL);
     if (!trans_pcie->ict_tbl)
         return -ENOMEM;
+    
+    bzero((void*)trans_pcie->ict_tbl, ICT_SIZE);
     
     /* just an API sanity check ... it is guaranteed to be aligned */
     if (trans_pcie->ict_tbl_dma & (ICT_SIZE - 1)) {
@@ -792,6 +915,7 @@ void IntelWifi::iwl_pcie_free_ict(struct iwl_trans *trans)
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
     if (trans_pcie->ict_tbl) {
+        // TODO: Implement
 //        dma_free_coherent(trans->dev, ICT_SIZE,
 //                          trans_pcie->ict_tbl,
 //                          trans_pcie->ict_tbl_dma);
@@ -1015,7 +1139,9 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
         isr_stats->rx++;
         
 //        local_bh_disable();
-//        iwl_pcie_rx_handle(trans, 0);
+        fWorkLoop->disableAllInterrupts();
+        iwl_pcie_rx_handle(trans, 0);
+        fWorkLoop->enableAllInterrupts();
 //        local_bh_enable();
     }
     
@@ -1059,6 +1185,290 @@ out:
     //lock_map_release(&trans->sync_cmd_lockdep_map);
     return IRQ_HANDLED;
 }
+
+// line 1090
+void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans,
+                                  struct iwl_rxq *rxq,
+                                  struct iwl_rx_mem_buffer *rxb,
+                                  bool emergency)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    struct iwl_txq *txq = trans_pcie->txq[trans_pcie->cmd_queue];
+    bool page_stolen = false;
+    unsigned int max_len = PAGE_SIZE << trans_pcie->rx_page_order;
+    u32 offset = 0;
+    
+    if (WARN_ON(!rxb))
+        return;
+    
+    //dma_unmap_page(trans->dev, rxb->page_dma, max_len, DMA_FROM_DEVICE);
+    
+    while (offset + sizeof(u32) + sizeof(struct iwl_cmd_header) < max_len) {
+        struct iwl_rx_packet *pkt;
+        u16 sequence;
+        bool reclaim;
+        int index, cmd_index, len;
+        struct iwl_rx_cmd_buffer rxcb = {
+            ._offset = (int)offset,
+            ._rx_page_order = trans_pcie->rx_page_order,
+            ._page = rxb->page,
+            ._page_stolen = false,
+            .truesize = max_len,
+        };
+
+        pkt = (struct iwl_rx_packet *)rxb_addr(&rxcb);
+
+        if (pkt->len_n_flags == cpu_to_le32(FH_RSCSR_FRAME_INVALID)) {
+            IWL_DEBUG_RX(trans,
+                         "Q %d: RB end marker at offset %d\n",
+                         rxq->id, offset);
+            break;
+        }
+
+        if ((le32_to_cpu(pkt->len_n_flags) & FH_RSCSR_RXQ_MASK) >> FH_RSCSR_RXQ_POS != rxq->id) {
+            IWL_DEBUG_RX(trans, "frame on invalid queue - is on %d and indicates %d\n",
+                         rxq->id,
+                         (le32_to_cpu(pkt->len_n_flags) & FH_RSCSR_RXQ_MASK) >>
+                         FH_RSCSR_RXQ_POS);
+        }
+
+
+        IWL_DEBUG_RX(trans,
+                     "Q %d: cmd at offset %d: %u (%.2x.%2x, seq 0x%x)\n",
+                     rxq->id, offset,
+
+                                        iwl_cmd_id(pkt->hdr.cmd,
+                                                   pkt->hdr.group_id,
+                                                   0),
+                     pkt->hdr.group_id, pkt->hdr.cmd,
+                     le16_to_cpu(pkt->hdr.sequence));
+
+////        IWL_DEBUG_RX(trans,
+////                     "Q %d: cmd at offset %d: %s (%.2x.%2x, seq 0x%x)\n",
+////                     rxq->id, offset,
+////                     iwl_get_cmd_string(trans,
+////                                        iwl_cmd_id(pkt->hdr.cmd,
+////                                                   pkt->hdr.group_id,
+////                                                   0)),
+////                     pkt->hdr.group_id, pkt->hdr.cmd,
+////                     le16_to_cpu(pkt->hdr.sequence));
+//
+        len = iwl_rx_packet_len(pkt);
+        len += sizeof(u32); /* account for status word */
+////        trace_iwlwifi_dev_rx(trans->dev, trans, pkt, len);
+////        trace_iwlwifi_dev_rx_data(trans->dev, trans, pkt, len);
+//
+        /* Reclaim a command buffer only if this packet is a response
+         *   to a (driver-originated) command.
+         * If the packet (e.g. Rx frame) originated from uCode,
+         *   there is no command buffer to reclaim.
+         * Ucode should set SEQ_RX_FRAME bit if ucode-originated,
+         *   but apparently a few don't get set; catch them here. */
+        reclaim = !(pkt->hdr.sequence & SEQ_RX_FRAME);
+        if (reclaim && !pkt->hdr.group_id) {
+            int i;
+
+            for (i = 0; i < trans_pcie->n_no_reclaim_cmds; i++) {
+                if (trans_pcie->no_reclaim_cmds[i] ==
+                    pkt->hdr.cmd) {
+                    reclaim = false;
+                    break;
+                }
+            }
+        }
+
+        sequence = le16_to_cpu(pkt->hdr.sequence);
+        index = SEQ_TO_INDEX(sequence);
+        cmd_index = iwl_pcie_get_cmd_index(txq, index);
+        
+        if (rxq->id == 0)
+            opmode->rx(NULL, NULL, &rxcb);
+//            iwl_op_mode_rx(trans->op_mode, &rxq->napi,
+//                           &rxcb);
+//        else
+//            iwl_op_mode_rx_rss(trans->op_mode, &rxq->napi,
+//                               &rxcb, rxq->id);
+//
+//        if (reclaim) {
+//            //kzfree(txq->entries[cmd_index].free_buf);
+//            txq->entries[cmd_index].free_buf = NULL;
+//        }
+        
+        /*
+         * After here, we should always check rxcb._page_stolen,
+         * if it is true then one of the handlers took the page.
+         */
+        
+        if (reclaim) {
+            /* Invoke any callbacks, transfer the buffer to caller,
+             * and fire off the (possibly) blocking
+             * iwl_trans_send_cmd()
+             * as we reclaim the driver command queue */
+            // TODO: Implement
+//            if (!rxcb._page_stolen)
+//                iwl_pcie_hcmd_complete(trans, &rxcb);
+//            else
+//                IWL_WARN(trans, "Claim null rxb?\n");
+        }
+        
+        page_stolen |= rxcb._page_stolen;
+        offset += ALIGN(len, FH_RSCSR_FRAME_ALIGN);
+    }
+    
+    /* page was stolen from us -- free our reference */
+//    if (page_stolen) {
+//        __free_pages(rxb->page, trans_pcie->rx_page_order);
+//        rxb->page = NULL;
+//    }
+    
+    /* Reuse the page if possible. For notification packets and
+     * SKBs that fail to Rx correctly, add them back into the
+     * rx_free list for reuse later. */
+    // TODO: Implement
+//    if (rxb->page != NULL) {
+//        rxb->page_dma =
+//        dma_map_page(trans->dev, rxb->page, 0,
+//                     PAGE_SIZE << trans_pcie->rx_page_order,
+//                     DMA_FROM_DEVICE);
+//        if (dma_mapping_error(trans->dev, rxb->page_dma)) {
+//            /*
+//             * free the page(s) as well to not break
+//             * the invariant that the items on the used
+//             * list have no page(s)
+//             */
+//            __free_pages(rxb->page, trans_pcie->rx_page_order);
+//            rxb->page = NULL;
+//            iwl_pcie_rx_reuse_rbd(trans, rxb, rxq, emergency);
+//        } else {
+//            list_add_tail(&rxb->list, &rxq->rx_free);
+//            rxq->free_count++;
+//        }
+//    } else
+//        iwl_pcie_rx_reuse_rbd(trans, rxb, rxq, emergency);
+}
+
+
+/* line 1236
+ * iwl_pcie_rx_handle - Main entry function for receiving responses from fw
+ */
+void IntelWifi::iwl_pcie_rx_handle(struct iwl_trans *trans, int queue)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    struct iwl_rxq *rxq = &trans_pcie->rxq[queue];
+    u32 r, i, count = 0;
+    bool emergency = false;
+    
+restart:
+    IOSimpleLockLock(rxq->lock);
+    /* uCode's read index (stored in shared DRAM) indicates the last Rx
+     * buffer that the driver may process (last buffer filled by ucode). */
+    r = le16_to_cpu(rxq->rb_stts->closed_rb_num) & 0x0FFF;
+    i = rxq->read;
+    
+    /* W/A 9000 device step A0 wrap-around bug */
+    r &= (rxq->queue_size - 1);
+    
+    /* Rx interrupt, but nothing sent from uCode */
+    if (i == r)
+        IWL_DEBUG_RX(trans, "Q %d: HW = SW = %d\n", rxq->id, r);
+    
+    while (i != r) {
+        struct iwl_rx_mem_buffer *rxb;
+        
+        if (unlikely(rxq->used_count == rxq->queue_size / 2))
+            emergency = true;
+        
+        if (trans->cfg->mq_rx_supported) {
+            /*
+             * used_bd is a 32 bit but only 12 are used to retrieve
+             * the vid
+             */
+            u16 vid = le32_to_cpu(rxq->used_bd[i]) & 0x0FFF;
+            
+            if ((!vid || vid > ARRAY_SIZE(trans_pcie->global_table))) {
+                DebugLog("Invalid rxb index from HW %u\n", (u32)vid);
+                //iwl_force_nmi(trans);
+                goto out;
+            }
+            rxb = trans_pcie->global_table[vid - 1];
+            if (rxb->invalid) {
+                DebugLog("Invalid rxb from HW %u\n", (u32)vid);
+                //iwl_force_nmi(trans);
+                goto out;
+            }
+            rxb->invalid = true;
+        } else {
+            rxb = rxq->queue[i];
+            rxq->queue[i] = NULL;
+        }
+        
+        IWL_DEBUG_RX(trans, "Q %d: HW = %d, SW = %d\n", rxq->id, r, i);
+        iwl_pcie_rx_handle_rb(trans, rxq, rxb, emergency);
+        
+        i = (i + 1) & (rxq->queue_size - 1);
+        
+        /*
+         * If we have RX_CLAIM_REQ_ALLOC released rx buffers -
+         * try to claim the pre-allocated buffers from the allocator.
+         * If not ready - will try to reclaim next time.
+         * There is no need to reschedule work - allocator exits only
+         * on success
+         */
+//        if (rxq->used_count >= RX_CLAIM_REQ_ALLOC)
+//            iwl_pcie_rx_allocator_get(trans, rxq);
+        
+        if (rxq->used_count % RX_CLAIM_REQ_ALLOC == 0 && !emergency) {
+            struct iwl_rb_allocator *rba = &trans_pcie->rba;
+            
+            /* Add the remaining empty RBDs for allocator use */
+            //spin_lock(&rba->lock);
+            IOSimpleLockLock(rba->lock);
+            list_splice_tail_init(&rxq->rx_used, &rba->rbd_empty);
+            //spin_unlock(&rba->lock);
+            IOSimpleLockUnlock(rba->lock);
+        } else if (emergency) {
+            count++;
+            if (count == 8) {
+                count = 0;
+                if (rxq->used_count < rxq->queue_size / 3)
+                    emergency = false;
+                
+                rxq->read = i;
+                //spin_unlock(&rxq->lock);
+                IOSimpleLockUnlock(rxq->lock);
+                iwl_pcie_rxq_alloc_rbs(trans, rxq);
+                iwl_pcie_rxq_restock(trans, rxq);
+                goto restart;
+            }
+        }
+    }
+out:
+    /* Backtrack one entry */
+    rxq->read = i;
+    //spin_unlock(&rxq->lock);
+    IOSimpleLockUnlock(rxq->lock);
+    
+    /*
+     * handle a case where in emergency there are some unallocated RBDs.
+     * those RBDs are in the used list, but are not tracked by the queue's
+     * used_count which counts allocator owned RBDs.
+     * unallocated emergency RBDs must be allocated on exit, otherwise
+     * when called again the function may not be in emergency mode and
+     * they will be handed to the allocator with no tracking in the RBD
+     * allocator counters, which will lead to them never being claimed back
+     * by the queue.
+     * by allocating them here, they are now in the queue free list, and
+     * will be restocked by the next call of iwl_pcie_rxq_restock.
+     */
+    if (unlikely(emergency && count))
+        iwl_pcie_rxq_alloc_rbs(trans, rxq);
+    
+//    if (rxq->napi.poll)
+//        napi_gro_flush(&rxq->napi, false);
+    
+    iwl_pcie_rxq_restock(trans, rxq);
+}
+
 
 u32 IntelWifi::iwl_pcie_int_cause_non_ict(struct iwl_trans *trans)
 {
@@ -1123,6 +1533,8 @@ void IntelWifi::iwl_pcie_handle_rfkill_irq(struct iwl_trans *trans)
  */
 void IntelWifi::iwl_pcie_irq_handle_error(struct iwl_trans *trans)
 {
+    DebugLog("Handle error\n");
+    
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     //int i;
     
@@ -1254,6 +1666,7 @@ u32 IntelWifi::iwl_pcie_int_cause_ict(struct iwl_trans *trans)
 
 void IntelWifi::iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq)
 {
+    DebugLog("CALL: iwl_pcie_rx_hw_init");
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     u32 rb_size;
     IOInterruptState state;
@@ -1274,8 +1687,10 @@ void IntelWifi::iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq
             rb_size = FH_RCSR_RX_CONFIG_REG_VAL_RB_SIZE_4K;
     }
     
-    if (!io->iwl_grab_nic_access(&state))
+    if (!io->iwl_grab_nic_access(&state)) {
+        DebugLog("IntelWifi: UNABLE TO GRAB NIC ACCESS");
         return;
+    }
     
     /* Stop Rx DMA */
     io->iwl_write32(FH_MEM_RCSR_CHNL0_CONFIG_REG, 0);
@@ -1308,10 +1723,10 @@ void IntelWifi::iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq
                 FH_RCSR_CHNL0_RX_IGNORE_RXF_EMPTY |
                 FH_RCSR_CHNL0_RX_CONFIG_IRQ_DEST_INT_HOST_VAL |
                 rb_size |
-                (RX_RB_TIMEOUT << FH_RCSR_RX_CONFIG_REG_IRQ_RBTH_POS) |
+                //(RX_RB_TIMEOUT << FH_RCSR_RX_CONFIG_REG_IRQ_RBTH_POS) |
                 (rfdnlog << FH_RCSR_RX_CONFIG_RBDCB_SIZE_POS));
     
-    io->iwl_release_nic_access(&state);
+    
     
     /* Set interrupt coalescing timer to default (2048 usecs) */
     io->iwl_write8(CSR_INT_COALESCING, IWL_HOST_INT_TIMEOUT_DEF);
@@ -1319,6 +1734,11 @@ void IntelWifi::iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq
     /* W/A for interrupt coalescing bug in 7260 and 3160 */
     if (trans->cfg->host_interrupt_operation_mode)
         io->iwl_set_bit(CSR_INT_COALESCING, IWL_HOST_INT_OPER_MODE);
+    
+    //io->iwl_write32(FH_RSCSR_CHNL0_WPTR, 8);
+    
+    io->iwl_release_nic_access(&state);
+    
 }
 
 int IntelWifi::iwl_pcie_rx_init(struct iwl_trans *trans)
@@ -1333,7 +1753,7 @@ int IntelWifi::iwl_pcie_rx_init(struct iwl_trans *trans)
         iwl_pcie_rx_mq_hw_init(trans);
     else
         iwl_pcie_rx_hw_init(trans, trans_pcie->rxq);
-
+    
     iwl_pcie_rxq_restock(trans, trans_pcie->rxq);
 
     IOSimpleLockLock(trans_pcie->rxq->lock);

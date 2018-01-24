@@ -40,6 +40,7 @@
 
 extern "C" {
 #include "agn.h"
+#include "iwl-trans.h"
 }
 
 /******************************************************************************
@@ -1012,5 +1013,41 @@ void IwlDvmOpMode::iwl_setup_rx_handlers(struct iwl_priv *priv)
 //    if (priv->lib->bt_params)
 //        iwlagn_bt_rx_handler_setup(priv);
 }
+
+void IwlDvmOpMode::iwl_rx_dispatch(struct iwl_priv *priv, struct napi_struct *napi,
+                     struct iwl_rx_cmd_buffer *rxb)
+{
+    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
+    //struct iwl_priv *priv = IWL_OP_MODE_GET_DVM(op_mode);
+    
+    /*
+     * Do the notification wait before RX handlers so
+     * even if the RX handler consumes the RXB we have
+     * access to it in the notification wait entry.
+     */
+    iwl_notification_wait_notify(&priv->notif_wait, pkt);
+    
+    /* Based on type of command response or notification,
+     *   handle those that need handling via function in
+     *   rx_handlers table.  See iwl_setup_rx_handlers() */
+    if (priv->rx_handlers[pkt->hdr.cmd]) {
+        priv->rx_handlers_stats[pkt->hdr.cmd]++;
+        priv->rx_handlers[pkt->hdr.cmd](priv, rxb);
+    } else {
+        /* No handling needed */
+        IWL_DEBUG_RX(priv, "No handler needed for %u, 0x%02x\n",
+                     
+                                        iwl_cmd_id(pkt->hdr.cmd,
+                                                   0, 0),
+                     pkt->hdr.cmd);
+        
+//        IWL_DEBUG_RX(priv, "No handler needed for %s, 0x%02x\n",
+//                     iwl_get_cmd_string(priv->trans,
+//                                        iwl_cmd_id(pkt->hdr.cmd,
+//                                                   0, 0)),
+//                     pkt->hdr.cmd);
+    }
+}
+
 
 

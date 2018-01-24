@@ -511,7 +511,10 @@ int IwlDvmOpMode::iwl_init_drv(struct iwl_priv *priv)
     priv->missed_beacon_threshold = IWL_MISSED_BEACON_THRESHOLD_DEF;
     priv->agg_tids_count = 0;
     
-    //priv->rx_statistics_jiffies = jiffies;
+    uint64_t uptime;
+    clock_get_uptime(&uptime);
+    
+    priv->rx_statistics_jiffies = uptime;
     
     /* Choose which receivers/antennas to use */
     iwlagn_set_rxon_chain(priv, &priv->contexts[IWL_RXON_CTX_BSS]);
@@ -761,9 +764,9 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     
     /* is antenna coupling more than 35dB ? */
     priv->bt_ant_couple_ok =
-    (iwlwifi_mod_params.antenna_coupling >
-     IWL_BT_ANTENNA_COUPLING_THRESHOLD) ?
-    true : false;
+            (iwlwifi_mod_params.antenna_coupling >
+                    IWL_BT_ANTENNA_COUPLING_THRESHOLD) ?
+                    true : false;
     
     /* bt channel inhibition enabled*/
     priv->bt_ch_announce = true;
@@ -844,7 +847,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
         if (i < IWLAGN_FIRST_AMPDU_QUEUE &&
             i != IWL_DEFAULT_CMD_QUEUE_NUM &&
             i != IWL_IPAN_CMD_QUEUE_NUM)
-            priv->queue_to_mac80211[i] = i;
+                priv->queue_to_mac80211[i] = i;
         
         priv->queue_stop_count[i] = 0;
     }

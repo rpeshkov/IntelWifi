@@ -32,3 +32,7 @@ void IwlDvmOpMode::stop(struct iwl_priv *priv) {
     iwl_op_mode_dvm_stop(priv);
 }
 
+void IwlDvmOpMode::rx(struct iwl_priv *priv, struct napi_struct *napi, struct iwl_rx_cmd_buffer *rxb) {
+    iwl_rx_dispatch(this->priv, napi, rxb);
+}
+

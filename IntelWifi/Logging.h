@@ -12,7 +12,7 @@
 #define Logging_h
 
 #ifdef DEBUG
-#define DebugLog(args...) IOLog(args)
+#define DebugLog(args...) IOLog("IntelWifi: " args)
 #else
 #define DebugLog(args...)
 #endif

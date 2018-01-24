@@ -1540,13 +1540,13 @@ struct iwl_drv *iwl_drv_start(struct iwl_trans *trans)
 	struct iwl_drv *drv;
 	int ret;
 
-	//drv = kzalloc(sizeof(*drv), GFP_KERNEL);
     drv = IOMalloc(sizeof(*drv));
-    memset(drv, 0, sizeof(*drv));
+    
 	if (!drv) {
 		ret = -ENOMEM;
 		goto err;
 	}
+    bzero(drv, sizeof(*drv));
 
 	drv->trans = trans;
 	drv->dev = trans->dev;

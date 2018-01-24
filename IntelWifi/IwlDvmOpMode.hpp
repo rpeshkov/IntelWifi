@@ -27,6 +27,8 @@ public:
     virtual void nic_config(struct iwl_priv *priv) override;
     
     virtual void stop(struct iwl_priv *priv) override;
+    virtual void rx(struct iwl_priv *priv, struct napi_struct *napi,
+                    struct iwl_rx_cmd_buffer *rxb) override;
 
     
 private:
@@ -109,6 +111,8 @@ private:
     
     // rx.c
     void iwl_setup_rx_handlers(struct iwl_priv *priv); // line 945
+    void iwl_rx_dispatch(struct iwl_priv *priv, struct napi_struct *napi,
+                                       struct iwl_rx_cmd_buffer *rxb); // line 1001
     
     // scan.c
     int iwl_send_scan_abort(struct iwl_priv *priv); // line 57

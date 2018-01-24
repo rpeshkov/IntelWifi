@@ -231,7 +231,6 @@ const char *iwl_get_cmd_string(struct iwl_trans *trans, u32 id)
 		return "UNKNOWN";
 	return ret->cmd_name;
 }
-IWL_EXPORT_SYMBOL(iwl_get_cmd_string);
 
 int iwl_cmd_groups_verify_sorted(const struct iwl_trans_config *trans)
 {

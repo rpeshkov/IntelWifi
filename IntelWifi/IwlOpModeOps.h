@@ -26,11 +26,9 @@ public:
                                  struct dentry *dbgfs_dir) = 0;
     virtual void nic_config(struct iwl_priv *priv) = 0;
     virtual void stop(struct iwl_priv *priv) = 0;
+    virtual void rx(struct iwl_priv *priv, struct napi_struct *napi,
+               struct iwl_rx_cmd_buffer *rxb) = 0;
 
-    
-//    void (*stop)(struct iwl_op_mode *op_mode);
-//    void (*rx)(struct iwl_op_mode *op_mode, struct napi_struct *napi,
-//               struct iwl_rx_cmd_buffer *rxb);
 //    void (*rx_rss)(struct iwl_op_mode *op_mode, struct napi_struct *napi,
 //                   struct iwl_rx_cmd_buffer *rxb, unsigned int queue);
 //    void (*async_cb)(struct iwl_op_mode *op_mode,

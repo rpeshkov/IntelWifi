@@ -334,7 +334,7 @@ int IwlDvmOpMode::iwl_load_ucode_wait_alive(struct iwl_priv *priv,
     static const u16 alive_cmd[] = { REPLY_ALIVE };
     
     fw = iwl_get_ucode_image(priv->fw, ucode_type);
-    if (WARN_ON(!fw))
+    if (!fw)
         return -EINVAL;
     
     old_type = priv->cur_ucode;
@@ -344,7 +344,7 @@ int IwlDvmOpMode::iwl_load_ucode_wait_alive(struct iwl_priv *priv,
     iwl_init_notification_wait(&priv->notif_wait, &alive_wait,
                                alive_cmd, ARRAY_SIZE(alive_cmd),
                                iwl_alive_fn, &alive_data);
-    
+
     ret = _ops->start_fw(priv->trans, fw, false);
     if (ret) {
         priv->cur_ucode = old_type;
@@ -363,8 +363,6 @@ int IwlDvmOpMode::iwl_load_ucode_wait_alive(struct iwl_priv *priv,
         return ret;
     }
 
-//    IODelay(1500);
-    
     if (!alive_data.valid) {
         IWL_ERR(priv, "Loaded ucode is not valid!\n");
         priv->cur_ucode = old_type;

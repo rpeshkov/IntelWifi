@@ -163,8 +163,8 @@ void IntelIO::iwl_release_nic_access(IOInterruptState *state) {
      * scheduled on different CPUs (after we drop reg_lock).
      */
     // original linux code: mmiowb();
+    //OSSynchronizeIO();
     os_compiler_barrier();
-    OSSynchronizeIO();
 
     IOSimpleLockUnlockEnableInterrupt(fTrans->reg_lock, *state);
 }
@@ -317,7 +317,7 @@ _OSWriteInt8(
               uint8_t                      data
               )
 {
-    *(volatile uint8_t *)((uintptr_t)base + byteOffset) = data;
+    *((u8*)base + byteOffset) = data;
 }
 
 void IntelIO::iwl_write8(u32 ofs, u8 val)

@@ -17,7 +17,7 @@ extern "C" {
 // line 238
 int IwlDvmOpMode::__iwl_up(struct iwl_priv *priv)
 {
-//    struct iwl_rxon_context *ctx;
+    struct iwl_rxon_context *ctx;
     int ret;
     
     //lockdep_assert_held(&priv->mutex);
@@ -27,14 +27,14 @@ int IwlDvmOpMode::__iwl_up(struct iwl_priv *priv)
         return -EIO;
     }
     
-//    for_each_context(priv, ctx) {
-//        ret = iwlagn_alloc_bcast_station(priv, ctx);
-//        if (ret) {
-//            // TODO: Implement
-//            //iwl_dealloc_bcast_stations(priv);
-//            return ret;
-//        }
-//    }
+    for_each_context(priv, ctx) {
+        ret = iwlagn_alloc_bcast_station(priv, ctx);
+        if (ret) {
+            // TODO: Implement
+            //iwl_dealloc_bcast_stations(priv);
+            return ret;
+        }
+    }
     
     ret = _ops->start_hw(priv->trans, true);
     if (ret) {
@@ -84,10 +84,8 @@ int IwlDvmOpMode::iwlagn_mac_start(struct iwl_priv *priv)
     IWL_DEBUG_MAC80211(priv, "enter\n");
     
     /* we should be verifying the device is ready to be opened */
-    //mutex_lock(&priv->mutex);
     IOLockLock(priv->mutex);
     ret = __iwl_up(priv);
-    //mutex_unlock(&priv->mutex);
     IOLockUnlock(priv->mutex);
     if (ret)
         return ret;

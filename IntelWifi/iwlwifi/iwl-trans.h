@@ -269,7 +269,7 @@ static inline void iwl_free_resp(struct iwl_host_cmd *cmd)
 }
 
 struct iwl_rx_cmd_buffer {
-	struct page *_page;
+	void *_page;
 	int _offset;
 	bool _page_stolen;
 	u32 _rx_page_order;
@@ -278,9 +278,10 @@ struct iwl_rx_cmd_buffer {
 
 static inline void *rxb_addr(struct iwl_rx_cmd_buffer *r)
 {
+    
 	//return (void *)((unsigned long)page_address(r->_page) + r->_offset);
     // TODO: BANG!!!
-    return NULL;
+    return r->_page;//(void *) ((u8*)r->_page + r->_offset);
 }
 
 static inline int rxb_offset(struct iwl_rx_cmd_buffer *r)
@@ -292,7 +293,7 @@ static inline struct page *rxb_steal_page(struct iwl_rx_cmd_buffer *r)
 {
 	r->_page_stolen = true;
 	//get_page(r->_page);
-	return r->_page;
+    return NULL;//r->_page;
 }
 
 static inline void iwl_free_rxb(struct iwl_rx_cmd_buffer *r)
@@ -360,11 +361,11 @@ iwl_trans_get_rb_size_order(enum iwl_amsdu_size rb_size)
     // TODO: Implement get_order
 	switch (rb_size) {
 	case IWL_AMSDU_4K:
-            return 4;// get_order(4 * 1024);
+            return __get_order(4 * 1024);
 	case IWL_AMSDU_8K:
-            return 8; // get_order(8 * 1024);
+            return __get_order(8 * 1024);
 	case IWL_AMSDU_12K:
-            return 12; // get_order(12 * 1024);
+            return __get_order(12 * 1024);
 	default:
 		//WARN_ON(1);
 		return -1;

@@ -190,7 +190,8 @@ int iwl_wait_notification(struct iwl_notif_wait_data *notif_wait,
     IOLockLock(notif_wait->notif_waitq);
     AbsoluteTime deadline;
     clock_interval_to_deadline((u32)timeout, kMillisecondScale, (UInt64 *) &deadline);
-    ret = IOLockSleepDeadline(notif_wait->notif_waitq, wait_entry, deadline, THREAD_INTERRUPTIBLE);
+    
+    ret = IOLockSleepDeadline(notif_wait->notif_waitq, wait_entry, deadline, THREAD_UNINT);
     iwl_remove_notification(notif_wait, wait_entry);
     IOLockUnlock(notif_wait->notif_waitq);
 
