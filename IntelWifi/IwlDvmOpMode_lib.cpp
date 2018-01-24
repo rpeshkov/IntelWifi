@@ -6,13 +6,15 @@
 //  Copyright © 2018 Roman Peshkov. All rights reserved.
 //
 
+extern "C" {
+#include "iwl-trans.h"
+#include "agn.h"
+    
+}
+
+
 #include "IwlDvmOpMode.hpp"
 
-extern "C" {
-    #include "iwl-trans.h"
-#include "agn.h"
-
-}
 
 // line 49
 int IwlDvmOpMode::iwlagn_send_tx_power(struct iwl_priv *priv)
@@ -356,8 +358,8 @@ int IwlDvmOpMode::iwl_dvm_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *c
     }
     
     if (test_bit(STATUS_FW_ERROR, &priv->status)) {
-        //const char* str = iwl_get_cmd_string(priv->trans, cmd->id);
-        IWL_ERR(priv, "Command %d failed: FW Error\n", cmd->id);
+        const char* str = iwl_get_cmd_string(priv->trans, cmd->id);
+        IWL_ERR(priv, "Command %s failed: FW Error\n", str);
         return -EIO;
     }
     

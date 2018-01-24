@@ -116,7 +116,6 @@ bool iwl_notification_wait(struct iwl_notif_wait_data *notif_wait,
 			if (!w->fn || w->fn(notif_wait, pkt, w->fn_data)) {
 				w->triggered = true;
 				triggered = true;
-                DebugLog("We are here\n");
 			}
 		}
         IOSimpleLockUnlock(notif_wait->notif_wait_lock);
@@ -192,7 +191,8 @@ int iwl_wait_notification(struct iwl_notif_wait_data *notif_wait,
     AbsoluteTime deadline;
     clock_interval_to_deadline((u32)timeout, kMillisecondScale, (UInt64 *) &deadline);
     
-    ret = IOLockSleepDeadline(notif_wait->notif_waitq, wait_entry, deadline, THREAD_UNINT);
+    ret = IOLockSleepDeadline(notif_wait->notif_waitq, wait_entry, deadline, THREAD_INTERRUPTIBLE);
+    DebugLog("After sleep status: %d", ret);
     iwl_remove_notification(notif_wait, wait_entry);
     IOLockUnlock(notif_wait->notif_waitq);
 
@@ -200,7 +200,7 @@ int iwl_wait_notification(struct iwl_notif_wait_data *notif_wait,
 		return -EIO;
 
 	/* return value is always >= 0 */
-	if (ret <= 0)
+	if (ret != THREAD_AWAKENED)
 		return -ETIMEDOUT;
 	return 0;
 }

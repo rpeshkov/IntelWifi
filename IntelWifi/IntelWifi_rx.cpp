@@ -207,17 +207,14 @@ void IntelWifi::iwl_pcie_rxq_inc_wr_ptr(struct iwl_trans *trans, struct iwl_rxq 
         reg = io->iwl_read32(CSR_UCODE_DRV_GP1);
         
         if (reg & CSR_UCODE_DRV_GP1_BIT_MAC_SLEEP) {
-            IWL_DEBUG_INFO(trans, "Rx queue requesting wakeup, GP1 = 0x%x\n",
-                           reg);
-            io->iwl_set_bit(CSR_GP_CNTRL,
-                        CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
+            IWL_DEBUG_INFO(trans, "Rx queue requesting wakeup, GP1 = 0x%x\n", reg);
+            io->iwl_set_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
             rxq->need_update = true;
             return;
         }
     }
     
     rxq->write_actual = round_down(rxq->write, 8);
-    //rxq->write_actual = 8;
     
     //DebugLog("WRITE ACTUAL: %u\n", rxq->write);
     
@@ -264,7 +261,6 @@ void IntelWifi::iwl_pcie_rxmq_restock(struct iwl_trans *trans,
     if (!test_bit(STATUS_DEVICE_ENABLED, &trans->status))
         return;
     
-    //spin_lock(&rxq->lock);
     IOSimpleLockLock(rxq->lock);
     while (rxq->free_count) {
         __le64 *bd = (__le64 *)rxq->bd;
@@ -305,8 +301,6 @@ void IntelWifi::iwl_pcie_rxsq_restock(struct iwl_trans *trans,
 {
     struct iwl_rx_mem_buffer *rxb;
 
-    DebugLog("Current status: %lu", trans->status);
-    
     /*
      * If the device isn't enabled - not need to try to add buffers...
      * This can happen when we stop the device and still have an interrupt
@@ -319,9 +313,6 @@ void IntelWifi::iwl_pcie_rxsq_restock(struct iwl_trans *trans,
         DebugLog("It's disabled!");
         return;
     }
-    
-    
-
     
     IOSimpleLockLock(rxq->lock);
     while ((iwl_rxq_space(rxq) > 0) && (rxq->free_count)) {
@@ -387,8 +378,6 @@ int IntelWifi::iwl_pcie_rx_alloc(struct iwl_trans *trans)
     if (WARN_ON(trans_pcie->rxq))
         return -EINVAL;
     
-//    trans_pcie->rxq = kcalloc(trans->num_rx_queues, sizeof(struct iwl_rxq),
-//                              GFP_KERNEL);
     trans_pcie->rxq = (struct iwl_rxq *)IOMalloc(sizeof(struct iwl_rxq) * trans->num_rx_queues);
     
     if (!trans_pcie->rxq)
@@ -648,7 +637,10 @@ static void iwl_pcie_free_rbs_pool(struct iwl_trans *trans)
 //                       DMA_FROM_DEVICE);
 //        __free_pages(trans_pcie->rx_pool[i].page,
 //                     trans_pcie->rx_page_order);
-        IOFreePageable(trans_pcie->rx_pool[i].page, PAGE_SIZE);
+        //IOFreePageable(trans_pcie->rx_pool[i].page, PAGE_SIZE);
+        trans_pcie->rx_pool[i].page_dma = NULL;
+        trans_pcie->rx_pool[i].page->complete();
+        trans_pcie->rx_pool[i].page->release();
         trans_pcie->rx_pool[i].page = NULL;
     }
 }
@@ -1216,7 +1208,7 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans,
         struct iwl_rx_cmd_buffer rxcb = {
             ._offset = (int)offset,
             ._rx_page_order = trans_pcie->rx_page_order,
-            ._page = rxb->page,
+            ._page = rxb->page->getBytesNoCopy(),
             ._page_stolen = false,
             .truesize = max_len,
         };
@@ -1224,45 +1216,28 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans,
         pkt = (struct iwl_rx_packet *)rxb_addr(&rxcb);
 
         if (pkt->len_n_flags == cpu_to_le32(FH_RSCSR_FRAME_INVALID)) {
-            IWL_DEBUG_RX(trans,
-                         "Q %d: RB end marker at offset %d\n",
-                         rxq->id, offset);
+            IWL_DEBUG_RX(trans, "Q %d: RB end marker at offset %d\n", rxq->id, offset);
             break;
         }
 
-        if ((le32_to_cpu(pkt->len_n_flags) & FH_RSCSR_RXQ_MASK) >> FH_RSCSR_RXQ_POS != rxq->id) {
-            IWL_DEBUG_RX(trans, "frame on invalid queue - is on %d and indicates %d\n",
-                         rxq->id,
-                         (le32_to_cpu(pkt->len_n_flags) & FH_RSCSR_RXQ_MASK) >>
-                         FH_RSCSR_RXQ_POS);
+        u32 frame_queue = (le32_to_cpu(pkt->len_n_flags) & FH_RSCSR_RXQ_MASK) >> FH_RSCSR_RXQ_POS;
+        
+        if (frame_queue != rxq->id) {
+            IWL_DEBUG_RX(trans, "frame on invalid queue - is on %d and indicates %d\n", rxq->id, frame_queue);
         }
-
-
+        
         IWL_DEBUG_RX(trans,
-                     "Q %d: cmd at offset %d: %u (%.2x.%2x, seq 0x%x)\n",
+                     "Q %d: cmd at offset %d: %s (%.2x.%2x, seq 0x%x)\n",
                      rxq->id, offset,
-
-                                        iwl_cmd_id(pkt->hdr.cmd,
-                                                   pkt->hdr.group_id,
-                                                   0),
+                     iwl_get_cmd_string(trans, iwl_cmd_id(pkt->hdr.cmd, pkt->hdr.group_id, 0)),
                      pkt->hdr.group_id, pkt->hdr.cmd,
                      le16_to_cpu(pkt->hdr.sequence));
 
-////        IWL_DEBUG_RX(trans,
-////                     "Q %d: cmd at offset %d: %s (%.2x.%2x, seq 0x%x)\n",
-////                     rxq->id, offset,
-////                     iwl_get_cmd_string(trans,
-////                                        iwl_cmd_id(pkt->hdr.cmd,
-////                                                   pkt->hdr.group_id,
-////                                                   0)),
-////                     pkt->hdr.group_id, pkt->hdr.cmd,
-////                     le16_to_cpu(pkt->hdr.sequence));
-//
         len = iwl_rx_packet_len(pkt);
         len += sizeof(u32); /* account for status word */
-////        trace_iwlwifi_dev_rx(trans->dev, trans, pkt, len);
-////        trace_iwlwifi_dev_rx_data(trans->dev, trans, pkt, len);
-//
+//        trace_iwlwifi_dev_rx(trans->dev, trans, pkt, len);
+//        trace_iwlwifi_dev_rx_data(trans->dev, trans, pkt, len);
+
         /* Reclaim a command buffer only if this packet is a response
          *   to a (driver-originated) command.
          * If the packet (e.g. Rx frame) originated from uCode,
@@ -1294,10 +1269,10 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans,
 //            iwl_op_mode_rx_rss(trans->op_mode, &rxq->napi,
 //                               &rxcb, rxq->id);
 //
-//        if (reclaim) {
-//            //kzfree(txq->entries[cmd_index].free_buf);
-//            txq->entries[cmd_index].free_buf = NULL;
-//        }
+        if (reclaim) {
+            //kzfree(txq->entries[cmd_index].free_buf);
+            txq->entries[cmd_index].free_buf = NULL;
+        }
         
         /*
          * After here, we should always check rxcb._page_stolen,
@@ -1309,11 +1284,10 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans,
              * and fire off the (possibly) blocking
              * iwl_trans_send_cmd()
              * as we reclaim the driver command queue */
-            // TODO: Implement
-//            if (!rxcb._page_stolen)
-//                iwl_pcie_hcmd_complete(trans, &rxcb);
-//            else
-//                IWL_WARN(trans, "Claim null rxb?\n");
+            if (!rxcb._page_stolen)
+                iwl_pcie_hcmd_complete(trans, &rxcb);
+            else
+                IWL_WARN(trans, "Claim null rxb?\n");
         }
         
         page_stolen |= rxcb._page_stolen;
@@ -1321,10 +1295,12 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans,
     }
     
     /* page was stolen from us -- free our reference */
-//    if (page_stolen) {
-//        __free_pages(rxb->page, trans_pcie->rx_page_order);
-//        rxb->page = NULL;
-//    }
+    if (page_stolen) {
+        //__free_pages(rxb->page, trans_pcie->rx_page_order);
+        rxb->page->complete();
+        rxb->page->release();
+        rxb->page = NULL;
+    }
     
     /* Reuse the page if possible. For notification packets and
      * SKBs that fail to Rx correctly, add them back into the
@@ -1524,7 +1500,7 @@ void IntelWifi::iwl_pcie_handle_rfkill_irq(struct iwl_trans *trans)
             IWL_DEBUG_RF_KILL(trans,
                               "Rfkill while SYNC HCMD in flight\n");
         IOLockLock(trans_pcie->wait_command_queue);
-        IOLockWakeup(trans_pcie->wait_command_queue, 0, true);
+        IOLockWakeup(trans_pcie->wait_command_queue, &trans->status, true);
         IOLockUnlock(trans_pcie->wait_command_queue);
     } else {
         clear_bit(STATUS_RFKILL_HW, &trans->status);
@@ -1553,7 +1529,7 @@ void IntelWifi::iwl_pcie_irq_handle_error(struct iwl_trans *trans)
              clear_bit(STATUS_SYNC_HCMD_ACTIVE, &trans->status);
              iwl_op_mode_wimax_active(trans->op_mode);
              IOLockLock(trans_pcie->wait_command_queue);
-             IOLockWakeup(trans_pcie->wait_command_queue, 0, true);
+             IOLockWakeup(trans_pcie->wait_command_queue, &trans->status, true);
              IOLockUnlock(trans_pcie->wait_command_queue);
              return;
          }
@@ -1573,7 +1549,7 @@ void IntelWifi::iwl_pcie_irq_handle_error(struct iwl_trans *trans)
     clear_bit(STATUS_SYNC_HCMD_ACTIVE, &trans->status);
 
     IOLockLock(trans_pcie->wait_command_queue);
-    IOLockWakeup(trans_pcie->wait_command_queue, 0, true);
+    IOLockWakeup(trans_pcie->wait_command_queue, &trans->status, true);
     IOLockUnlock(trans_pcie->wait_command_queue);
 }
 
@@ -1740,10 +1716,7 @@ void IntelWifi::iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq
     if (trans->cfg->host_interrupt_operation_mode)
         io->iwl_set_bit(CSR_INT_COALESCING, IWL_HOST_INT_OPER_MODE);
     
-    //io->iwl_write32(FH_RSCSR_CHNL0_WPTR, 8);
-    
     io->iwl_release_nic_access(&state);
-    
 }
 
 int IntelWifi::iwl_pcie_rx_init(struct iwl_trans *trans)
@@ -1767,6 +1740,4 @@ int IntelWifi::iwl_pcie_rx_init(struct iwl_trans *trans)
     
     return 0;
 }
-
-
 

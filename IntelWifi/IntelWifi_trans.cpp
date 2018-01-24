@@ -713,7 +713,7 @@ int IntelWifi::iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
             io->iwl_set_bits_prph(LMPM_CHICK,
                                   LMPM_CHICK_EXTENDED_ADDR_SPACE);
         
-        cmd->writeBytes(offset, (u8 *)section->data + offset, copy_size);
+        cmd->writeBytes(0, (u8 *)section->data + offset, copy_size);
         
         ret = iwl_pcie_load_firmware_chunk(trans, dst_addr, seg.fIOVMAddr, copy_size);
         

@@ -29,8 +29,12 @@
  *
  *****************************************************************************/
 
+
 #include "IntelWifi.hpp"
 #include "iwlwifi/fw/api/tx.h"
+#include "iwlwifi/iwl-trans.h"
+
+
 
 #define IWL_TX_CRC_SIZE 4
 #define IWL_TX_DELIMITER_SIZE 4
@@ -1419,6 +1423,99 @@ int IntelWifi::iwl_pcie_send_hcmd_async(struct iwl_trans *trans,
     return 0;
 }
 
+/* line 1723
+ * iwl_pcie_hcmd_complete - Pull unused buffers off the queue and reclaim them
+ * @rxb: Rx buffer to reclaim
+ */
+void IntelWifi::iwl_pcie_hcmd_complete(struct iwl_trans *trans,
+                            struct iwl_rx_cmd_buffer *rxb)
+{
+    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
+    u16 sequence = le16_to_cpu(pkt->hdr.sequence);
+    u8 group_id;
+    u32 cmd_id;
+    int txq_id = SEQ_TO_QUEUE(sequence);
+    int index = SEQ_TO_INDEX(sequence);
+    int cmd_index;
+    struct iwl_device_cmd *cmd;
+    struct iwl_cmd_meta *meta;
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    struct iwl_txq *txq = trans_pcie->txq[trans_pcie->cmd_queue];
+    
+    /* If a Tx command is being handled and it isn't in the actual
+     * command queue then there a command routing bug has been introduced
+     * in the queue management code. */
+    if (txq_id != trans_pcie->cmd_queue) {
+        IWL_ERR(trans, "wrong command queue %d (should be %d), sequence 0x%X readp=%d writep=%d\n",
+             txq_id, trans_pcie->cmd_queue, sequence, txq->read_ptr,
+                     txq->write_ptr);
+        //iwl_print_hex_error(trans, pkt, 32);
+        return;
+    }
+    
+    //spin_lock_bh(&txq->lock);
+    IOSimpleLockLock(txq->lock);
+    
+    cmd_index = iwl_pcie_get_cmd_index(txq, index);
+    cmd = txq->entries[cmd_index].cmd;
+    meta = &txq->entries[cmd_index].meta;
+    group_id = cmd->hdr.group_id;
+    cmd_id = iwl_cmd_id(cmd->hdr.cmd, group_id, 0);
+    
+    iwl_pcie_tfd_unmap(trans, meta, txq, index);
+    
+    /* Input error checking is done when commands are added to queue. */
+    if (meta->flags & CMD_WANT_SKB) {
+        void *p = rxb_steal_page(rxb);
+        
+        meta->source->resp_pkt = pkt;
+        meta->source->_rx_page_addr = (unsigned long)p;
+        meta->source->_rx_page_order = trans_pcie->rx_page_order;
+    }
+    
+    if (meta->flags & CMD_WANT_ASYNC_CALLBACK)
+        iwl_op_mode_async_cb(trans->op_mode, cmd);
+    
+    iwl_pcie_cmdq_reclaim(trans, txq_id, index);
+    
+    if (!(meta->flags & CMD_ASYNC)) {
+        if (!test_bit(STATUS_SYNC_HCMD_ACTIVE, &trans->status)) {
+            IWL_WARN(trans,
+                     "HCMD_ACTIVE already clear for command %s\n",
+                     iwl_get_cmd_string(trans, cmd_id));
+        }
+        clear_bit(STATUS_SYNC_HCMD_ACTIVE, &trans->status);
+        IWL_DEBUG_INFO(trans, "Clearing HCMD_ACTIVE for command %s\n",
+                       iwl_get_cmd_string(trans, cmd_id));
+        //wake_up(&trans_pcie->wait_command_queue);
+        IOLockLock(trans_pcie->wait_command_queue);
+        IOLockWakeup(trans_pcie->wait_command_queue, &trans->status, true);
+        IOLockUnlock(trans_pcie->wait_command_queue);
+    }
+    
+    if (meta->flags & CMD_MAKE_TRANS_IDLE) {
+        IWL_DEBUG_INFO(trans, "complete %s - mark trans as idle\n",
+                       iwl_get_cmd_string(trans, cmd->hdr.cmd));
+        set_bit(STATUS_TRANS_IDLE, &trans->status);
+        //wake_up(&trans_pcie->d0i3_waitq);
+    }
+    
+    if (meta->flags & CMD_WAKE_UP_TRANS) {
+        IWL_DEBUG_INFO(trans, "complete %s - clear trans idle flag\n",
+                       iwl_get_cmd_string(trans, cmd->hdr.cmd));
+        clear_bit(STATUS_TRANS_IDLE, &trans->status);
+        //wake_up(&trans_pcie->d0i3_waitq);
+    }
+    
+    meta->flags = 0;
+    
+    //spin_unlock_bh(&txq->lock);
+    IOSimpleLockUnlock(txq->lock);
+}
+
+
+#define HOST_COMPLETE_TIMEOUT 2000
+
 // line 1829
 int IntelWifi::iwl_pcie_send_hcmd_sync(struct iwl_trans *trans,
                                    struct iwl_host_cmd *cmd)
@@ -1457,30 +1554,37 @@ int IntelWifi::iwl_pcie_send_hcmd_sync(struct iwl_trans *trans,
         return ret;
     }
     
-    IOSleep(2000);
+    //IOSleep(2000);
     
 //    ret = wait_event_timeout(trans_pcie->wait_command_queue,
 //                             !test_bit(STATUS_SYNC_HCMD_ACTIVE,
 //                                       &trans->status),
 //                             HOST_COMPLETE_TIMEOUT);
-//    if (!ret) {
-//        IWL_ERR(trans, "Error sending %s: time out after %dms.\n",
-//                iwl_get_cmd_string(trans, cmd->id),
-//                jiffies_to_msecs(HOST_COMPLETE_TIMEOUT));
-//
-//        IWL_ERR(trans, "Current CMD queue read_ptr %d write_ptr %d\n",
-//                txq->read_ptr, txq->write_ptr);
-//
-//        clear_bit(STATUS_SYNC_HCMD_ACTIVE, &trans->status);
-//        IWL_DEBUG_INFO(trans, "Clearing HCMD_ACTIVE for command %s\n",
-//                       iwl_get_cmd_string(trans, cmd->id));
-//        ret = -ETIMEDOUT;
-//
-//        iwl_force_nmi(trans);
-//        iwl_trans_fw_error(trans);
-//
-//        goto cancel;
-//    }
+    IOLockLock(trans_pcie->wait_command_queue);
+    AbsoluteTime deadline;
+    clock_interval_to_deadline(HOST_COMPLETE_TIMEOUT, kMillisecondScale, (UInt64 *) &deadline);
+    ret = IOLockSleepDeadline(trans_pcie->wait_command_queue, &trans->status, deadline, THREAD_INTERRUPTIBLE);
+    IOLockUnlock(trans_pcie->wait_command_queue);
+    
+    if (ret != THREAD_AWAKENED) {
+        IWL_ERR(trans, "Error sending %s: time out after %dms.\n",
+                iwl_get_cmd_string(trans, cmd->id),
+                HOST_COMPLETE_TIMEOUT);
+
+        IWL_ERR(trans, "Current CMD queue read_ptr %d write_ptr %d\n",
+                txq->read_ptr, txq->write_ptr);
+
+        clear_bit(STATUS_SYNC_HCMD_ACTIVE, &trans->status);
+        IWL_DEBUG_INFO(trans, "Clearing HCMD_ACTIVE for command %s\n",
+                       iwl_get_cmd_string(trans, cmd->id));
+        ret = -ETIMEDOUT;
+
+        io->iwl_force_nmi(trans);
+        // TODO: Implement
+        //iwl_trans_fw_error(trans);
+
+        goto cancel;
+    }
     
     if (test_bit(STATUS_FW_ERROR, &trans->status)) {
         IWL_ERR(trans, "FW error in SYNC CMD %s\n",
@@ -1542,8 +1646,6 @@ int IntelWifi::iwl_trans_pcie_send_hcmd(struct iwl_trans *trans, struct iwl_host
     
     /* We still can fail on RFKILL that can be asserted while we wait */
     return iwl_pcie_send_hcmd_sync(trans, cmd);
-//    DebugLog("SYNC CMD NOT IMPLEMENTED");
-//    return 0;
 }
 
 

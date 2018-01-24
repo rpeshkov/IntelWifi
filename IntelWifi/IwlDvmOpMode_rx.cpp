@@ -36,12 +36,14 @@
 //  Copyright © 2018 Roman Peshkov. All rights reserved.
 //
 
-#include "IwlDvmOpMode.hpp"
-
 extern "C" {
 #include "agn.h"
 #include "iwl-trans.h"
 }
+
+#include "IwlDvmOpMode.hpp"
+
+
 
 /******************************************************************************
  *
@@ -1035,17 +1037,17 @@ void IwlDvmOpMode::iwl_rx_dispatch(struct iwl_priv *priv, struct napi_struct *na
         priv->rx_handlers[pkt->hdr.cmd](priv, rxb);
     } else {
         /* No handling needed */
-        IWL_DEBUG_RX(priv, "No handler needed for %u, 0x%02x\n",
-                     
-                                        iwl_cmd_id(pkt->hdr.cmd,
-                                                   0, 0),
-                     pkt->hdr.cmd);
-        
-//        IWL_DEBUG_RX(priv, "No handler needed for %s, 0x%02x\n",
-//                     iwl_get_cmd_string(priv->trans,
+//        IWL_DEBUG_RX(priv, "No handler needed for %u, 0x%02x\n",
+//
 //                                        iwl_cmd_id(pkt->hdr.cmd,
-//                                                   0, 0)),
+//                                                   0, 0),
 //                     pkt->hdr.cmd);
+        
+        IWL_DEBUG_RX(priv, "No handler needed for %s, 0x%02x\n",
+                     iwl_get_cmd_string(priv->trans,
+                                        iwl_cmd_id(pkt->hdr.cmd,
+                                                   0, 0)),
+                     pkt->hdr.cmd);
     }
 }
 

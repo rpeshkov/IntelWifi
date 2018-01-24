@@ -64,26 +64,26 @@ public:
     {
         int ret;
         
-//        if (unlikely(!(cmd->flags & CMD_SEND_IN_RFKILL) &&
-//                     test_bit(STATUS_RFKILL_OPMODE, &trans->status)))
-//            return -ERFKILL;
-//
-//        if (unlikely(test_bit(STATUS_FW_ERROR, &trans->status)))
-//            return -EIO;
-//
-//        if (unlikely(trans->state != IWL_TRANS_FW_ALIVE)) {
-//            IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
-//            return -EIO;
-//        }
-//
-//        if (WARN_ON((cmd->flags & CMD_WANT_ASYNC_CALLBACK) &&
-//                    !(cmd->flags & CMD_ASYNC)))
-//            return -EINVAL;
-//
-//#ifdef CONFIG_LOCKDEP
-//        if (!(cmd->flags & CMD_ASYNC))
-//            lock_map_acquire_read(&trans->sync_cmd_lockdep_map);
-//#endif
+        if (unlikely(!(cmd->flags & CMD_SEND_IN_RFKILL) &&
+                     test_bit(STATUS_RFKILL_OPMODE, &trans->status)))
+            return -ERFKILL;
+
+        if (unlikely(test_bit(STATUS_FW_ERROR, &trans->status)))
+            return -EIO;
+
+        if (unlikely(trans->state != IWL_TRANS_FW_ALIVE)) {
+            IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
+            return -EIO;
+        }
+
+        if (WARN_ON((cmd->flags & CMD_WANT_ASYNC_CALLBACK) &&
+                    !(cmd->flags & CMD_ASYNC)))
+            return -EINVAL;
+
+#ifdef CONFIG_LOCKDEP
+        if (!(cmd->flags & CMD_ASYNC))
+            lock_map_acquire_read(&trans->sync_cmd_lockdep_map);
+#endif
         
         if (trans->wide_cmd_header && !iwl_cmd_groupid(cmd->id))
             cmd->id = DEF_ID(cmd->id);

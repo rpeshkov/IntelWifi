@@ -17,7 +17,7 @@
 #define DebugLog(args...)
 #endif
 
-#define TraceLog(args...) IOLog(args)
+#define TraceLog(args...) IOLog("IntelWifi:" args)
 
 #define IWL_DEBUG_INFO(trans, args...) DebugLog("DEBUG INFO: " args)
 #define IWL_ERR(trans, args...) TraceLog("ERROR: " args)

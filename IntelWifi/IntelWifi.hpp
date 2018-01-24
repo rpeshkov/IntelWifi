@@ -217,7 +217,7 @@ private:
 
     
     struct iwl_trans* iwl_trans_pcie_alloc(const struct iwl_cfg *cfg); // line 2988
-        
+    
     // trans-gen2.c
     int iwl_pcie_gen2_apm_init(struct iwl_trans *trans);
     void iwl_pcie_gen2_apm_stop(struct iwl_trans *trans, bool op_mode_leave);
@@ -301,8 +301,11 @@ private:
     void iwl_trans_pcie_txq_disable(struct iwl_trans *trans, int txq_id, bool configure_scd); // line 1404
     int iwl_pcie_enqueue_hcmd(struct iwl_trans *trans,
                                          struct iwl_host_cmd *cmd); // line 1440
+    void iwl_pcie_hcmd_complete(struct iwl_trans *trans,
+                                           struct iwl_rx_cmd_buffer *rxb); // line 1723
     int iwl_pcie_send_hcmd_async(struct iwl_trans *trans,
                                  struct iwl_host_cmd *cmd);
+    
     int iwl_pcie_send_hcmd_sync(struct iwl_trans *trans,
                                 struct iwl_host_cmd *cmd); // line 1829
     int iwl_trans_pcie_send_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd); // line 1935

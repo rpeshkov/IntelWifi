@@ -281,7 +281,7 @@ static inline void *rxb_addr(struct iwl_rx_cmd_buffer *r)
     
 	//return (void *)((unsigned long)page_address(r->_page) + r->_offset);
     // TODO: BANG!!!
-    return r->_page;//(void *) ((u8*)r->_page + r->_offset);
+    return (void *)((unsigned long)r->_page + r->_offset);//(void *) ((u8*)r->_page + r->_offset);
 }
 
 static inline int rxb_offset(struct iwl_rx_cmd_buffer *r)
@@ -289,11 +289,10 @@ static inline int rxb_offset(struct iwl_rx_cmd_buffer *r)
 	return r->_offset;
 }
 
-static inline struct page *rxb_steal_page(struct iwl_rx_cmd_buffer *r)
+static inline void *rxb_steal_page(struct iwl_rx_cmd_buffer *r)
 {
 	r->_page_stolen = true;
-	//get_page(r->_page);
-    return NULL;//r->_page;
+    return r->_page;
 }
 
 static inline void iwl_free_rxb(struct iwl_rx_cmd_buffer *r)

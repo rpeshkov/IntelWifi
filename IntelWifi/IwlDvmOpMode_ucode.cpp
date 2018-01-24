@@ -369,6 +369,8 @@ int IwlDvmOpMode::iwl_load_ucode_wait_alive(struct iwl_priv *priv,
         return -EIO;
     }
     
+    DebugLog("IT IS ALIVE!\n");
+    
     priv->ucode_loaded = true;
     
     if (ucode_type != IWL_UCODE_WOWLAN) {
