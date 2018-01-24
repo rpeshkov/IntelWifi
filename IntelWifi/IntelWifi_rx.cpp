@@ -525,19 +525,20 @@ int IntelWifi::iwl_pcie_rx_alloc(struct iwl_trans *trans)
  * iwl_pcie_rx_alloc_page - allocates and returns a page.
  *
  */
-static void *iwl_pcie_rx_alloc_page(struct iwl_trans *trans)
+static IOBufferMemoryDescriptor *iwl_pcie_rx_alloc_page(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     //struct page *page;
-    void *page;
+    //void *page;
     
     
 //    if (trans_pcie->rx_page_order > 0)
 //        gfp_mask |= __GFP_COMP;
     
     /* Alloc a new receive buffer */
-    page = IOMalloc(PAGE_SIZE);  //alloc_pages(gfp_mask, trans_pcie->rx_page_order);
-    if (!page) {
+    
+    //page = IOMalloc(PAGE_SIZE);  //alloc_pages(gfp_mask, trans_pcie->rx_page_order);
+    //if (!page) {
 //        if (net_ratelimit())
 //            IWL_DEBUG_INFO(trans, "alloc_pages failed, order: %d\n",
 //                           trans_pcie->rx_page_order);
@@ -548,9 +549,11 @@ static void *iwl_pcie_rx_alloc_page(struct iwl_trans *trans)
 //        if (!(gfp_mask & __GFP_NOWARN) && net_ratelimit())
 //            IWL_CRIT(trans,
 //                     "Failed to alloc_pages\n");
-        return NULL;
-    }
-    return page;
+//        return NULL;
+//    }
+//    return page;
+    
+    return IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, 0, PAGE_SIZE, 0x00000000FFFFFFFFULL);
 }
 
 
@@ -568,7 +571,7 @@ static void iwl_pcie_rxq_alloc_rbs(struct iwl_trans *trans, struct iwl_rxq *rxq)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     struct iwl_rx_mem_buffer *rxb;
-    void *page;
+    IOBufferMemoryDescriptor *page;
     
     while (1) {
         IOSimpleLockLock(rxq->lock);
@@ -591,7 +594,9 @@ static void iwl_pcie_rxq_alloc_rbs(struct iwl_trans *trans, struct iwl_rxq *rxq)
             //spin_unlock(&rxq->lock);
             IOSimpleLockUnlock(rxq->lock);
             //__free_pages(page, trans_pcie->rx_page_order);
-            IOFree(page, PAGE_SIZE);
+            page->complete();
+            page->release();
+            //IOFree(page, PAGE_SIZE);
             return;
         }
         rxb = list_first_entry(&rxq->rx_used, struct iwl_rx_mem_buffer,
@@ -603,7 +608,7 @@ static void iwl_pcie_rxq_alloc_rbs(struct iwl_trans *trans, struct iwl_rxq *rxq)
         //BUG_ON(rxb->page);
         rxb->page = page;
         /* Get physical address of the RB */
-        rxb->page_dma = 0;
+        rxb->page_dma = page->getPhysicalSegment(0, 0);
         
 //        rxb->page_dma =
 //        dma_map_page(trans->dev, page, 0,
@@ -1139,9 +1144,9 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
         isr_stats->rx++;
         
 //        local_bh_disable();
-        fWorkLoop->disableAllInterrupts();
+        //fWorkLoop->disableAllInterrupts();
         iwl_pcie_rx_handle(trans, 0);
-        fWorkLoop->enableAllInterrupts();
+        //fWorkLoop->enableAllInterrupts();
 //        local_bh_enable();
     }
     
@@ -1375,7 +1380,7 @@ restart:
     while (i != r) {
         struct iwl_rx_mem_buffer *rxb;
         
-        if (unlikely(rxq->used_count == rxq->queue_size / 2))
+        if (rxq->used_count == rxq->queue_size / 2)
             emergency = true;
         
         if (trans->cfg->mq_rx_supported) {

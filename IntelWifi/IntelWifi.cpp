@@ -339,7 +339,6 @@ bool IntelWifi::interruptFilter(OSObject* owner, IOFilterInterruptEventSource * 
 }
 
 void IntelWifi::interruptOccured(OSObject* owner, IOInterruptEventSource* sender, int count) {
-    DebugLog("Interrupt %d", count);
     IntelWifi* me = (IntelWifi*)owner;
     
     if (me == 0) {

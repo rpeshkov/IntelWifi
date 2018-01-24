@@ -11,6 +11,8 @@
 #ifndef iwl_trans_pcie_h
 #define iwl_trans_pcie_h
 
+#include <IOKit/IOBufferMemoryDescriptor.h>
+
 #include <linux/types.h>
 
 #include <sys/kernel_types.h>
@@ -58,7 +60,8 @@ enum iwl_shared_irq_flags {
  */
 struct iwl_rx_mem_buffer {
     dma_addr_t page_dma;
-    void *page;
+    //void *page;
+    IOBufferMemoryDescriptor *page;
     u16 vid;
     bool invalid;
     struct list_head list;

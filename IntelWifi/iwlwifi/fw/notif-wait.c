@@ -116,6 +116,7 @@ bool iwl_notification_wait(struct iwl_notif_wait_data *notif_wait,
 			if (!w->fn || w->fn(notif_wait, pkt, w->fn_data)) {
 				w->triggered = true;
 				triggered = true;
+                DebugLog("We are here\n");
 			}
 		}
         IOSimpleLockUnlock(notif_wait->notif_wait_lock);

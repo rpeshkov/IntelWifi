@@ -263,6 +263,45 @@ finished:
     iwl_process_scan_complete(priv);
 }
 
+// line 357
+void IwlDvmOpMode::iwl_setup_rx_scan_handlers(struct iwl_priv *priv)
+{
+    /* scan handlers */
+    priv->rx_handlers[REPLY_SCAN_CMD] = iwl_rx_reply_scan;
+    priv->rx_handlers[SCAN_START_NOTIFICATION] = iwl_rx_scan_start_notif;
+    priv->rx_handlers[SCAN_RESULTS_NOTIFICATION] =
+    iwl_rx_scan_results_notif;
+    priv->rx_handlers[SCAN_COMPLETE_NOTIFICATION] =
+    iwl_rx_scan_complete_notif;
+}
+
+void IwlDvmOpMode::iwl_rx_reply_scan(struct iwl_priv *priv,
+                              struct iwl_rx_cmd_buffer *rxb)
+{
+    DebugLog("HANDLER: iwl_rx_reply_scan\n");
+}
+
+void IwlDvmOpMode::iwl_rx_scan_start_notif(struct iwl_priv *priv,
+                              struct iwl_rx_cmd_buffer *rxb)
+{
+    DebugLog("HANDLER: iwl_rx_scan_start_notif\n");
+}
+
+void IwlDvmOpMode::iwl_rx_scan_results_notif(struct iwl_priv *priv,
+                                    struct iwl_rx_cmd_buffer *rxb)
+{
+    DebugLog("HANDLER: iwl_rx_scan_results_notif\n");
+}
+
+void IwlDvmOpMode::iwl_rx_scan_complete_notif(struct iwl_priv *priv,
+                                    struct iwl_rx_cmd_buffer *rxb)
+{
+    DebugLog("HANDLER: iwl_rx_scan_complete_notif\n");
+}
+
+
+
+
 
 // line 929
 void IwlDvmOpMode::iwl_init_scan_params(struct iwl_priv *priv)

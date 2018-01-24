@@ -120,7 +120,23 @@ private:
     void iwl_force_scan_end(struct iwl_priv *priv); // line 165
     void iwl_do_scan_abort(struct iwl_priv *priv); // line 182
     void iwl_scan_cancel_timeout(struct iwl_priv *priv, unsigned long ms); // line 216
+    void iwl_setup_rx_scan_handlers(struct iwl_priv *priv); // line 357
     void iwl_init_scan_params(struct iwl_priv *priv); // line 929
+    
+    static void iwl_rx_reply_scan(struct iwl_priv *priv,
+                                  struct iwl_rx_cmd_buffer *rxb);
+    
+    
+    static void iwl_rx_scan_start_notif(struct iwl_priv *priv,
+                                        struct iwl_rx_cmd_buffer *rxb);
+    
+    static void iwl_rx_scan_results_notif(struct iwl_priv *priv,
+                                          struct iwl_rx_cmd_buffer *rxb);
+    
+    static void iwl_rx_scan_complete_notif(struct iwl_priv *priv,
+                                           struct iwl_rx_cmd_buffer *rxb);
+    
+
 
     
     

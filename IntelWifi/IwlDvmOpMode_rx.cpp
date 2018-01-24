@@ -990,7 +990,7 @@ void IwlDvmOpMode::iwl_setup_rx_handlers(struct iwl_priv *priv)
 //    handlers[REPLY_STATISTICS_CMD]        = iwlagn_rx_reply_statistics;
 //    handlers[STATISTICS_NOTIFICATION]    = iwlagn_rx_statistics;
 //
-//    iwl_setup_rx_scan_handlers(priv);
+    iwl_setup_rx_scan_handlers(priv);
 //
 //    handlers[CARD_STATE_NOTIFICATION]    = iwlagn_rx_card_state_notif;
 //    handlers[MISSED_BEACONS_NOTIFICATION]    =
