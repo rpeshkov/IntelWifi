@@ -244,6 +244,10 @@ struct cfg80211_chan_def {
     u32 center_freq2;
 };
 
+// line 1094
+#define IEEE80211_MAX_CHAINS    4
+
+
 
 /** line 1746
  * enum cfg80211_signal_type - signal type

@@ -263,41 +263,127 @@ finished:
     iwl_process_scan_complete(priv);
 }
 
+
+/* line 253
+ * Service response to REPLY_SCAN_CMD (0x80)
+ */
+void IwlDvmOpMode::iwl_rx_reply_scan(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
+{
+#ifdef CONFIG_IWLWIFI_DEBUG
+    struct iwl_rx_packet *pkt = rxb_addr(rxb);
+    struct iwl_scanreq_notification *notif = (void *)pkt->data;
+    
+    IWL_DEBUG_SCAN(priv, "Scan request status = 0x%x\n", notif->status);
+#endif
+}
+
+// line 265
+/* Service SCAN_START_NOTIFICATION (0x82) */
+void IwlDvmOpMode::iwl_rx_scan_start_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
+{
+    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
+    struct iwl_scanstart_notification *notif = (struct iwl_scanstart_notification *)pkt->data;
+    
+    priv->scan_start_tsf = le32_to_cpu(notif->tsf_low);
+    IWL_DEBUG_SCAN(priv, "Scan start: "
+                   "%d [802.11%s] "
+                   "(TSF: 0x%08X:%08X) - %d (beacon timer %u)\n",
+                   notif->channel,
+                   notif->band ? "bg" : "a",
+                   le32_to_cpu(notif->tsf_high),
+                   le32_to_cpu(notif->tsf_low),
+                   notif->status, notif->beacon_timer);
+}
+
+// line 283
+/* Service SCAN_RESULTS_NOTIFICATION (0x83) */
+void IwlDvmOpMode::iwl_rx_scan_results_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
+{
+#ifdef CONFIG_IWLWIFI_DEBUG
+    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
+    struct iwl_scanresults_notification *notif = (struct iwl_scanresults_notification *)pkt->data;
+    
+    IWL_DEBUG_SCAN(priv, "Scan ch.res: "
+                   "%d [802.11%s] "
+                   "probe status: %u:%u "
+                   "(TSF: 0x%08X:%08X) - %d "
+                   "elapsed=%lu usec\n",
+                   notif->channel,
+                   notif->band ? "bg" : "a",
+                   notif->probe_status, notif->num_probe_not_sent,
+                   le32_to_cpu(notif->tsf_high),
+                   le32_to_cpu(notif->tsf_low),
+                   le32_to_cpu(notif->statistics[0]),
+                   le32_to_cpu(notif->tsf_low) - priv->scan_start_tsf);
+#endif
+
+}
+
+// line 306
+/* Service SCAN_COMPLETE_NOTIFICATION (0x84) */
+void IwlDvmOpMode::iwl_rx_scan_complete_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
+{
+    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
+    struct iwl_scancomplete_notification *scan_notif = (struct iwl_scancomplete_notification *)pkt->data;
+    
+    IWL_DEBUG_SCAN(priv, "Scan complete: %d channels (TSF 0x%08X:%08X) - %d\n",
+                   scan_notif->scanned_channels,
+                   scan_notif->tsf_low,
+                   scan_notif->tsf_high, scan_notif->status);
+    
+    clock_sec_t secs;
+    clock_usec_t micros;
+    clock_get_system_microtime(&secs, &micros);
+    
+    IWL_DEBUG_SCAN(priv, "Scan on %sGHz took %lums\n",
+                   (priv->scan_band == NL80211_BAND_2GHZ) ? "2.4" : "5.2",
+                   (micros - priv->scan_start) * 1000);
+    
+    /*
+     * When aborting, we run the scan completed background work inline
+     * and the background work must then do nothing. The SCAN_COMPLETE
+     * bit helps implement that logic and thus needs to be set before
+     * queueing the work. Also, since the scan abort waits for SCAN_HW
+     * to clear, we need to set SCAN_COMPLETE before clearing SCAN_HW
+     * to avoid a race there.
+     */
+    set_bit(STATUS_SCAN_COMPLETE, &priv->status);
+    clear_bit(STATUS_SCAN_HW, &priv->status);
+    // TODO: Implement
+    //queue_work(priv->workqueue, &priv->scan_completed);
+    
+    if (priv->iw_mode != NL80211_IFTYPE_ADHOC && iwl_advanced_bt_coexist(priv) && priv->bt_status != scan_notif->bt_status) {
+        if (scan_notif->bt_status) {
+            /* BT on */
+            if (!priv->bt_ch_announce)
+                priv->bt_traffic_load =
+                IWL_BT_COEX_TRAFFIC_LOAD_HIGH;
+            /*
+             * otherwise, no traffic load information provided
+             * no changes made
+             */
+        } else {
+            /* BT off */
+            priv->bt_traffic_load =
+            IWL_BT_COEX_TRAFFIC_LOAD_NONE;
+        }
+        priv->bt_status = scan_notif->bt_status;
+        // TODO: Implement
+//        queue_work(priv->workqueue, &priv->bt_traffic_change_work);
+    }
+
+}
+
 // line 357
 void IwlDvmOpMode::iwl_setup_rx_scan_handlers(struct iwl_priv *priv)
 {
     /* scan handlers */
     priv->rx_handlers[REPLY_SCAN_CMD] = iwl_rx_reply_scan;
     priv->rx_handlers[SCAN_START_NOTIFICATION] = iwl_rx_scan_start_notif;
-    priv->rx_handlers[SCAN_RESULTS_NOTIFICATION] =
-    iwl_rx_scan_results_notif;
-    priv->rx_handlers[SCAN_COMPLETE_NOTIFICATION] =
-    iwl_rx_scan_complete_notif;
+    priv->rx_handlers[SCAN_RESULTS_NOTIFICATION] = iwl_rx_scan_results_notif;
+    priv->rx_handlers[SCAN_COMPLETE_NOTIFICATION] = iwl_rx_scan_complete_notif;
 }
 
-void IwlDvmOpMode::iwl_rx_reply_scan(struct iwl_priv *priv,
-                              struct iwl_rx_cmd_buffer *rxb)
-{
-    DebugLog("HANDLER: iwl_rx_reply_scan\n");
-}
-
-void IwlDvmOpMode::iwl_rx_scan_start_notif(struct iwl_priv *priv,
-                              struct iwl_rx_cmd_buffer *rxb)
-{
-    DebugLog("HANDLER: iwl_rx_scan_start_notif\n");
-}
-
-void IwlDvmOpMode::iwl_rx_scan_results_notif(struct iwl_priv *priv,
-                                    struct iwl_rx_cmd_buffer *rxb)
-{
-    DebugLog("HANDLER: iwl_rx_scan_results_notif\n");
-}
-
-void IwlDvmOpMode::iwl_rx_scan_complete_notif(struct iwl_priv *priv,
-                                    struct iwl_rx_cmd_buffer *rxb)
-{
-    DebugLog("HANDLER: iwl_rx_scan_complete_notif\n");
-}
 
 
 

@@ -52,6 +52,7 @@
 #define IWL_DEBUG_RX(priv, args...) DebugLog("DEBUG RX: " args)
 #define IWL_DEBUG_DROP_LIMIT(priv, args...) DebugLog("DEBUG DROP LIMIT: " args)
 #define IWL_DEBUG_QUIET_RFKILL(priv, args...) DebugLog("DEBUG QUIET RFKILL: " args)
+#define IWL_DEBUG_STATS(priv, args...) DebugLog("DEBUG STATS: " args)
 
 
 #endif /* Logging_h */

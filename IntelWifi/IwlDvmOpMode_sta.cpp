@@ -89,7 +89,7 @@ u8 IwlDvmOpMode::iwl_prep_station(struct iwl_priv *priv, struct iwl_rxon_context
     station->ctxid = ctx->ctxid;
     
     if (sta) {
-        //struct iwl_station_priv *sta_priv;
+//        struct iwl_station_priv *sta_priv;
 
         // TODO: Implement
 //        sta_priv = (struct iwl_station_priv *)sta->drv_priv;
@@ -132,8 +132,7 @@ static void iwl_sta_fill_lq(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
     if (r >= IWL_FIRST_CCK_RATE && r <= IWL_LAST_CCK_RATE)
         rate_flags |= RATE_MCS_CCK_MSK;
     
-    rate_flags |= first_antenna(priv->nvm_data->valid_tx_ant) <<
-    RATE_MCS_ANT_POS;
+    rate_flags |= first_antenna(priv->nvm_data->valid_tx_ant) << RATE_MCS_ANT_POS;
     //rate_n_flags = iwl_hw_set_rate_n_flags(iwl_rates[r].plcp, rate_flags);
     for (i = 0; i < LINK_QUAL_MAX_RETRY_NUM; i++)
         link_cmd->rs_table[i].rate_n_flags = rate_n_flags;
@@ -191,8 +190,7 @@ void IwlDvmOpMode::iwl_clear_ucode_stations(struct iwl_priv *priv, struct iwl_rx
     IOSimpleLockUnlock(priv->sta_lock);
     
     if (!cleared)
-        IWL_DEBUG_INFO(priv,
-                       "No active stations found to be cleared\n");
+        IWL_DEBUG_INFO(priv, "No active stations found to be cleared\n");
 }
 
 

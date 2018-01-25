@@ -232,6 +232,193 @@ struct ieee80211_vif {
     u8 drv_priv[0] __aligned(sizeof(void *));
 };
 
+/** line 1031
+ * enum mac80211_rx_flags - receive flags
+ *
+ * These flags are used with the @flag member of &struct ieee80211_rx_status.
+ * @RX_FLAG_MMIC_ERROR: Michael MIC error was reported on this frame.
+ *    Use together with %RX_FLAG_MMIC_STRIPPED.
+ * @RX_FLAG_DECRYPTED: This frame was decrypted in hardware.
+ * @RX_FLAG_MMIC_STRIPPED: the Michael MIC is stripped off this frame,
+ *    verification has been done by the hardware.
+ * @RX_FLAG_IV_STRIPPED: The IV and ICV are stripped from this frame.
+ *    If this flag is set, the stack cannot do any replay detection
+ *    hence the driver or hardware will have to do that.
+ * @RX_FLAG_PN_VALIDATED: Currently only valid for CCMP/GCMP frames, this
+ *    flag indicates that the PN was verified for replay protection.
+ *    Note that this flag is also currently only supported when a frame
+ *    is also decrypted (ie. @RX_FLAG_DECRYPTED must be set)
+ * @RX_FLAG_DUP_VALIDATED: The driver should set this flag if it did
+ *    de-duplication by itself.
+ * @RX_FLAG_FAILED_FCS_CRC: Set this flag if the FCS check failed on
+ *    the frame.
+ * @RX_FLAG_FAILED_PLCP_CRC: Set this flag if the PCLP check failed on
+ *    the frame.
+ * @RX_FLAG_MACTIME_START: The timestamp passed in the RX status (@mactime
+ *    field) is valid and contains the time the first symbol of the MPDU
+ *    was received. This is useful in monitor mode and for proper IBSS
+ *    merging.
+ * @RX_FLAG_MACTIME_END: The timestamp passed in the RX status (@mactime
+ *    field) is valid and contains the time the last symbol of the MPDU
+ *    (including FCS) was received.
+ * @RX_FLAG_MACTIME_PLCP_START: The timestamp passed in the RX status (@mactime
+ *    field) is valid and contains the time the SYNC preamble was received.
+ * @RX_FLAG_NO_SIGNAL_VAL: The signal strength value is not present.
+ *    Valid only for data frames (mainly A-MPDU)
+ * @RX_FLAG_AMPDU_DETAILS: A-MPDU details are known, in particular the reference
+ *    number (@ampdu_reference) must be populated and be a distinct number for
+ *    each A-MPDU
+ * @RX_FLAG_AMPDU_LAST_KNOWN: last subframe is known, should be set on all
+ *    subframes of a single A-MPDU
+ * @RX_FLAG_AMPDU_IS_LAST: this subframe is the last subframe of the A-MPDU
+ * @RX_FLAG_AMPDU_DELIM_CRC_ERROR: A delimiter CRC error has been detected
+ *    on this subframe
+ * @RX_FLAG_AMPDU_DELIM_CRC_KNOWN: The delimiter CRC field is known (the CRC
+ *    is stored in the @ampdu_delimiter_crc field)
+ * @RX_FLAG_MIC_STRIPPED: The mic was stripped of this packet. Decryption was
+ *    done by the hardware
+ * @RX_FLAG_ONLY_MONITOR: Report frame only to monitor interfaces without
+ *    processing it in any regular way.
+ *    This is useful if drivers offload some frames but still want to report
+ *    them for sniffing purposes.
+ * @RX_FLAG_SKIP_MONITOR: Process and report frame to all interfaces except
+ *    monitor interfaces.
+ *    This is useful if drivers offload some frames but still want to report
+ *    them for sniffing purposes.
+ * @RX_FLAG_AMSDU_MORE: Some drivers may prefer to report separate A-MSDU
+ *    subframes instead of a one huge frame for performance reasons.
+ *    All, but the last MSDU from an A-MSDU should have this flag set. E.g.
+ *    if an A-MSDU has 3 frames, the first 2 must have the flag set, while
+ *    the 3rd (last) one must not have this flag set. The flag is used to
+ *    deal with retransmission/duplication recovery properly since A-MSDU
+ *    subframes share the same sequence number. Reported subframes can be
+ *    either regular MSDU or singly A-MSDUs. Subframes must not be
+ *    interleaved with other frames.
+ * @RX_FLAG_RADIOTAP_VENDOR_DATA: This frame contains vendor-specific
+ *    radiotap data in the skb->data (before the frame) as described by
+ *    the &struct ieee80211_vendor_radiotap.
+ * @RX_FLAG_ALLOW_SAME_PN: Allow the same PN as same packet before.
+ *    This is used for AMSDU subframes which can have the same PN as
+ *    the first subframe.
+ * @RX_FLAG_ICV_STRIPPED: The ICV is stripped from this frame. CRC checking must
+ *    be done in the hardware.
+ */
+enum mac80211_rx_flags {
+    RX_FLAG_MMIC_ERROR        = BIT(0),
+    RX_FLAG_DECRYPTED        = BIT(1),
+    RX_FLAG_MACTIME_PLCP_START    = BIT(2),
+    RX_FLAG_MMIC_STRIPPED        = BIT(3),
+    RX_FLAG_IV_STRIPPED        = BIT(4),
+    RX_FLAG_FAILED_FCS_CRC        = BIT(5),
+    RX_FLAG_FAILED_PLCP_CRC     = BIT(6),
+    RX_FLAG_MACTIME_START        = BIT(7),
+    RX_FLAG_NO_SIGNAL_VAL        = BIT(8),
+    RX_FLAG_AMPDU_DETAILS        = BIT(9),
+    RX_FLAG_PN_VALIDATED        = BIT(10),
+    RX_FLAG_DUP_VALIDATED        = BIT(11),
+    RX_FLAG_AMPDU_LAST_KNOWN    = BIT(12),
+    RX_FLAG_AMPDU_IS_LAST        = BIT(13),
+    RX_FLAG_AMPDU_DELIM_CRC_ERROR    = BIT(14),
+    RX_FLAG_AMPDU_DELIM_CRC_KNOWN    = BIT(15),
+    RX_FLAG_MACTIME_END        = BIT(16),
+    RX_FLAG_ONLY_MONITOR        = BIT(17),
+    RX_FLAG_SKIP_MONITOR        = BIT(18),
+    RX_FLAG_AMSDU_MORE        = BIT(19),
+    RX_FLAG_RADIOTAP_VENDOR_DATA    = BIT(20),
+    RX_FLAG_MIC_STRIPPED        = BIT(21),
+    RX_FLAG_ALLOW_SAME_PN        = BIT(22),
+    RX_FLAG_ICV_STRIPPED        = BIT(23),
+};
+
+/**
+ * enum mac80211_rx_encoding_flags - MCS & bandwidth flags
+ *
+ * @RX_ENC_FLAG_SHORTPRE: Short preamble was used for this frame
+ * @RX_ENC_FLAG_SHORT_GI: Short guard interval was used
+ * @RX_ENC_FLAG_HT_GF: This frame was received in a HT-greenfield transmission,
+ *    if the driver fills this value it should add
+ *    %IEEE80211_RADIOTAP_MCS_HAVE_FMT
+ *    to hw.radiotap_mcs_details to advertise that fact
+ * @RX_ENC_FLAG_LDPC: LDPC was used
+ * @RX_ENC_FLAG_STBC_MASK: STBC 2 bit bitmask. 1 - Nss=1, 2 - Nss=2, 3 - Nss=3
+ * @RX_ENC_FLAG_BF: packet was beamformed
+ */
+enum mac80211_rx_encoding_flags {
+    RX_ENC_FLAG_SHORTPRE        = BIT(0),
+    RX_ENC_FLAG_SHORT_GI        = BIT(2),
+    RX_ENC_FLAG_HT_GF        = BIT(3),
+    RX_ENC_FLAG_STBC_MASK        = BIT(4) | BIT(5),
+    RX_ENC_FLAG_LDPC        = BIT(6),
+    RX_ENC_FLAG_BF            = BIT(7),
+};
+
+#define RX_ENC_FLAG_STBC_SHIFT        4
+
+enum mac80211_rx_encoding {
+    RX_ENC_LEGACY = 0,
+    RX_ENC_HT,
+    RX_ENC_VHT,
+};
+
+
+/** line 1159
+ * struct ieee80211_rx_status - receive status
+ *
+ * The low-level driver should provide this information (the subset
+ * supported by hardware) to the 802.11 code with each received
+ * frame, in the skb's control buffer (cb).
+ *
+ * @mactime: value in microseconds of the 64-bit Time Synchronization Function
+ *     (TSF) timer when the first data symbol (MPDU) arrived at the hardware.
+ * @boottime_ns: CLOCK_BOOTTIME timestamp the frame was received at, this is
+ *    needed only for beacons and probe responses that update the scan cache.
+ * @device_timestamp: arbitrary timestamp for the device, mac80211 doesn't use
+ *    it but can store it and pass it back to the driver for synchronisation
+ * @band: the active band when this frame was received
+ * @freq: frequency the radio was tuned to when receiving this frame, in MHz
+ *    This field must be set for management frames, but isn't strictly needed
+ *    for data (other) frames - for those it only affects radiotap reporting.
+ * @signal: signal strength when receiving this frame, either in dBm, in dB or
+ *    unspecified depending on the hardware capabilities flags
+ *    @IEEE80211_HW_SIGNAL_*
+ * @chains: bitmask of receive chains for which separate signal strength
+ *    values were filled.
+ * @chain_signal: per-chain signal strength, in dBm (unlike @signal, doesn't
+ *    support dB or unspecified units)
+ * @antenna: antenna used
+ * @rate_idx: index of data rate into band's supported rates or MCS index if
+ *    HT or VHT is used (%RX_FLAG_HT/%RX_FLAG_VHT)
+ * @nss: number of streams (VHT and HE only)
+ * @flag: %RX_FLAG_\*
+ * @encoding: &enum mac80211_rx_encoding
+ * @bw: &enum rate_info_bw
+ * @enc_flags: uses bits from &enum mac80211_rx_encoding_flags
+ * @rx_flags: internal RX flags for mac80211
+ * @ampdu_reference: A-MPDU reference number, must be a different value for
+ *    each A-MPDU but the same for each subframe within one A-MPDU
+ * @ampdu_delimiter_crc: A-MPDU delimiter CRC
+ */
+struct ieee80211_rx_status {
+    u64 mactime;
+    u64 boottime_ns;
+    u32 device_timestamp;
+    u32 ampdu_reference;
+    u32 flag;
+    u16 freq;
+    u8 enc_flags;
+    u8 encoding:2, bw:3;
+    u8 rate_idx;
+    u8 nss;
+    u8 rx_flags;
+    u8 band;
+    u8 antenna;
+    s8 signal;
+    u8 chains;
+    s8 chain_signal[IEEE80211_MAX_CHAINS];
+    u8 ampdu_delimiter_crc;
+};
+
+
 /** line 1305
  * enum ieee80211_smps_mode - spatial multiplexing power save mode
  *

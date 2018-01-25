@@ -105,8 +105,7 @@ private:
     
     // calib.c
     int iwl_send_calib_results(struct iwl_priv *priv); // line 93
-    static int iwl_calib_set(struct iwl_priv *priv,
-                      const struct iwl_calib_hdr *cmd, int len); // line 117
+    static int iwl_calib_set(struct iwl_priv *priv, const struct iwl_calib_hdr *cmd, int len); // line 117
     int iwl_sensitivity_write(struct iwl_priv *priv); // line 470
     int iwl_enhance_sensitivity_write(struct iwl_priv *priv); // line 505
     void iwl_init_sensitivity(struct iwl_priv *priv); // line 594
@@ -137,28 +136,13 @@ private:
     void iwl_setup_rx_scan_handlers(struct iwl_priv *priv); // line 357
     void iwl_init_scan_params(struct iwl_priv *priv); // line 929
     
-    static void iwl_rx_reply_scan(struct iwl_priv *priv,
-                                  struct iwl_rx_cmd_buffer *rxb);
-    
-    
-    static void iwl_rx_scan_start_notif(struct iwl_priv *priv,
-                                        struct iwl_rx_cmd_buffer *rxb);
-    
-    static void iwl_rx_scan_results_notif(struct iwl_priv *priv,
-                                          struct iwl_rx_cmd_buffer *rxb);
-    
-    static void iwl_rx_scan_complete_notif(struct iwl_priv *priv,
-                                           struct iwl_rx_cmd_buffer *rxb);
-    
+    static void iwl_rx_reply_scan(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb);
+    static void iwl_rx_scan_start_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb);
+    static void iwl_rx_scan_results_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb);
+    static void iwl_rx_scan_complete_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb);
     
     // agn.h
     void iwl_dvm_set_pmi(struct iwl_priv *priv, bool state);
-
-
-    
-    
-    
-
     
     IwlTransOps *_ops;
     IntelEeprom *_eeprom;

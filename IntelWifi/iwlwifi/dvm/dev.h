@@ -721,6 +721,7 @@ struct iwl_priv {
 	s32 last_temperature;
 
 	struct iwl_wipan_noa_data __rcu *noa_data;
+    vm_size_t noa_data_size;
 
 	/* Scan related variables */
 	unsigned long scan_start;
