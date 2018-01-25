@@ -33,6 +33,7 @@ public:
     
 private:
     // main.c
+    void iwl_update_chain_flags(struct iwl_priv *priv); // line 162
     int iwl_send_statistics_request(struct iwl_priv *priv, u8 flags, bool clear); // line 374
     void iwl_rf_kill_ct_config(struct iwl_priv *priv); // line 678
     int iwlagn_send_calib_cfg_rt(struct iwl_priv *priv, u32 cfg); // line 723
@@ -73,7 +74,9 @@ private:
     // sta.c
     u8 iwl_prep_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
                                       const u8 *addr, bool is_ap, struct ieee80211_sta *sta); // line 252
+    void iwl_clear_ucode_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 619
     int iwlagn_alloc_bcast_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 1276
+    int iwl_update_bcast_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 1316
     
     // lib.c
     void iwlagn_set_rxon_chain(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 790
@@ -82,9 +85,17 @@ private:
     
     // rxon.c
     void iwl_connection_init_rx_config(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 35
+    int iwlagn_disable_bss(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct iwl_rxon_cmd *send); // line 99
+    int iwlagn_disable_pan(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct iwl_rxon_cmd *send); // line 119
+    int iwlagn_disconn_pan(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct iwl_rxon_cmd *send); // line 156
+    void iwlagn_update_qos(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 172
     int iwlagn_send_rxon_assoc(struct iwl_priv *priv,
                                struct iwl_rxon_context *ctx); // line 212
+    int iwl_send_rxon_timing(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 292
+    int iwlagn_rxon_disconn(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 360
     int iwl_set_tx_power(struct iwl_priv *priv, s8 tx_power, bool force); // line 402
+    int iwlagn_set_pan_params(struct iwl_priv *priv); // line 529
+    int iwlagn_rxon_connect(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 560
     void iwl_set_flags_for_band(struct iwl_priv *priv,
                                 struct iwl_rxon_context *ctx,
                                 enum nl80211_band band,
@@ -96,6 +107,9 @@ private:
     int iwl_send_calib_results(struct iwl_priv *priv); // line 93
     static int iwl_calib_set(struct iwl_priv *priv,
                       const struct iwl_calib_hdr *cmd, int len); // line 117
+    int iwl_sensitivity_write(struct iwl_priv *priv); // line 470
+    int iwl_enhance_sensitivity_write(struct iwl_priv *priv); // line 505
+    void iwl_init_sensitivity(struct iwl_priv *priv); // line 594
     void iwl_reset_run_time_calib(struct iwl_priv *priv); // line 1098
     
     // power.c
@@ -136,6 +150,9 @@ private:
     static void iwl_rx_scan_complete_notif(struct iwl_priv *priv,
                                            struct iwl_rx_cmd_buffer *rxb);
     
+    
+    // agn.h
+    void iwl_dvm_set_pmi(struct iwl_priv *priv, bool state);
 
 
     

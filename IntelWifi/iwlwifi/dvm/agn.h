@@ -434,14 +434,6 @@ static inline int iwl_is_ready_rf(struct iwl_priv *priv)
 	return iwl_is_ready(priv);
 }
 
-static inline void iwl_dvm_set_pmi(struct iwl_priv *priv, bool state)
-{
-	if (state)
-		set_bit(STATUS_POWER_PMI, &priv->status);
-	else
-		clear_bit(STATUS_POWER_PMI, &priv->status);
-	iwl_trans_set_pmi(priv->trans, state);
-}
 
 #ifdef CONFIG_IWLWIFI_DEBUGFS
 int iwl_dbgfs_register(struct iwl_priv *priv, struct dentry *dbgfs_dir);
@@ -453,24 +445,24 @@ static inline int iwl_dbgfs_register(struct iwl_priv *priv,
 }
 #endif /* CONFIG_IWLWIFI_DEBUGFS */
 
-#ifdef CONFIG_IWLWIFI_DEBUG
-#define IWL_DEBUG_QUIET_RFKILL(m, fmt, args...)	\
-do {									\
-	if (!iwl_is_rfkill((m)))					\
-		IWL_ERR(m, fmt, ##args);				\
-	else								\
-		__iwl_err((m)->dev, true,				\
-			  !iwl_have_debug_level(IWL_DL_RADIO),		\
-			  fmt, ##args);					\
-} while (0)
-#else
-#define IWL_DEBUG_QUIET_RFKILL(m, fmt, args...)	\
-do {									\
-	if (!iwl_is_rfkill((m)))					\
-		IWL_ERR(m, fmt, ##args);				\
-	else								\
-		__iwl_err((m)->dev, true, true, fmt, ##args);	\
-} while (0)
-#endif				/* CONFIG_IWLWIFI_DEBUG */
+//#ifdef CONFIG_IWLWIFI_DEBUG
+//#define IWL_DEBUG_QUIET_RFKILL(m, fmt, args...)    \
+//do {                                    \
+//    if (!iwl_is_rfkill((m)))                    \
+//        IWL_ERR(m, fmt, ##args);                \
+//    else                                \
+//        __iwl_err((m)->dev, true,                \
+//              !iwl_have_debug_level(IWL_DL_RADIO),        \
+//              fmt, ##args);                    \
+//} while (0)
+//#else
+//#define IWL_DEBUG_QUIET_RFKILL(m, fmt, args...)    \
+//do {                                    \
+//    if (!iwl_is_rfkill((m)))                    \
+//        IWL_ERR(m, fmt, ##args);                \
+//    else                                \
+//        __iwl_err((m)->dev, true, true, fmt, ##args);    \
+//} while (0)
+//#endif                /* CONFIG_IWLWIFI_DEBUG */
 
 #endif /* __iwl_agn_h__ */

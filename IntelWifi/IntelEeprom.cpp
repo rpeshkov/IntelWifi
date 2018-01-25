@@ -801,8 +801,7 @@ int IntelEeprom::iwl_init_channel_map(struct iwl_nvm_data *data)
             n_channels++;
             
             channel->hw_value = eeprom_ch_array[ch_idx];
-            channel->band = (band == 1) ? NL80211_BAND_2GHZ
-            : NL80211_BAND_5GHZ;
+            channel->band = (band == 1) ? NL80211_BAND_2GHZ : NL80211_BAND_5GHZ;
             channel->center_freq =
             ieee80211_channel_to_frequency(
                                            channel->hw_value, channel->band);

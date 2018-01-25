@@ -26,7 +26,7 @@ void IwlDvmOpMode::iwl_connection_init_rx_config(struct iwl_priv *priv,
     
     if (!ctx->vif) {
         ctx->staging.dev_type = ctx->unused_devtype;
-    } else
+    } else {
         switch (ctx->vif->type) {
             case NL80211_IFTYPE_AP:
                 ctx->staging.dev_type = ctx->ap_devtype;
@@ -40,8 +40,7 @@ void IwlDvmOpMode::iwl_connection_init_rx_config(struct iwl_priv *priv,
             case NL80211_IFTYPE_ADHOC:
                 ctx->staging.dev_type = ctx->ibss_devtype;
                 ctx->staging.flags = RXON_FLG_SHORT_PREAMBLE_MSK;
-                ctx->staging.filter_flags = RXON_FILTER_BCON_AWARE_MSK |
-                RXON_FILTER_ACCEPT_GRP_MSK;
+                ctx->staging.filter_flags = RXON_FILTER_BCON_AWARE_MSK | RXON_FILTER_ACCEPT_GRP_MSK;
                 break;
                 
             case NL80211_IFTYPE_MONITOR:
@@ -53,6 +52,7 @@ void IwlDvmOpMode::iwl_connection_init_rx_config(struct iwl_priv *priv,
                         ctx->vif->type);
                 break;
         }
+    }
     
 #if 0
     /* TODO:  Figure out when short_preamble would be set and cache from
@@ -63,8 +63,7 @@ void IwlDvmOpMode::iwl_connection_init_rx_config(struct iwl_priv *priv,
         ctx->staging.flags |= RXON_FLG_SHORT_PREAMBLE_MSK;
 #endif
     
-    ctx->staging.channel =
-    cpu_to_le16(priv->hw->conf.chandef.chan->hw_value);
+    ctx->staging.channel = cpu_to_le16(priv->hw->conf.chandef.chan->hw_value);
     priv->band = priv->hw->conf.chandef.chan->band;
     
     iwl_set_flags_for_band(priv, ctx, priv->band, ctx->vif);
@@ -79,6 +78,105 @@ void IwlDvmOpMode::iwl_connection_init_rx_config(struct iwl_priv *priv,
     ctx->staging.ofdm_ht_dual_stream_basic_rates = 0xff;
     ctx->staging.ofdm_ht_triple_stream_basic_rates = 0xff;
 }
+
+// line 99
+int IwlDvmOpMode::iwlagn_disable_bss(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct iwl_rxon_cmd *send)
+{
+    __le32 old_filter = send->filter_flags;
+    int ret;
+    
+    send->filter_flags &= ~RXON_FILTER_ASSOC_MSK;
+    ret = iwl_dvm_send_cmd_pdu(priv, ctx->rxon_cmd, 0, sizeof(*send), send);
+    
+    send->filter_flags = old_filter;
+    
+    if (ret)
+        IWL_DEBUG_QUIET_RFKILL(priv,
+                               "Error clearing ASSOC_MSK on BSS (%d)\n", ret);
+    
+    return ret;
+}
+
+// line 119
+int IwlDvmOpMode::iwlagn_disable_pan(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct iwl_rxon_cmd *send)
+{
+    struct iwl_notification_wait disable_wait;
+    __le32 old_filter = send->filter_flags;
+    u8 old_dev_type = send->dev_type;
+    int ret;
+    static const u16 deactivate_cmd[] = {
+        REPLY_WIPAN_DEACTIVATION_COMPLETE
+    };
+    
+    iwl_init_notification_wait(&priv->notif_wait, &disable_wait,
+                               deactivate_cmd, ARRAY_SIZE(deactivate_cmd),
+                               NULL, NULL);
+    
+    send->filter_flags &= ~RXON_FILTER_ASSOC_MSK;
+    send->dev_type = RXON_DEV_TYPE_P2P;
+    ret = iwl_dvm_send_cmd_pdu(priv, ctx->rxon_cmd,
+                               0, sizeof(*send), send);
+    
+    send->filter_flags = old_filter;
+    send->dev_type = old_dev_type;
+    
+    if (ret) {
+        IWL_ERR(priv, "Error disabling PAN (%d)\n", ret);
+        iwl_remove_notification(&priv->notif_wait, &disable_wait);
+    } else {
+        ret = iwl_wait_notification(&priv->notif_wait, &disable_wait, 1000);
+        if (ret)
+            IWL_ERR(priv, "Timed out waiting for PAN disable\n");
+    }
+    
+    return ret;
+}
+
+// line 156
+int IwlDvmOpMode::iwlagn_disconn_pan(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct iwl_rxon_cmd *send)
+{
+    __le32 old_filter = send->filter_flags;
+    int ret;
+    
+    send->filter_flags &= ~RXON_FILTER_ASSOC_MSK;
+    ret = iwl_dvm_send_cmd_pdu(priv, ctx->rxon_cmd, 0,
+                               sizeof(*send), send);
+    
+    send->filter_flags = old_filter;
+    
+    return ret;
+}
+
+// line 172
+void IwlDvmOpMode::iwlagn_update_qos(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+{
+    int ret;
+    
+    if (!ctx->is_active)
+        return;
+    
+    ctx->qos_data.def_qos_parm.qos_flags = 0;
+    
+    if (ctx->qos_data.qos_active)
+        ctx->qos_data.def_qos_parm.qos_flags |=
+        QOS_PARAM_FLG_UPDATE_EDCA_MSK;
+    
+    if (ctx->ht.enabled)
+        ctx->qos_data.def_qos_parm.qos_flags |= QOS_PARAM_FLG_TGN_MSK;
+    
+    IWL_DEBUG_INFO(priv, "send QoS cmd with Qos active=%d FLAGS=0x%X\n",
+                   ctx->qos_data.qos_active,
+                   ctx->qos_data.def_qos_parm.qos_flags);
+    
+    ret = iwl_dvm_send_cmd_pdu(priv, ctx->qos_cmd, 0,
+                               sizeof(struct iwl_qosparam_cmd),
+                               &ctx->qos_data.def_qos_parm);
+    if (ret)
+        IWL_DEBUG_QUIET_RFKILL(priv, "Failed to update QoS\n");
+}
+
+
+
 
 // line 212
 int IwlDvmOpMode::iwlagn_send_rxon_assoc(struct iwl_priv *priv,
@@ -125,6 +223,157 @@ int IwlDvmOpMode::iwlagn_send_rxon_assoc(struct iwl_priv *priv,
                                CMD_ASYNC, sizeof(rxon_assoc), &rxon_assoc);
     return ret;
 }
+
+// line 257
+static u16 iwl_adjust_beacon_interval(u16 beacon_val, u16 max_beacon_val)
+{
+    u16 new_val;
+    u16 beacon_factor;
+    
+    /*
+     * If mac80211 hasn't given us a beacon interval, program
+     * the default into the device (not checking this here
+     * would cause the adjustment below to return the maximum
+     * value, which may break PAN.)
+     */
+    if (!beacon_val)
+        return DEFAULT_BEACON_INTERVAL;
+    
+    /*
+     * If the beacon interval we obtained from the peer
+     * is too large, we'll have to wake up more often
+     * (and in IBSS case, we'll beacon too much)
+     *
+     * For example, if max_beacon_val is 4096, and the
+     * requested beacon interval is 7000, we'll have to
+     * use 3500 to be able to wake up on the beacons.
+     *
+     * This could badly influence beacon detection stats.
+     */
+    
+    beacon_factor = (beacon_val + max_beacon_val) / max_beacon_val;
+    new_val = beacon_val / beacon_factor;
+    
+    if (!new_val)
+        new_val = max_beacon_val;
+    
+    return new_val;
+}
+
+
+// line 292
+int IwlDvmOpMode::iwl_send_rxon_timing(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+{
+    u64 tsf;
+    s32 interval_tm, rem;
+    struct ieee80211_conf *conf = NULL;
+    u16 beacon_int;
+    struct ieee80211_vif *vif = ctx->vif;
+    
+    conf = &priv->hw->conf;
+    
+    //lockdep_assert_held(&priv->mutex);
+    
+    memset(&ctx->timing, 0, sizeof(struct iwl_rxon_time_cmd));
+    
+    ctx->timing.timestamp = cpu_to_le64(priv->timestamp);
+    ctx->timing.listen_interval = cpu_to_le16(conf->listen_interval);
+    
+    beacon_int = vif ? vif->bss_conf.beacon_int : 0;
+    
+    /*
+     * TODO: For IBSS we need to get atim_window from mac80211,
+     *     for now just always use 0
+     */
+    ctx->timing.atim_window = 0;
+    
+    if (ctx->ctxid == IWL_RXON_CTX_PAN &&
+        (!ctx->vif || ctx->vif->type != NL80211_IFTYPE_STATION) &&
+        iwl_is_associated(priv, IWL_RXON_CTX_BSS) &&
+        priv->contexts[IWL_RXON_CTX_BSS].vif &&
+        priv->contexts[IWL_RXON_CTX_BSS].vif->bss_conf.beacon_int) {
+        ctx->timing.beacon_interval =
+        priv->contexts[IWL_RXON_CTX_BSS].timing.beacon_interval;
+        beacon_int = le16_to_cpu(ctx->timing.beacon_interval);
+    } else if (ctx->ctxid == IWL_RXON_CTX_BSS &&
+               iwl_is_associated(priv, IWL_RXON_CTX_PAN) &&
+               priv->contexts[IWL_RXON_CTX_PAN].vif &&
+               priv->contexts[IWL_RXON_CTX_PAN].vif->bss_conf.beacon_int &&
+               (!iwl_is_associated_ctx(ctx) || !ctx->vif ||
+                !ctx->vif->bss_conf.beacon_int)) {
+                   ctx->timing.beacon_interval =
+                   priv->contexts[IWL_RXON_CTX_PAN].timing.beacon_interval;
+                   beacon_int = le16_to_cpu(ctx->timing.beacon_interval);
+               } else {
+                   beacon_int = iwl_adjust_beacon_interval(beacon_int,
+                                                           IWL_MAX_UCODE_BEACON_INTERVAL * TIME_UNIT);
+                   ctx->timing.beacon_interval = cpu_to_le16(beacon_int);
+               }
+    
+    ctx->beacon_int = beacon_int;
+    
+    tsf = priv->timestamp; /* tsf is modifed by do_div: copy it */
+    interval_tm = beacon_int * TIME_UNIT;
+    rem = do_div(tsf, interval_tm);
+    ctx->timing.beacon_init_val = cpu_to_le32(interval_tm - rem);
+    
+    ctx->timing.dtim_period = vif ? (vif->bss_conf.dtim_period ?: 1) : 1;
+    
+    IWL_DEBUG_ASSOC(priv,
+                    "beacon interval %d beacon timer %d beacon tim %d\n",
+                    le16_to_cpu(ctx->timing.beacon_interval),
+                    le32_to_cpu(ctx->timing.beacon_init_val),
+                    le16_to_cpu(ctx->timing.atim_window));
+    
+    return iwl_dvm_send_cmd_pdu(priv, ctx->rxon_timing_cmd,
+                                0, sizeof(ctx->timing), &ctx->timing);
+}
+
+
+// line 360
+int IwlDvmOpMode::iwlagn_rxon_disconn(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+{
+    int ret;
+    struct iwl_rxon_cmd *active = (struct iwl_rxon_cmd *)&ctx->active;
+    
+    if (ctx->ctxid == IWL_RXON_CTX_BSS) {
+        ret = iwlagn_disable_bss(priv, ctx, &ctx->staging);
+    } else {
+        ret = iwlagn_disable_pan(priv, ctx, &ctx->staging);
+        if (ret)
+            return ret;
+        if (ctx->vif) {
+            ret = iwl_send_rxon_timing(priv, ctx);
+            if (ret) {
+                IWL_ERR(priv, "Failed to send timing (%d)!\n", ret);
+                return ret;
+            }
+            ret = iwlagn_disconn_pan(priv, ctx, &ctx->staging);
+        }
+    }
+    if (ret)
+        return ret;
+    
+    /*
+     * Un-assoc RXON clears the station table and WEP
+     * keys, so we have to restore those afterwards.
+     */
+    iwl_clear_ucode_stations(priv, ctx);
+    /* update -- might need P2P now */
+    iwl_update_bcast_station(priv, ctx);
+    
+    // TODO: Implement
+    //iwl_restore_stations(priv, ctx);
+//    ret = iwl_restore_default_wep_keys(priv, ctx);
+//    if (ret) {
+//        IWL_ERR(priv, "Failed to restore WEP keys (%d)\n", ret);
+//        return ret;
+//    }
+    
+    memcpy(active, &ctx->staging, sizeof(*active));
+    return 0;
+}
+
 
 // line 402
 int IwlDvmOpMode::iwl_set_tx_power(struct iwl_priv *priv, s8 tx_power, bool force)
@@ -185,6 +434,166 @@ int IwlDvmOpMode::iwl_set_tx_power(struct iwl_priv *priv, s8 tx_power, bool forc
     return ret;
 }
 
+// line 460
+int IwlDvmOpMode::iwlagn_rxon_connect(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+{
+    int ret;
+    struct iwl_rxon_cmd *active = (struct iwl_rxon_cmd *)&ctx->active;
+    
+    /* RXON timing must be before associated RXON */
+    if (ctx->ctxid == IWL_RXON_CTX_BSS) {
+        ret = iwl_send_rxon_timing(priv, ctx);
+        if (ret) {
+            IWL_ERR(priv, "Failed to send timing (%d)!\n", ret);
+            return ret;
+        }
+    }
+    /* QoS info may be cleared by previous un-assoc RXON */
+    iwlagn_update_qos(priv, ctx);
+    
+    /*
+     * We'll run into this code path when beaconing is
+     * enabled, but then we also need to send the beacon
+     * to the device.
+     */
+    if (ctx->vif && (ctx->vif->type == NL80211_IFTYPE_AP)) {
+        // TODO: Implement
+//        ret = iwlagn_update_beacon(priv, ctx->vif);
+//        if (ret) {
+//            IWL_ERR(priv,
+//                    "Error sending required beacon (%d)!\n",
+//                    ret);
+//            return ret;
+//        }
+    }
+    
+    priv->start_calib = 0;
+    /*
+     * Apply the new configuration.
+     *
+     * Associated RXON doesn't clear the station table in uCode,
+     * so we don't need to restore stations etc. after this.
+     */
+    ret = iwl_dvm_send_cmd_pdu(priv, ctx->rxon_cmd, 0,
+                               sizeof(struct iwl_rxon_cmd), &ctx->staging);
+    if (ret) {
+        IWL_ERR(priv, "Error setting new RXON (%d)\n", ret);
+        return ret;
+    }
+    memcpy(active, &ctx->staging, sizeof(*active));
+    
+    /* IBSS beacon needs to be sent after setting assoc */
+    // TODO: Implement
+//    if (ctx->vif && (ctx->vif->type == NL80211_IFTYPE_ADHOC))
+//        if (iwlagn_update_beacon(priv, ctx->vif))
+//            IWL_ERR(priv, "Error sending IBSS beacon\n");
+    iwl_init_sensitivity(priv);
+    
+    /*
+     * If we issue a new RXON command which required a tune then
+     * we must send a new TXPOWER command or we won't be able to
+     * Tx any frames.
+     *
+     * It's expected we set power here if channel is changing.
+     */
+    ret = iwl_set_tx_power(priv, priv->tx_power_next, true);
+    if (ret) {
+        IWL_ERR(priv, "Error sending TX power (%d)\n", ret);
+        return ret;
+    }
+    
+    return 0;
+}
+
+
+// line 529
+int IwlDvmOpMode::iwlagn_set_pan_params(struct iwl_priv *priv)
+{
+    struct iwl_wipan_params_cmd cmd;
+    struct iwl_rxon_context *ctx_bss, *ctx_pan;
+    int slot0 = 300, slot1 = 0;
+    int ret;
+    
+    if (priv->valid_contexts == BIT(IWL_RXON_CTX_BSS))
+        return 0;
+    
+//    BUILD_BUG_ON(NUM_IWL_RXON_CTX != 2);
+//
+//    lockdep_assert_held(&priv->mutex);
+    
+    ctx_bss = &priv->contexts[IWL_RXON_CTX_BSS];
+    ctx_pan = &priv->contexts[IWL_RXON_CTX_PAN];
+    
+    /*
+     * If the PAN context is inactive, then we don't need
+     * to update the PAN parameters, the last thing we'll
+     * have done before it goes inactive is making the PAN
+     * parameters be WLAN-only.
+     */
+    if (!ctx_pan->is_active)
+        return 0;
+    
+    memset(&cmd, 0, sizeof(cmd));
+    
+    /* only 2 slots are currently allowed */
+    cmd.num_slots = 2;
+    
+    cmd.slots[0].type = 0; /* BSS */
+    cmd.slots[1].type = 1; /* PAN */
+    
+    if (ctx_bss->vif && ctx_pan->vif) {
+        int bcnint = ctx_pan->beacon_int;
+        int dtim = ctx_pan->vif->bss_conf.dtim_period ?: 1;
+        
+        /* should be set, but seems unused?? */
+        cmd.flags |= cpu_to_le16(IWL_WIPAN_PARAMS_FLG_SLOTTED_MODE);
+        
+        if (ctx_pan->vif->type == NL80211_IFTYPE_AP &&
+            bcnint &&
+            bcnint != ctx_bss->beacon_int) {
+            IWL_ERR(priv,
+                    "beacon intervals don't match (%d, %d)\n",
+                    ctx_bss->beacon_int, ctx_pan->beacon_int);
+        } else
+            bcnint = max_t(int, bcnint,
+                           ctx_bss->beacon_int);
+        if (!bcnint)
+            bcnint = DEFAULT_BEACON_INTERVAL;
+        slot0 = bcnint / 2;
+        slot1 = bcnint - slot0;
+        
+        if (test_bit(STATUS_SCAN_HW, &priv->status) ||
+            (!ctx_bss->vif->bss_conf.idle &&
+             !ctx_bss->vif->bss_conf.assoc)) {
+                slot0 = dtim * bcnint * 3 - IWL_MIN_SLOT_TIME;
+                slot1 = IWL_MIN_SLOT_TIME;
+            } else if (!ctx_pan->vif->bss_conf.idle &&
+                       !ctx_pan->vif->bss_conf.assoc) {
+                slot1 = dtim * bcnint * 3 - IWL_MIN_SLOT_TIME;
+                slot0 = IWL_MIN_SLOT_TIME;
+            }
+    } else if (ctx_pan->vif) {
+        slot0 = 0;
+        slot1 = max_t(int, 1, ctx_pan->vif->bss_conf.dtim_period) *
+        ctx_pan->beacon_int;
+        slot1 = max_t(int, DEFAULT_BEACON_INTERVAL, slot1);
+        
+        if (test_bit(STATUS_SCAN_HW, &priv->status)) {
+            slot0 = slot1 * 3 - IWL_MIN_SLOT_TIME;
+            slot1 = IWL_MIN_SLOT_TIME;
+        }
+    }
+    
+    cmd.slots[0].width = cpu_to_le16(slot0);
+    cmd.slots[1].width = cpu_to_le16(slot1);
+    
+    ret = iwl_dvm_send_cmd_pdu(priv, REPLY_WIPAN_PARAMS, 0,
+                               sizeof(cmd), &cmd);
+    if (ret)
+        IWL_ERR(priv, "Error setting PAN parameters (%d)\n", ret);
+    
+    return ret;
+}
 
 
 // line 736
@@ -562,10 +971,10 @@ int IwlDvmOpMode::iwlagn_commit_rxon(struct iwl_priv *priv, struct iwl_rxon_cont
                    "Going to commit RXON\n"
                    "  * with%s RXON_FILTER_ASSOC_MSK\n"
                    "  * channel = %d\n"
-                   "  * bssid = %pM\n",
+                   "  * bssid = %02x:%02x:%02x:%02x:%02x:%02xM\n",
                    (new_assoc ? "" : "out"),
                    le16_to_cpu(ctx->staging.channel),
-                   ctx->staging.bssid_addr);
+                   ctx->staging.bssid_addr[0],ctx->staging.bssid_addr[1],ctx->staging.bssid_addr[2],ctx->staging.bssid_addr[3],ctx->staging.bssid_addr[4],ctx->staging.bssid_addr[5]);
     
     /*
      * Always clear associated first, but with the correct config.
@@ -574,16 +983,16 @@ int IwlDvmOpMode::iwlagn_commit_rxon(struct iwl_priv *priv, struct iwl_rxon_cont
      * set up filters in the device.
      */
     // TODO: Implement
-//    ret = iwlagn_rxon_disconn(priv, ctx);
-//    if (ret)
-//        return ret;
-//
-//    ret = iwlagn_set_pan_params(priv);
-//    if (ret)
-//        return ret;
-//
-//    if (new_assoc)
-//        return iwlagn_rxon_connect(priv, ctx);
+    ret = iwlagn_rxon_disconn(priv, ctx);
+    if (ret)
+        return ret;
+
+    ret = iwlagn_set_pan_params(priv);
+    if (ret)
+        return ret;
+
+    if (new_assoc)
+        return iwlagn_rxon_connect(priv, ctx);
     
     return 0;
 }

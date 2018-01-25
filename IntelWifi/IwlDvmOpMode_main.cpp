@@ -108,6 +108,20 @@ static const struct iwl_hcmd_arr iwl_dvm_groups[] = {
 
 //static const struct iwl_op_mode_ops iwl_dvm_ops;
 
+
+// line 162
+void IwlDvmOpMode::iwl_update_chain_flags(struct iwl_priv *priv)
+{
+    struct iwl_rxon_context *ctx;
+    
+    for_each_context(priv, ctx) {
+        iwlagn_set_rxon_chain(priv, ctx);
+        if (ctx->active.rx_chain != ctx->staging.rx_chain)
+            iwlagn_commit_rxon(priv, ctx);
+    }
+}
+
+
 // line 374
 int IwlDvmOpMode::iwl_send_statistics_request(struct iwl_priv *priv, u8 flags, bool clear)
 {
@@ -402,8 +416,7 @@ int IwlDvmOpMode::iwl_alive_start(struct iwl_priv *priv)
     iwlagn_send_tx_ant_config(priv, priv->nvm_data->valid_tx_ant);
     
     if (iwl_is_associated_ctx(ctx) && !priv->wowlan) {
-        struct iwl_rxon_cmd *active_rxon =
-        (struct iwl_rxon_cmd *)&ctx->active;
+        struct iwl_rxon_cmd *active_rxon = (struct iwl_rxon_cmd *)&ctx->active;
         /* apply any changes in staging */
         ctx->staging.filter_flags |= RXON_FILTER_ASSOC_MSK;
         active_rxon->filter_flags &= ~RXON_FILTER_ASSOC_MSK;
@@ -595,8 +608,7 @@ static int iwl_eeprom_init_hw_params(struct iwl_priv *priv)
         return -EINVAL;
     }
     
-    if (!data->sku_cap_11n_enable && !data->sku_cap_band_24GHz_enable &&
-        !data->sku_cap_band_52GHz_enable) {
+    if (!data->sku_cap_11n_enable && !data->sku_cap_band_24GHz_enable && !data->sku_cap_band_52GHz_enable) {
         IWL_ERR(priv, "Invalid device sku\n");
         return -EINVAL;
     }
@@ -607,13 +619,11 @@ static int iwl_eeprom_init_hw_params(struct iwl_priv *priv)
                    data->sku_cap_band_52GHz_enable ? "" : "NOT", "enabled",
                    data->sku_cap_11n_enable ? "" : "NOT", "enabled");
     
-    priv->hw_params.tx_chains_num =
-    num_of_ant(data->valid_tx_ant);
+    priv->hw_params.tx_chains_num = num_of_ant(data->valid_tx_ant);
     if (priv->cfg->rx_with_siso_diversity)
         priv->hw_params.rx_chains_num = 1;
     else
-        priv->hw_params.rx_chains_num =
-        num_of_ant(data->valid_rx_ant);
+        priv->hw_params.rx_chains_num = num_of_ant(data->valid_rx_ant);
     
     IWL_DEBUG_INFO(priv, "Valid Tx ant: 0x%X, Valid Rx ant: 0x%X\n",
                    data->valid_tx_ant,
@@ -819,6 +829,9 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
         priv->addresses[1].addr[5]++;
         priv->hw->wiphy->n_addresses++;
     }
+    
+    // TODO: This was added by me. Without it, channel is not initialized and rxon commit fails
+    priv->hw->conf.chandef.chan = &priv->nvm_data->channels[0];
 
     /************************
      * 4. Setup HW constants
@@ -999,5 +1012,18 @@ void IwlDvmOpMode::iwl_nic_config(struct iwl_priv *priv)
     if (priv->lib->nic_config)
         priv->lib->nic_config(priv);
 }
+
+void IwlDvmOpMode::iwl_dvm_set_pmi(struct iwl_priv *priv, bool state)
+{
+    if (state)
+        set_bit(STATUS_POWER_PMI, &priv->status);
+    else
+        clear_bit(STATUS_POWER_PMI, &priv->status);
+    
+    //iwl_trans_set_pmi(priv->trans, state);
+    _ops->set_pmi(priv->trans, state);
+    
+}
+
 
 

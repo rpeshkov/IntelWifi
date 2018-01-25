@@ -214,7 +214,7 @@ private:
     void iwl_trans_pcie_configure(struct iwl_trans *trans, const struct iwl_trans_config *trans_cfg); // line 1737
     
     void iwl_trans_pcie_free(struct iwl_trans* trans); // line 1776
-
+    void iwl_trans_pcie_set_pmi(struct iwl_trans *trans, bool state); // line 1821
     
     struct iwl_trans* iwl_trans_pcie_alloc(const struct iwl_cfg *cfg); // line 2988
     

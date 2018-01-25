@@ -159,6 +159,43 @@ static void iwl_sta_fill_lq(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
     link_cmd->sta_id = sta_id;
 }
 
+/** line 619
+ * iwl_clear_ucode_stations - clear ucode station table bits
+ *
+ * This function clears all the bits in the driver indicating
+ * which stations are active in the ucode. Call when something
+ * other than explicit station management would cause this in
+ * the ucode, e.g. unassociated RXON.
+ */
+void IwlDvmOpMode::iwl_clear_ucode_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+{
+    int i;
+    bool cleared = false;
+    
+    IWL_DEBUG_INFO(priv, "Clearing ucode stations in driver\n");
+    
+    //spin_lock_bh(&priv->sta_lock);
+    IOSimpleLockLock(priv->sta_lock);
+    for (i = 0; i < IWLAGN_STATION_COUNT; i++) {
+        if (ctx && ctx->ctxid != priv->stations[i].ctxid)
+            continue;
+        
+        if (priv->stations[i].used & IWL_STA_UCODE_ACTIVE) {
+            IWL_DEBUG_INFO(priv,
+                           "Clearing ucode active for station %d\n", i);
+            priv->stations[i].used &= ~IWL_STA_UCODE_ACTIVE;
+            cleared = true;
+        }
+    }
+    //spin_unlock_bh(&priv->sta_lock);
+    IOSimpleLockUnlock(priv->sta_lock);
+    
+    if (!cleared)
+        IWL_DEBUG_INFO(priv,
+                       "No active stations found to be cleared\n");
+}
+
+
 
 // line 881
 static struct iwl_link_quality_cmd *
@@ -226,3 +263,34 @@ int IwlDvmOpMode::iwlagn_alloc_bcast_station(struct iwl_priv *priv,
     
     return 0;
 }
+
+/** line 1316
+ * iwl_update_bcast_station - update broadcast station's LQ command
+ *
+ * Only used by iwlagn. Placed here to have all bcast station management
+ * code together.
+ */
+int IwlDvmOpMode::iwl_update_bcast_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+{
+    struct iwl_link_quality_cmd *link_cmd;
+    u8 sta_id = ctx->bcast_sta_id;
+    
+    link_cmd = iwl_sta_alloc_lq(priv, ctx, sta_id);
+    if (!link_cmd) {
+        IWL_ERR(priv, "Unable to initialize rate scaling for bcast station.\n");
+        return -ENOMEM;
+    }
+    
+    //spin_lock_bh(&priv->sta_lock);
+    IOSimpleLockLock(priv->sta_lock);
+    if (priv->stations[sta_id].lq)
+        IOFree(priv->stations[sta_id].lq, sizeof(struct iwl_link_quality_cmd));
+    else
+        IWL_DEBUG_INFO(priv, "Bcast station rate scaling has not been initialized yet.\n");
+    priv->stations[sta_id].lq = link_cmd;
+    //spin_unlock_bh(&priv->sta_lock);
+    IOSimpleLockUnlock(priv->sta_lock);
+    
+    return 0;
+}
+

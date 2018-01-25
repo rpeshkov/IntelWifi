@@ -56,6 +56,15 @@
 #define likely(x)       __builtin_expect(!!(x), 1)
 #define unlikely(x)     __builtin_expect(!!(x), 0)
 
+# define do_div(n,base) ({                    \
+uint32_t __base = (base);                \
+uint32_t __rem;                        \
+__rem = ((uint64_t)(n)) % __base;            \
+(n) = ((uint64_t)(n)) / __base;                \
+__rem;                            \
+})
+
+
 # define __acquires(x)
 # define __releases(x)
 # define __acquire(x) (void)0

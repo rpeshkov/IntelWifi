@@ -13,6 +13,7 @@
 #include <linux/types.h>
 #include <linux/netdevice.h>
 
+
 #define IEEE80211_FCTL_VERS        0x0003
 #define IEEE80211_FCTL_FTYPE        0x000c
 #define IEEE80211_FCTL_STYPE        0x00f0
@@ -132,9 +133,6 @@ struct mac_address {
     u8 addr[ETH_ALEN];
 };
 
-struct ieee80211_channel_switch {
-    int something;
-};
 
 
 /* Notice of Absence attribute - described in P2P spec 4.1.14 */

@@ -300,6 +300,32 @@ struct ieee80211_conf {
     enum ieee80211_smps_mode smps_mode;
 };
 
+/** line 1372
+ * struct ieee80211_channel_switch - holds the channel switch data
+ *
+ * The information provided in this structure is required for channel switch
+ * operation.
+ *
+ * @timestamp: value in microseconds of the 64-bit Time Synchronization
+ *    Function (TSF) timer when the frame containing the channel switch
+ *    announcement was received. This is simply the rx.mactime parameter
+ *    the driver passed into mac80211.
+ * @device_timestamp: arbitrary timestamp for the device, this is the
+ *    rx.device_timestamp parameter the driver passed to mac80211.
+ * @block_tx: Indicates whether transmission must be blocked before the
+ *    scheduled channel switch, as indicated by the AP.
+ * @chandef: the new channel to switch to
+ * @count: the number of TBTT's until the channel switch event
+ */
+struct ieee80211_channel_switch {
+    u64 timestamp;
+    u32 device_timestamp;
+    bool block_tx;
+    struct cfg80211_chan_def chandef;
+    u8 count;
+};
+
+
 
 /** line 1877
  * enum ieee80211_hw_flags - hardware flags

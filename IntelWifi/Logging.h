@@ -26,7 +26,7 @@
 #define IWL_DEBUG_FW(drv, args...) DebugLog("DEBUG FW: " args)
 #define IWL_WARN(drv, args...) TraceLog("WARN: " args)
 #define IWL_DEBUG_EEPROM(dev, args...) DebugLog("DEBUG EEPROM: " args)
-#define IWL_DEBUG_ISR(trans, args...) DebugLog("IntelWifi DEBUG ISR: " args)
+#define IWL_DEBUG_ISR(trans, args...) DebugLog("DEBUG ISR: " args)
 
 #define IWL_DEBUG_RF_KILL(trans, args...) DebugLog("DEBUG RFKILL: " args)
 
@@ -51,6 +51,7 @@
 #define IWL_DEBUG_SCAN(priv, args...) DebugLog("DEBUG SCAN: " args)
 #define IWL_DEBUG_RX(priv, args...) DebugLog("DEBUG RX: " args)
 #define IWL_DEBUG_DROP_LIMIT(priv, args...) DebugLog("DEBUG DROP LIMIT: " args)
+#define IWL_DEBUG_QUIET_RFKILL(priv, args...) DebugLog("DEBUG QUIET RFKILL: " args)
 
 
 #endif /* Logging_h */

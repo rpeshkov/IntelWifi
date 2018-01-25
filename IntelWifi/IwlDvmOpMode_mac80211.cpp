@@ -60,9 +60,9 @@ int IwlDvmOpMode::__iwl_up(struct iwl_priv *priv)
         goto error;
     }
 
-//    ret = iwl_alive_start(priv);
-//    if (ret)
-//        goto error;
+    ret = iwl_alive_start(priv);
+    if (ret)
+        goto error;
     return 0;
     
 error:
@@ -142,6 +142,7 @@ struct ieee80211_hw *IwlDvmOpMode::iwl_alloc_all(void)
     
     hw->wiphy = (struct wiphy *)IOMalloc(sizeof(wiphy));
     bzero(hw->wiphy, sizeof(wiphy));
+    hw->conf.chandef.chan = (struct ieee80211_channel *)IOMalloc(sizeof(struct ieee80211_channel));
     
     hw->priv = IOMalloc(sizeof(iwl_priv));
     if (!hw->priv)

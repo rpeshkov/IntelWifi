@@ -1649,6 +1649,14 @@ void IntelWifi::iwl_trans_pcie_free(struct iwl_trans *trans)
     iwl_trans_free(trans);
 }
 
+// line 1821
+void IntelWifi::iwl_trans_pcie_set_pmi(struct iwl_trans *trans, bool state)
+{
+    if (state)
+        set_bit(STATUS_TPOWER_PMI, &trans->status);
+    else
+        clear_bit(STATUS_TPOWER_PMI, &trans->status);
+}
 
 
 

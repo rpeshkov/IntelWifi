@@ -570,13 +570,11 @@ static void iwl6000_hw_set_hw_params(struct iwl_priv *priv)
 static int iwl6000_hw_channel_switch(struct iwl_priv *priv,
 				     struct ieee80211_channel_switch *ch_switch)
 {
-    // TODO: Implement
     return 0;
-    
-	/*
-	 * MULTI-FIXME
-	 * See iwlagn_mac_channel_switch.
-	 */
+//    /*
+//     * MULTI-FIXME
+//     * See iwlagn_mac_channel_switch.
+//     */
 //    struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
 //    struct iwl6000_channel_switch_cmd *cmd;
 //    u32 switch_time_in_usec, ucode_switch_time;
@@ -639,7 +637,7 @@ static int iwl6000_hw_channel_switch(struct iwl_priv *priv,
 //        ch_switch->chandef.chan->flags & IEEE80211_CHAN_RADAR;
 //
 //    err = iwl_dvm_send_cmd(priv, &hcmd);
-//    kfree(cmd);
+//    IOFree(cmd, sizeof(*cmd));
 //    return err;
 }
 

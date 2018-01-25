@@ -365,13 +365,13 @@ int IwlDvmOpMode::iwl_power_set_mode(struct iwl_priv *priv, struct iwl_powertabl
 			iwl_dvm_set_pmi(priv, false);
 
         // TODO: Port
-//        if (update_chains)
-//            iwl_update_chain_flags(priv);
-//        else
-//            IWL_DEBUG_POWER(priv,
-//                    "Cannot update the power, chain noise "
-//                    "calibration running: %d\n",
-//                    priv->chain_noise_data.state);
+        if (update_chains)
+            iwl_update_chain_flags(priv);
+        else
+            IWL_DEBUG_POWER(priv,
+                    "Cannot update the power, chain noise "
+                    "calibration running: %d\n",
+                    priv->chain_noise_data.state);
 
 		memcpy(&priv->power_data.sleep_cmd, cmd, sizeof(*cmd));
 	} else
