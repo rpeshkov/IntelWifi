@@ -891,12 +891,14 @@ static inline int iwl_trans_d3_resume(struct iwl_trans *trans,
 
 static inline void iwl_trans_ref(struct iwl_trans *trans)
 {
+    // TODO: Implement
 	if (trans->ops->ref)
 		trans->ops->ref(trans);
 }
 
 static inline void iwl_trans_unref(struct iwl_trans *trans)
 {
+    // TODO: Implement
 	if (trans->ops->unref)
 		trans->ops->unref(trans);
 }

@@ -9,13 +9,16 @@
 #ifndef IwlDvmOpMode_hpp
 #define IwlDvmOpMode_hpp
 
+extern "C" {
+#include <linux/mac80211.h>
+    #include <net/cfg80211.h>
+}
+
 #include <IOKit/IOBufferMemoryDescriptor.h>
 
 #include "IwlOpModeOps.h"
 
-extern "C" {
-#include <linux/mac80211.h>
-}
+
 
 
 class IwlDvmOpMode : public IwlOpModeOps {

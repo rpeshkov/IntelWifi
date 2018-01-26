@@ -222,6 +222,18 @@ void IwlDvmOpMode::iwl_do_scan_abort(struct iwl_priv *priv)
         IWL_DEBUG_SCAN(priv, "Successfully send scan abort\n");
 }
 
+/**
+ * iwl_scan_cancel - Cancel any currently executing HW scan
+ */
+int iwl_scan_cancel(struct iwl_priv *priv)
+{
+    IWL_DEBUG_SCAN(priv, "Queuing abort scan\n");
+    // TODO: Implement
+    //queue_work(priv->workqueue, &priv->abort_scan);
+    return 0;
+}
+
+
 
 /** line 216
  * iwl_scan_cancel_timeout - Cancel any currently executing HW scan

@@ -497,8 +497,7 @@ void IntelWifi::iwl_pcie_clear_cmd_in_flight(struct iwl_trans *trans)
     if (trans_pcie->ref_cmd_in_flight) {
         trans_pcie->ref_cmd_in_flight = false;
         IWL_DEBUG_RPM(trans, "clear ref_cmd_in_flight - unref\n");
-        // TODO: Implement ops
-        //iwl_trans_unref(trans);
+        iwl_trans_unref(trans);
     }
     
     if (!trans->cfg->base_params->apmg_wake_up_wa)
@@ -510,6 +509,62 @@ void IntelWifi::iwl_pcie_clear_cmd_in_flight(struct iwl_trans *trans)
     __iwl_trans_pcie_clear_bit(trans, CSR_GP_CNTRL,
                                CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
 }
+
+/* line 666
+ * iwl_pcie_txq_free - Deallocate DMA queue.
+ * @txq: Transmit queue to deallocate.
+ *
+ * Empty queue by removing and destroying all BD's.
+ * Free all buffers.
+ * 0-fill, but do not free "txq" descriptor structure.
+ */
+static void iwl_pcie_txq_free(struct iwl_trans *trans, int txq_id)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    struct iwl_txq *txq = trans_pcie->txq[txq_id];
+    //struct device *dev = trans->dev;
+    int i;
+    
+    if (WARN_ON(!txq))
+        return;
+    
+    // TODO: Implement
+    //iwl_pcie_txq_unmap(trans, txq_id);
+    
+    /* De-alloc array of command/tx buffers */
+    if (txq_id == trans_pcie->cmd_queue)
+        for (i = 0; i < txq->n_window; i++) {
+            //kzfree(txq->entries[i].cmd);
+            IOFree(txq->entries[i].cmd, sizeof(struct iwl_device_cmd));
+            // TODO: Implement
+            //kzfree(txq->entries[i].free_buf);
+        }
+    
+    /* De-alloc circular buffer of TFDs */
+    if (txq->tfds) {
+        // TODO: Implement
+//        dma_free_coherent(dev,
+//                          trans_pcie->tfd_size * TFD_QUEUE_SIZE_MAX,
+//                          txq->tfds, txq->dma_addr);
+        txq->dma_addr = 0;
+        txq->tfds = NULL;
+        
+//        dma_free_coherent(dev,
+//                          sizeof(*txq->first_tb_bufs) * txq->n_window,
+//                          txq->first_tb_bufs, txq->first_tb_dma);
+    }
+    
+    
+    //kfree(txq->entries);
+    IOFree(txq->entries, sizeof(struct iwl_pcie_txq_entry) * txq->n_window);
+    txq->entries = NULL;
+    
+    //del_timer_sync(&txq->stuck_timer);
+    
+    /* 0-fill queue descriptor structure */
+    bzero(txq, sizeof(*txq));
+}
+
 
 
 // line 715
@@ -602,6 +657,37 @@ out:
     IOSimpleLockUnlock(trans_pcie->irq_lock);
 }
 
+/* line 877
+ * iwl_trans_tx_free - Free TXQ Context
+ *
+ * Destroy all TX DMA queues and structures
+ */
+void iwl_pcie_tx_free(struct iwl_trans *trans)
+{
+    int txq_id;
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    memset(trans_pcie->queue_used, 0, sizeof(trans_pcie->queue_used));
+    
+    /* Tx queues */
+    if (trans_pcie->txq_memory) {
+        for (txq_id = 0;
+             txq_id < trans->cfg->base_params->num_of_queues;
+             txq_id++) {
+            iwl_pcie_txq_free(trans, txq_id);
+            trans_pcie->txq[txq_id] = NULL;
+        }
+    }
+    
+    IOFree(trans_pcie->txq_memory, sizeof(struct iwl_txq) * trans->cfg->base_params->num_of_queues);
+    trans_pcie->txq_memory = NULL;
+    
+//    iwl_pcie_free_dma_ptr(trans, &trans_pcie->kw);
+//
+//    iwl_pcie_free_dma_ptr(trans, &trans_pcie->scd_bc_tbls);
+}
+
+
 /* line 907
  * iwl_pcie_tx_alloc - allocate TX context
  * Allocate all Tx DMA structures and initialize them
@@ -663,8 +749,7 @@ int IntelWifi::iwl_pcie_tx_alloc(struct iwl_trans *trans)
     return 0;
     
 error:
-    // TODO: Implement
-    //iwl_pcie_tx_free(trans);
+    iwl_pcie_tx_free(trans);
     
     return ret;
 }
@@ -685,7 +770,6 @@ int IntelWifi::iwl_pcie_tx_init(struct iwl_trans *trans)
         alloc = true;
     }
     
-    //spin_lock(&trans_pcie->irq_lock);
     IOSimpleLockLock(trans_pcie->irq_lock);
     
     /* Turn off all Tx DMA fifos */
@@ -729,9 +813,8 @@ int IntelWifi::iwl_pcie_tx_init(struct iwl_trans *trans)
     return 0;
 error:
     /*Upon error, free only if we allocated something */
-    // TODO: Implement
-//    if (alloc)
-//        iwl_pcie_tx_free(trans);
+    if (alloc)
+        iwl_pcie_tx_free(trans);
     return ret;
 }
 
@@ -774,8 +857,7 @@ int IntelWifi::iwl_pcie_set_cmd_in_flight(struct iwl_trans *trans, const struct 
     if (!(cmd->flags & CMD_SEND_IN_IDLE) && !trans_pcie->ref_cmd_in_flight) {
         trans_pcie->ref_cmd_in_flight = true;
         IWL_DEBUG_RPM(trans, "set ref_cmd_in_flight - ref\n");
-        // TODO: Implement ops
-        //iwl_trans_ref(trans);
+        iwl_trans_ref(trans);
     }
     
     /*
@@ -784,8 +866,7 @@ int IntelWifi::iwl_pcie_set_cmd_in_flight(struct iwl_trans *trans, const struct 
      * returned. This needs to be done only on NICs that have
      * apmg_wake_up_wa set.
      */
-    if (trans->cfg->base_params->apmg_wake_up_wa &&
-        !trans_pcie->cmd_hold_nic_awake) {
+    if (trans->cfg->base_params->apmg_wake_up_wa && !trans_pcie->cmd_hold_nic_awake) {
         __iwl_trans_pcie_set_bit(trans, CSR_GP_CNTRL,
                                  CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
         
@@ -1128,10 +1209,10 @@ int IntelWifi::iwl_pcie_enqueue_hcmd(struct iwl_trans *trans,
 //            dup_buf = kmemdup(cmddata[i], cmdlen[i],
 //                              GFP_ATOMIC);
             dup_buf = IOMalloc(cmdlen[i]);
-            memcpy(dup_buf, cmddata[i], cmdlen[i]);
-            
             if (!dup_buf)
                 return -ENOMEM;
+            memcpy(dup_buf, cmddata[i], cmdlen[i]);
+           
         } else {
             /* NOCOPY must not be followed by normal! */
             if (WARN_ON(had_nocopy)) {
@@ -1549,12 +1630,6 @@ int IntelWifi::iwl_pcie_send_hcmd_sync(struct iwl_trans *trans,
         return ret;
     }
     
-    //IOSleep(2000);
-    
-//    ret = wait_event_timeout(trans_pcie->wait_command_queue,
-//                             !test_bit(STATUS_SYNC_HCMD_ACTIVE,
-//                                       &trans->status),
-//                             HOST_COMPLETE_TIMEOUT);
     IOLockLock(trans_pcie->wait_command_queue);
     AbsoluteTime deadline;
     clock_interval_to_deadline(HOST_COMPLETE_TIMEOUT, kMillisecondScale, (UInt64 *) &deadline);

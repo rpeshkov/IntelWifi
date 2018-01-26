@@ -55,6 +55,28 @@ int IwlDvmOpMode::iwlagn_send_tx_power(struct iwl_priv *priv)
                                 sizeof(tx_power_cmd), &tx_power_cmd);
 }
 
+int iwlagn_hwrate_to_mac80211_idx(u32 rate_n_flags, enum nl80211_band band)
+{
+    int idx = 0;
+    int band_offset = 0;
+    
+    /* HT rate format: mac80211 wants an MCS number, which is just LSB */
+    if (rate_n_flags & RATE_MCS_HT_MSK) {
+        idx = (rate_n_flags & 0xff);
+        return idx;
+        /* Legacy rate format, search for match in table */
+    } else {
+        if (band == NL80211_BAND_5GHZ)
+            band_offset = IWL_FIRST_OFDM_RATE;
+//        for (idx = band_offset; idx < IWL_RATE_COUNT_LEGACY; idx++)
+//            if (iwl_rates[idx].plcp == (rate_n_flags & 0xFF))
+//                return idx - band_offset;
+    }
+    
+    return -1;
+}
+
+
 /*
  * BT coex
  */

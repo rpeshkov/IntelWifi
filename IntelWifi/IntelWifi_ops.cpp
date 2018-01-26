@@ -23,8 +23,7 @@ void IntelWifi::op_mode_leave(struct iwl_trans *trans) {
 }
 
 void IntelWifi::set_pmi(struct iwl_trans *trans, bool state) {
-    //iwl_trans_set_pmi(trans, state);
-    iwl_trans_pcie_set_pmi(trans, state);
+    iwl_trans_set_pmi(trans, state);
 }
 
 void IntelWifi::configure(struct iwl_trans *trans, const struct iwl_trans_config *trans_cfg) {

@@ -36,3 +36,4 @@ int ieee80211_channel_to_frequency(int chan, enum nl80211_band band)
     }
     return 0; /* not supported */
 }
+

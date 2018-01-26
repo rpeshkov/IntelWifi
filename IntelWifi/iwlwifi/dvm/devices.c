@@ -27,7 +27,7 @@
 /*
  * DVM device-specific data & functions
  */
-//#include "iwl-io.h"
+#include "iwl-io.h"
 #include "iwl-prph.h"
 #include "iwl-eeprom-parse.h"
 
@@ -63,10 +63,9 @@ static void iwl1000_nic_config(struct iwl_priv *priv)
 {
 	/* Setting digital SVR for 1000 card to 1.32V */
 	/* locking is acquired in iwl_set_bits_mask_prph() function */
-    // TODO: Implement
-//    iwl_set_bits_mask_prph(priv->trans, APMG_DIGITAL_SVR_REG,
-//                APMG_SVR_DIGITAL_VOLTAGE_1_32,
-//                ~APMG_SVR_VOLTAGE_CONFIG_BIT_MSK);
+    iwl_set_bits_mask_prph(priv->trans, APMG_DIGITAL_SVR_REG,
+                APMG_SVR_DIGITAL_VOLTAGE_1_32,
+                ~APMG_SVR_VOLTAGE_CONFIG_BIT_MSK);
 }
 
 /**
@@ -200,9 +199,8 @@ static void iwl2000_set_ct_threshold(struct iwl_priv *priv)
 /* NIC configuration for 2000 series */
 static void iwl2000_nic_config(struct iwl_priv *priv)
 {
-    // TODO: Implement
-//    iwl_set_bit(priv->trans, CSR_GP_DRIVER_REG,
-//            CSR_GP_DRIVER_REG_BIT_RADIO_IQ_INVER);
+    iwl_set_bit(priv->trans, CSR_GP_DRIVER_REG,
+            CSR_GP_DRIVER_REG_BIT_RADIO_IQ_INVER);
 }
 
 static const struct iwl_sensitivity_ranges iwl2000_sensitivity = {
@@ -504,34 +502,33 @@ static void iwl6000_set_ct_threshold(struct iwl_priv *priv)
 /* NIC configuration for 6000 series */
 static void iwl6000_nic_config(struct iwl_priv *priv)
 {
-    // TODO: Implement
-//    switch (priv->cfg->device_family) {
-//    case IWL_DEVICE_FAMILY_6005:
-//    case IWL_DEVICE_FAMILY_6030:
-//    case IWL_DEVICE_FAMILY_6000:
-//        break;
-//    case IWL_DEVICE_FAMILY_6000i:
-//        /* 2x2 IPA phy type */
-//        iwl_write32(priv->trans, CSR_GP_DRIVER_REG,
-//                 CSR_GP_DRIVER_REG_BIT_RADIO_SKU_2x2_IPA);
-//        break;
-//    case IWL_DEVICE_FAMILY_6050:
-//        /* Indicate calibration version to uCode. */
-//        if (priv->nvm_data->calib_version >= 6)
-//            iwl_set_bit(priv->trans, CSR_GP_DRIVER_REG,
-//                    CSR_GP_DRIVER_REG_BIT_CALIB_VERSION6);
-//        break;
-//    case IWL_DEVICE_FAMILY_6150:
-//        /* Indicate calibration version to uCode. */
-//        if (priv->nvm_data->calib_version >= 6)
-//            iwl_set_bit(priv->trans, CSR_GP_DRIVER_REG,
-//                    CSR_GP_DRIVER_REG_BIT_CALIB_VERSION6);
-//        iwl_set_bit(priv->trans, CSR_GP_DRIVER_REG,
-//                CSR_GP_DRIVER_REG_BIT_6050_1x2);
-//        break;
-//    default:
-//        WARN_ON(1);
-//    }
+    switch (priv->cfg->device_family) {
+        case IWL_DEVICE_FAMILY_6005:
+        case IWL_DEVICE_FAMILY_6030:
+        case IWL_DEVICE_FAMILY_6000:
+            break;
+        case IWL_DEVICE_FAMILY_6000i:
+            /* 2x2 IPA phy type */
+            iwl_write32(priv->trans, CSR_GP_DRIVER_REG,
+                     CSR_GP_DRIVER_REG_BIT_RADIO_SKU_2x2_IPA);
+            break;
+        case IWL_DEVICE_FAMILY_6050:
+            /* Indicate calibration version to uCode. */
+            if (priv->nvm_data->calib_version >= 6)
+                iwl_set_bit(priv->trans, CSR_GP_DRIVER_REG,
+                        CSR_GP_DRIVER_REG_BIT_CALIB_VERSION6);
+            break;
+        case IWL_DEVICE_FAMILY_6150:
+            /* Indicate calibration version to uCode. */
+            if (priv->nvm_data->calib_version >= 6)
+                iwl_set_bit(priv->trans, CSR_GP_DRIVER_REG,
+                        CSR_GP_DRIVER_REG_BIT_CALIB_VERSION6);
+            iwl_set_bit(priv->trans, CSR_GP_DRIVER_REG,
+                    CSR_GP_DRIVER_REG_BIT_6050_1x2);
+            break;
+//        default:
+//            WARN_ON(1);
+    }
 }
 
 static const struct iwl_sensitivity_ranges iwl6000_sensitivity = {

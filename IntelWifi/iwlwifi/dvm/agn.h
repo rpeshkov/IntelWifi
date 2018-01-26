@@ -198,7 +198,7 @@ void iwlagn_temperature(struct iwl_priv *priv);
 #endif
 
 /* rx */
-//int iwlagn_hwrate_to_mac80211_idx(u32 rate_n_flags, enum nl80211_band band);
+int iwlagn_hwrate_to_mac80211_idx(u32 rate_n_flags, enum nl80211_band band);
 //void iwl_setup_rx_handlers(struct iwl_priv *priv);
 //void iwl_chswitch_done(struct iwl_priv *priv, bool is_success);
 
@@ -248,7 +248,7 @@ static inline bool iwl_is_tx_success(u32 status)
 //void iwlagn_post_scan(struct iwl_priv *priv);
 //int iwl_force_rf_reset(struct iwl_priv *priv, bool external);
 //void iwl_init_scan_params(struct iwl_priv *priv);
-//int iwl_scan_cancel(struct iwl_priv *priv);
+int iwl_scan_cancel(struct iwl_priv *priv);
 //void iwl_scan_cancel_timeout(struct iwl_priv *priv, unsigned long ms);
 //void iwl_force_scan_end(struct iwl_priv *priv);
 //void iwl_internal_short_hw_scan(struct iwl_priv *priv);

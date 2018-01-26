@@ -161,12 +161,6 @@ private:
     
     
     // trans.c
-    static u32 iwl_trans_pcie_read32(struct iwl_trans *trans, u32 ofs);
-    static void iwl_trans_pcie_write8(struct iwl_trans *trans, u32 ofs, u8 val);
-    static void iwl_trans_pcie_write32(struct iwl_trans *trans, u32 ofs, u32 val);
-    
-
-    
     void iwl_pcie_set_pwr(struct iwl_trans *trans, bool vaux); // line 186
     void iwl_pcie_apm_config(struct iwl_trans *trans); // line 204
     int iwl_pcie_apm_init(struct iwl_trans *trans); // line 232
@@ -217,7 +211,6 @@ private:
     void iwl_trans_pcie_configure(struct iwl_trans *trans, const struct iwl_trans_config *trans_cfg); // line 1737
     
     void iwl_trans_pcie_free(struct iwl_trans* trans); // line 1776
-    void iwl_trans_pcie_set_pmi(struct iwl_trans *trans, bool state); // line 1821
     
     struct iwl_trans* iwl_trans_pcie_alloc(const struct iwl_cfg *cfg); // line 2988
     

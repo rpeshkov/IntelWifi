@@ -216,8 +216,6 @@ void IntelWifi::iwl_pcie_rxq_inc_wr_ptr(struct iwl_trans *trans, struct iwl_rxq 
     
     rxq->write_actual = round_down(rxq->write, 8);
     
-    //DebugLog("WRITE ACTUAL: %u\n", rxq->write);
-    
     if (trans->cfg->mq_rx_supported)
         iwl_write32(trans, RFH_Q_FRBDCB_WIDX_TRG(rxq->id), rxq->write_actual);
     else
@@ -567,7 +565,6 @@ static void iwl_pcie_rxq_alloc_rbs(struct iwl_trans *trans, struct iwl_rxq *rxq)
             IOSimpleLockUnlock(rxq->lock);
             return;
         }
-        //spin_unlock(&rxq->lock);
         IOSimpleLockUnlock(rxq->lock);
         
         /* Alloc a new receive buffer */
@@ -575,22 +572,19 @@ static void iwl_pcie_rxq_alloc_rbs(struct iwl_trans *trans, struct iwl_rxq *rxq)
         if (!page)
             return;
         
-        //spin_lock(&rxq->lock);
         IOSimpleLockLock(rxq->lock);
         
         if (list_empty(&rxq->rx_used)) {
-            //spin_unlock(&rxq->lock);
             IOSimpleLockUnlock(rxq->lock);
             //__free_pages(page, trans_pcie->rx_page_order);
             page->complete();
             page->release();
-            //IOFree(page, PAGE_SIZE);
+            page = NULL;
             return;
         }
         rxb = list_first_entry(&rxq->rx_used, struct iwl_rx_mem_buffer,
                                list);
         list_del(&rxb->list);
-        //spin_unlock(&rxq->lock);
         IOSimpleLockUnlock(rxq->lock);
         
         //BUG_ON(rxb->page);
@@ -598,26 +592,20 @@ static void iwl_pcie_rxq_alloc_rbs(struct iwl_trans *trans, struct iwl_rxq *rxq)
         /* Get physical address of the RB */
         rxb->page_dma = page->getPhysicalSegment(0, 0);
         
-//        rxb->page_dma =
-//        dma_map_page(trans->dev, page, 0,
-//                     PAGE_SIZE << trans_pcie->rx_page_order,
-//                     DMA_FROM_DEVICE);
-//        if (dma_mapping_error(trans->dev, rxb->page_dma)) {
-//            rxb->page = NULL;
-//            spin_lock(&rxq->lock);
-//            list_add(&rxb->list, &rxq->rx_used);
-//            spin_unlock(&rxq->lock);
-//            __free_pages(page, trans_pcie->rx_page_order);
-//            return;
-//        }
+        if (!rxb->page_dma) {
+            page->complete();
+            page->release();
+            rxb->page = NULL;
+            
+            IOSimpleLockLock(rxq->lock);
+            list_add(&rxb->list, &rxq->rx_used);
+            IOSimpleLockUnlock(rxq->lock);
+            return;
+        }
         
-        //spin_lock(&rxq->lock);
         IOSimpleLockLock(rxq->lock);
-        
         list_add_tail(&rxb->list, &rxq->rx_free);
         rxq->free_count++;
-        
-        //spin_unlock(&rxq->lock);
         IOSimpleLockUnlock(rxq->lock);
     }
 }
@@ -631,22 +619,13 @@ static void iwl_pcie_free_rbs_pool(struct iwl_trans *trans)
     for (i = 0; i < RX_POOL_SIZE; i++) {
         if (!trans_pcie->rx_pool[i].page)
             continue;
-//        dma_unmap_page(trans->dev, trans_pcie->rx_pool[i].page_dma,
-//                       PAGE_SIZE << trans_pcie->rx_page_order,
-//                       DMA_FROM_DEVICE);
-//        __free_pages(trans_pcie->rx_pool[i].page,
-//                     trans_pcie->rx_page_order);
-        //IOFreePageable(trans_pcie->rx_pool[i].page, PAGE_SIZE);
         trans_pcie->rx_pool[i].page_dma = NULL;
-//        trans_pcie->rx_pool[i].page->complete();
-//        trans_pcie->rx_pool[i].page->release();
+        IOBufferMemoryDescriptor *p = static_cast<IOBufferMemoryDescriptor *>(trans_pcie->rx_pool[i].page);
+        p->complete();
+        p->release();
         trans_pcie->rx_pool[i].page = NULL;
     }
 }
-
-
-
-
 
 
 
@@ -795,7 +774,6 @@ int IntelWifi::_iwl_pcie_rx_init(struct iwl_trans *trans)
     IOSimpleLockUnlock(rba->lock);
     
     /* free all first - we might be reconfigured for a different size */
-    // TODO: Implement
     iwl_pcie_free_rbs_pool(trans);
     
     for (i = 0; i < RX_QUEUE_SIZE; i++)
@@ -845,7 +823,6 @@ int IntelWifi::_iwl_pcie_rx_init(struct iwl_trans *trans)
         rxb->invalid = true;
     }
     
-    // TODO: Implement
     iwl_pcie_rxq_alloc_rbs(trans, def_rxq);
     
     return 0;
@@ -1290,9 +1267,9 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans,
     
     /* page was stolen from us -- free our reference */
     if (page_stolen) {
-        //__free_pages(rxb->page, trans_pcie->rx_page_order);
-//        rxb->page->complete();
-//        rxb->page->release();
+        IOBufferMemoryDescriptor *page = static_cast<IOBufferMemoryDescriptor *>(rxb->page);
+        page->complete();
+        page->release();
         rxb->page = NULL;
     }
     
@@ -1362,13 +1339,13 @@ restart:
             
             if ((!vid || vid > ARRAY_SIZE(trans_pcie->global_table))) {
                 DebugLog("Invalid rxb index from HW %u\n", (u32)vid);
-                //iwl_force_nmi(trans);
+                iwl_force_nmi(trans);
                 goto out;
             }
             rxb = trans_pcie->global_table[vid - 1];
             if (rxb->invalid) {
                 DebugLog("Invalid rxb from HW %u\n", (u32)vid);
-                //iwl_force_nmi(trans);
+                iwl_force_nmi(trans);
                 goto out;
             }
             rxb->invalid = true;
@@ -1396,10 +1373,8 @@ restart:
             struct iwl_rb_allocator *rba = &trans_pcie->rba;
             
             /* Add the remaining empty RBDs for allocator use */
-            //spin_lock(&rba->lock);
             IOSimpleLockLock(rba->lock);
             list_splice_tail_init(&rxq->rx_used, &rba->rbd_empty);
-            //spin_unlock(&rba->lock);
             IOSimpleLockUnlock(rba->lock);
         } else if (emergency) {
             count++;
@@ -1420,7 +1395,6 @@ restart:
 out:
     /* Backtrack one entry */
     rxq->read = i;
-    //spin_unlock(&rxq->lock);
     IOSimpleLockUnlock(rxq->lock);
     
     /*
@@ -1698,10 +1672,8 @@ void IntelWifi::iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq
                 FH_RCSR_CHNL0_RX_IGNORE_RXF_EMPTY |
                 FH_RCSR_CHNL0_RX_CONFIG_IRQ_DEST_INT_HOST_VAL |
                 rb_size |
-                //(RX_RB_TIMEOUT << FH_RCSR_RX_CONFIG_REG_IRQ_RBTH_POS) |
+                (RX_RB_TIMEOUT << FH_RCSR_RX_CONFIG_REG_IRQ_RBTH_POS) |
                 (rfdnlog << FH_RCSR_RX_CONFIG_RBDCB_SIZE_POS));
-    
-    
     
     /* Set interrupt coalescing timer to default (2048 usecs) */
     iwl_write8(trans, CSR_INT_COALESCING, IWL_HOST_INT_TIMEOUT_DEF);

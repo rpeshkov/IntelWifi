@@ -14,6 +14,24 @@
 #include <linux/nl80211.h>
 
 /**
+ * enum ieee80211_band - supported frequency bands
+ *
+ * The bands are assigned this way because the supported
+ * bitrates differ in these bands.
+ *
+ * @IEEE80211_BAND_2GHZ: 2.4GHz ISM band
+ * @IEEE80211_BAND_5GHZ: around 5GHz band (4.9-5.7)
+ * @IEEE80211_NUM_BANDS: number of defined bands
+ */
+enum ieee80211_band {
+    IEEE80211_BAND_2GHZ = NL80211_BAND_2GHZ,
+    IEEE80211_BAND_5GHZ = NL80211_BAND_5GHZ,
+    
+    /* keep last */
+    IEEE80211_NUM_BANDS
+};
+
+/**
  * enum ieee80211_channel_flags - channel flags
  *
  * Channel flags set by the regulatory control code.
@@ -229,6 +247,7 @@ struct ieee80211_supported_band {
 
 int ieee80211_channel_to_frequency(int chan, enum nl80211_band band);
 
+
 /** line 409
  * struct cfg80211_chan_def - channel definition
  * @chan: the (control) channel
@@ -243,6 +262,28 @@ struct cfg80211_chan_def {
     u32 center_freq1;
     u32 center_freq2;
 };
+
+/**
+ * enum rate_info_bw - rate bandwidth information
+ *
+ * Used by the driver to indicate the rate bandwidth.
+ *
+ * @RATE_INFO_BW_5: 5 MHz bandwidth
+ * @RATE_INFO_BW_10: 10 MHz bandwidth
+ * @RATE_INFO_BW_20: 20 MHz bandwidth
+ * @RATE_INFO_BW_40: 40 MHz bandwidth
+ * @RATE_INFO_BW_80: 80 MHz bandwidth
+ * @RATE_INFO_BW_160: 160 MHz bandwidth
+ */
+enum rate_info_bw {
+    RATE_INFO_BW_20 = 0,
+    RATE_INFO_BW_5,
+    RATE_INFO_BW_10,
+    RATE_INFO_BW_40,
+    RATE_INFO_BW_80,
+    RATE_INFO_BW_160,
+};
+
 
 // line 1094
 #define IEEE80211_MAX_CHAINS    4

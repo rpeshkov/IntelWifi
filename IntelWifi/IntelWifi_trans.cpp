@@ -1646,14 +1646,6 @@ void IntelWifi::iwl_trans_pcie_free(struct iwl_trans *trans)
     iwl_trans_free(trans);
 }
 
-// line 1821
-void IntelWifi::iwl_trans_pcie_set_pmi(struct iwl_trans *trans, bool state)
-{
-    if (state)
-        set_bit(STATUS_TPOWER_PMI, &trans->status);
-    else
-        clear_bit(STATUS_TPOWER_PMI, &trans->status);
-}
 
 
 
@@ -1905,25 +1897,3 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
     
     return trans;
 }
-
-
-
-
-
-
-
-// MARK: IO
-
-
-
-void IntelWifi::iwl_trans_pcie_write32(struct iwl_trans *trans, u32 ofs, u32 val)
-{
-    OSWriteLittleInt32(IWL_TRANS_GET_PCIE_TRANS(trans)->hw_base, ofs, val);
-}
-
-
-u32 IntelWifi::iwl_trans_pcie_read32(struct iwl_trans *trans, u32 ofs)
-{
-    return OSReadLittleInt32(IWL_TRANS_GET_PCIE_TRANS(trans)->hw_base, ofs);
-}
-
