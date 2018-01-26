@@ -14,6 +14,9 @@ extern "C" {
 #include "iwlwifi/dvm/agn.h"
 #include "iwlwifi/iwl-drv.h"
 #include "iwlwifi/iwl-prph.h"
+#include "iwlwifi/iwl-io.h"
+#include "iwlwifi/iwl-eeprom-read.h"
+    #include "iwlwifi/iwl-eeprom-parse.h"
 }
 
 #define MAC_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
@@ -240,7 +243,7 @@ void IwlDvmOpMode::iwl_rf_kill_ct_config(struct iwl_priv *priv)
     struct iwl_ct_kill_throttling_config adv_cmd;
     int ret = 0;
     
-    _io->iwl_write32(CSR_UCODE_DRV_GP1_CLR,
+    iwl_write32(priv->trans, CSR_UCODE_DRV_GP1_CLR,
                 CSR_UCODE_DRV_GP1_REG_BIT_CT_KILL_EXIT);
     
     priv->thermal_throttle.ct_kill_toggle = false;
@@ -296,7 +299,6 @@ int IwlDvmOpMode::iwlagn_send_calib_cfg_rt(struct iwl_priv *priv, u32 cfg)
     
     
     return iwl_dvm_send_cmd(priv, &cmd);
-    //return 0;
 }
 
 // line 740
@@ -798,7 +800,11 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
         goto out_free_hw;
     
     /* Read the EEPROM */
-    if (!_eeprom->read()) {
+    
+    
+    
+    
+    if (iwl_read_eeprom(priv->trans, &priv->eeprom_blob, &priv->eeprom_blob_size)) {
         IWL_ERR(priv, "Unable to init EEPROM\n");
         goto out_free_hw;
     }
@@ -806,12 +812,12 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     /* Reset chip to save power until we load uCode during "up". */
     _ops->stop_device(priv->trans, true);
     
-    priv->nvm_data = _eeprom->parse();
+    priv->nvm_data = iwl_parse_eeprom_data(NULL, priv->cfg, priv->eeprom_blob, priv->eeprom_blob_size);
     
     if (!priv->nvm_data)
         goto out_free_eeprom_blob;
 
-    if (_eeprom->iwl_nvm_check_version(priv->nvm_data, priv->trans))
+    if (iwl_nvm_check_version(priv->nvm_data, priv->trans))
         goto out_free_eeprom;
     
     if (iwl_eeprom_init_hw_params(priv))
@@ -964,7 +970,7 @@ void IwlDvmOpMode::iwl_nic_config(struct iwl_priv *priv)
     //struct iwl_priv *priv = IWL_OP_MODE_GET_DVM(op_mode);
     
     /* SKU Control */
-    _io->iwl_trans_pcie_set_bits_mask(CSR_HW_IF_CONFIG_REG,
+    iwl_trans_set_bits_mask(priv->trans, CSR_HW_IF_CONFIG_REG,
                             CSR_HW_IF_CONFIG_REG_MSK_MAC_DASH |
                             CSR_HW_IF_CONFIG_REG_MSK_MAC_STEP,
                             (CSR_HW_REV_STEP(priv->trans->hw_rev) <<
@@ -982,7 +988,7 @@ void IwlDvmOpMode::iwl_nic_config(struct iwl_priv *priv)
         priv->nvm_data->radio_cfg_dash <<
         CSR_HW_IF_CONFIG_REG_POS_PHY_DASH;
         
-        _io->iwl_trans_pcie_set_bits_mask(CSR_HW_IF_CONFIG_REG,
+        iwl_trans_set_bits_mask(priv->trans, CSR_HW_IF_CONFIG_REG,
                                 CSR_HW_IF_CONFIG_REG_MSK_PHY_TYPE |
                                 CSR_HW_IF_CONFIG_REG_MSK_PHY_STEP |
                                 CSR_HW_IF_CONFIG_REG_MSK_PHY_DASH,
@@ -997,7 +1003,7 @@ void IwlDvmOpMode::iwl_nic_config(struct iwl_priv *priv)
     }
     
     /* set CSR_HW_CONFIG_REG for uCode use */
-    _io->iwl_set_bit(CSR_HW_IF_CONFIG_REG,
+    iwl_set_bit(priv->trans, CSR_HW_IF_CONFIG_REG,
                 CSR_HW_IF_CONFIG_REG_BIT_RADIO_SI |
                 CSR_HW_IF_CONFIG_REG_BIT_MAC_SI);
     
@@ -1005,7 +1011,7 @@ void IwlDvmOpMode::iwl_nic_config(struct iwl_priv *priv)
      * (PCIe power is lost before PERST# is asserted),
      * causing ME FW to lose ownership and not being able to obtain it back.
      */
-    _io->iwl_set_bits_mask_prph(APMG_PS_CTRL_REG,
+    iwl_set_bits_mask_prph(priv->trans, APMG_PS_CTRL_REG,
                            APMG_PS_CTRL_EARLY_PWR_OFF_RESET_DIS,
                            ~APMG_PS_CTRL_EARLY_PWR_OFF_RESET_DIS);
     

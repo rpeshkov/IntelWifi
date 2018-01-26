@@ -80,17 +80,17 @@ int IntelWifi::iwl_pcie_gen2_apm_init(struct iwl_trans *trans)
      * Disable L0s without affecting L1;
      * don't wait for ICH L0s (ICH bug W/A)
      */
-    io->iwl_set_bit(CSR_GIO_CHICKEN_BITS,
+    iwl_set_bit(trans, CSR_GIO_CHICKEN_BITS,
                 CSR_GIO_CHICKEN_BITS_REG_BIT_L1A_NO_L0S_RX);
     
     /* Set FH wait threshold to maximum (HW error during stress W/A) */
-    io->iwl_set_bit(CSR_DBG_HPET_MEM_REG, CSR_DBG_HPET_MEM_REG_VAL);
+    iwl_set_bit(trans, CSR_DBG_HPET_MEM_REG, CSR_DBG_HPET_MEM_REG_VAL);
     
     /*
      * Enable HAP INTA (interrupt from management bus) to
      * wake device's PCI Express link L1a -> L0s
      */
-    io->iwl_set_bit(CSR_HW_IF_CONFIG_REG,
+    iwl_set_bit(trans, CSR_HW_IF_CONFIG_REG,
                 CSR_HW_IF_CONFIG_REG_BIT_HAP_WAKE_L1A);
     
     iwl_pcie_apm_config(trans);
@@ -99,14 +99,14 @@ int IntelWifi::iwl_pcie_gen2_apm_init(struct iwl_trans *trans)
      * Set "initialization complete" bit to move adapter from
      * D0U* --> D0A* (powered-up active) state.
      */
-    io->iwl_set_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
+    iwl_set_bit(trans, CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
     
     /*
      * Wait for clock stabilization; once stabilized, access to
      * device-internal resources is supported, e.g. iwl_write_prph()
      * and accesses to uCode SRAM.
      */
-    ret = io->iwl_poll_bit(CSR_GP_CNTRL,
+    ret = iwl_poll_bit(trans, CSR_GP_CNTRL,
                        CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY,
                        CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY, 25000);
     if (ret < 0) {
@@ -128,13 +128,13 @@ void IntelWifi::iwl_pcie_gen2_apm_stop(struct iwl_trans *trans, bool op_mode_lea
             iwl_pcie_gen2_apm_init(trans);
         
         /* inform ME that we are leaving */
-        io->iwl_set_bit(CSR_DBG_LINK_PWR_MGMT_REG,
+        iwl_set_bit(trans, CSR_DBG_LINK_PWR_MGMT_REG,
                     CSR_RESET_LINK_PWR_MGMT_DISABLED);
-        io->iwl_set_bit(CSR_HW_IF_CONFIG_REG,
+        iwl_set_bit(trans, CSR_HW_IF_CONFIG_REG,
                     CSR_HW_IF_CONFIG_REG_PREPARE |
                     CSR_HW_IF_CONFIG_REG_ENABLE_PME);
         IODelay(1);
-        io->iwl_clear_bit(CSR_DBG_LINK_PWR_MGMT_REG,
+        iwl_clear_bit(trans, CSR_DBG_LINK_PWR_MGMT_REG,
                       CSR_RESET_LINK_PWR_MGMT_DISABLED);
         IODelay(5);
     }
@@ -150,7 +150,7 @@ void IntelWifi::iwl_pcie_gen2_apm_stop(struct iwl_trans *trans, bool op_mode_lea
      * Clear "initialization complete" bit to move adapter from
      * D0A* (powered-up Active) --> D0U* (Uninitialized) state.
      */
-    io->iwl_clear_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
+    iwl_clear_bit(trans, CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
 }
 
 void IntelWifi::_iwl_trans_pcie_gen2_stop_device(struct iwl_trans *trans, bool low_power)
@@ -190,7 +190,7 @@ void IntelWifi::_iwl_trans_pcie_gen2_stop_device(struct iwl_trans *trans, bool l
 //    iwl_pcie_ctxt_info_free(trans);
     
     /* Make sure (redundant) we've released our request to stay awake */
-    io->iwl_clear_bit(CSR_GP_CNTRL,
+    iwl_clear_bit(trans, CSR_GP_CNTRL,
                   CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
     
     /* Stop the device, and put it in low power state */
@@ -266,7 +266,7 @@ int IntelWifi::iwl_pcie_gen2_nic_init(struct iwl_trans *trans)
 //        return -ENOMEM;
     
     /* enable shadow regs in HW */
-    io->iwl_set_bit(CSR_MAC_SHADOW_REG_CTRL, 0x800FFFFF);
+    iwl_set_bit(trans, CSR_MAC_SHADOW_REG_CTRL, 0x800FFFFF);
     IWL_DEBUG_INFO(trans, "Enabling shadow registers in device\n");
     
     return 0;
@@ -306,7 +306,7 @@ int IntelWifi::iwl_trans_pcie_gen2_start_fw(struct iwl_trans *trans,
     
     iwl_enable_rfkill_int(trans);
     
-    io->iwl_write32(CSR_INT, 0xFFFFFFFF);
+    iwl_write32(trans, CSR_INT, 0xFFFFFFFF);
     
     /*
      * We enabled the RF-Kill interrupt and the handler may very
@@ -330,19 +330,18 @@ int IntelWifi::iwl_trans_pcie_gen2_start_fw(struct iwl_trans *trans,
     
     /* Someone called stop_device, don't try to start_fw */
     if (trans_pcie->is_down) {
-        IWL_WARN(trans,
-                 "Can't start_fw since the HW hasn't been started\n");
+        IWL_WARN(trans, "Can't start_fw since the HW hasn't been started\n");
         ret = -EIO;
         goto out;
     }
     
     /* make sure rfkill handshake bits are cleared */
-    io->iwl_write32(CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
-    io->iwl_write32(CSR_UCODE_DRV_GP1_CLR,
+    iwl_write32(trans, CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_SW_BIT_RFKILL);
+    iwl_write32(trans, CSR_UCODE_DRV_GP1_CLR,
                 CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
     
     /* clear (again), then enable host interrupts */
-    io->iwl_write32(CSR_INT, 0xFFFFFFFF);
+    iwl_write32(trans, CSR_INT, 0xFFFFFFFF);
     
     ret = iwl_pcie_gen2_nic_init(trans);
     if (ret) {

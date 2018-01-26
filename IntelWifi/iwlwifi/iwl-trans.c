@@ -110,7 +110,7 @@ struct iwl_trans *iwl_trans_alloc(unsigned int priv_size,
 	if (!trans)
 		return NULL;
     
-    memset(trans, 0, sizeof(*trans) + priv_size);
+    bzero(trans, sizeof(*trans) + priv_size);
     
     trans->priv_size = priv_size;
 

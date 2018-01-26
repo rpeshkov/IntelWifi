@@ -10,10 +10,8 @@
 
 #include "dev.h"
 
-IwlDvmOpMode::IwlDvmOpMode(IwlTransOps *ops, IntelIO *io, IntelEeprom *eeprom) {
-    _io = io;
+IwlDvmOpMode::IwlDvmOpMode(IwlTransOps *ops) {
     _ops = ops;
-    _eeprom = eeprom;
 }
 
 

@@ -9,8 +9,9 @@
 #ifndef IwlDvmOpMode_hpp
 #define IwlDvmOpMode_hpp
 
+#include <IOKit/IOBufferMemoryDescriptor.h>
+
 #include "IwlOpModeOps.h"
-#include "IntelEeprom.hpp"
 
 extern "C" {
 #include <linux/mac80211.h>
@@ -19,7 +20,7 @@ extern "C" {
 
 class IwlDvmOpMode : public IwlOpModeOps {
 public:
-    IwlDvmOpMode(IwlTransOps *ops, IntelIO *io, IntelEeprom *eeprom);
+    IwlDvmOpMode(IwlTransOps *ops);
     virtual struct ieee80211_hw *start(struct iwl_trans *trans,
                                 const struct iwl_cfg *cfg,
                                 const struct iwl_fw *fw,
@@ -145,9 +146,9 @@ private:
     void iwl_dvm_set_pmi(struct iwl_priv *priv, bool state);
     
     IwlTransOps *_ops;
-    IntelEeprom *_eeprom;
-    IntelIO *_io;
+    
     struct iwl_priv *priv;
 };
+
 
 #endif /* IwlDvmOpMode_hpp */

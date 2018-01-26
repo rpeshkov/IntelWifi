@@ -1,15 +1,6 @@
 /* add your code here */
 
-#include <IOKit/IOLib.h>
-#include <IOKit/IOBufferMemoryDescriptor.h>
-#include <IOKit/IODMACommand.h>
-#include <IOKit/IOTimerEventSource.h>
-#include <IOKit/IOFilterInterruptEventSource.h>
-#include <IOKit/pci/IOPCIDevice.h>
-#include <IOKit/network/IOEthernetController.h>
-#include <IOKit/network/IOEthernetInterface.h>
-#include <IOKit/network/IOPacketQueue.h>
-#include <IOKit/IOMemoryCursor.h>
+
 
 
 
@@ -23,12 +14,23 @@ extern "C" {
 #include "iwl-prph.h"
 #include "iwl-config.h"
 #include "iwl-eeprom-parse.h"
-#include "iwl-trans-pcie.h"
+#include "iwlwifi/pcie/internal.h"
+#include "iwlwifi/iwl-scd.h"
 }
+
+#include <IOKit/IOLib.h>
+#include <IOKit/IOBufferMemoryDescriptor.h>
+#include <IOKit/IODMACommand.h>
+#include <IOKit/IOTimerEventSource.h>
+#include <IOKit/IOFilterInterruptEventSource.h>
+#include <IOKit/pci/IOPCIDevice.h>
+#include <IOKit/network/IOEthernetController.h>
+#include <IOKit/network/IOEthernetInterface.h>
+#include <IOKit/network/IOPacketQueue.h>
+#include <IOKit/IOMemoryCursor.h>
 
 #include "Logging.h"
 
-#include "IntelEeprom.hpp"
 #include "IwlTransOps.h"
 #include "IwlDvmOpMode.hpp"
 
@@ -118,10 +120,6 @@ protected:
     IOEthernetStats *fEthernetStats;
     IOFilterInterruptEventSource* fInterruptSource;
     
-    IntelIO* io;
-    
-    IntelEeprom* eeprom;
-    
     IOMemoryMap *fMemoryMap;
     
     struct iwl_nvm_data *fNvmData;
@@ -134,8 +132,7 @@ private:
         RELEASE(fInterruptSource);
         RELEASE(fWorkLoop);
         RELEASE(mediumDict);
-        RELEASE(eeprom);
-        RELEASE(io);
+        
         RELEASE(fMemoryMap);
         if (fTrans) {
             iwl_trans_pcie_free(fTrans);
@@ -164,6 +161,12 @@ private:
     
     
     // trans.c
+    static u32 iwl_trans_pcie_read32(struct iwl_trans *trans, u32 ofs);
+    static void iwl_trans_pcie_write8(struct iwl_trans *trans, u32 ofs, u8 val);
+    static void iwl_trans_pcie_write32(struct iwl_trans *trans, u32 ofs, u32 val);
+    
+
+    
     void iwl_pcie_set_pwr(struct iwl_trans *trans, bool vaux); // line 186
     void iwl_pcie_apm_config(struct iwl_trans *trans); // line 204
     int iwl_pcie_apm_init(struct iwl_trans *trans); // line 232
@@ -313,33 +316,6 @@ private:
                           struct iwl_device_cmd *dev_cmd, int txq_id); // line 2256
     
     // SCD
-    void iwl_scd_txq_set_chain(struct iwl_trans *trans,
-                               u16 txq_id);
-    
-    
-    void iwl_scd_txq_enable_agg(struct iwl_trans *trans,
-                                u16 txq_id);
-    
-    void iwl_scd_txq_disable_agg(struct iwl_trans *trans,
-                                 u16 txq_id);
-    
-    void iwl_scd_disable_agg(struct iwl_trans *trans);
-    
-    void iwl_scd_activate_fifos(struct iwl_trans *trans);
-    
-    void iwl_scd_deactivate_fifos(struct iwl_trans *trans);
-    
-    void iwl_scd_enable_set_active(struct iwl_trans *trans,
-                                   u32 value);
-    
-    unsigned int SCD_QUEUE_WRPTR(unsigned int chnl);
-    
-    unsigned int SCD_QUEUE_RDPTR(unsigned int chnl);
-    
-    unsigned int SCD_QUEUE_STATUS_BITS(unsigned int chnl);
-    
-    void iwl_scd_txq_set_inactive(struct iwl_trans *trans,
-                                  u16 txq_id);
     
     inline void iwl_trans_txq_enable(struct iwl_trans *trans, int queue,
                                              int fifo, int sta_id, int tid,
@@ -378,13 +354,5 @@ private:
     
     IwlOpModeOps *opmode;
     struct ieee80211_hw *hw;
-    
-    
+  
 };
-
-static inline struct iwl_trans_pcie *
-IWL_TRANS_GET_PCIE_TRANS(struct iwl_trans *trans)
-{
-    return (struct iwl_trans_pcie *)trans->trans_specific;
-}
-

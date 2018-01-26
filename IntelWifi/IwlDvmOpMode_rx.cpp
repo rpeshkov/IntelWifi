@@ -237,7 +237,7 @@ static void iwlagn_recover_from_statistics(struct iwl_priv *priv,
                                            struct statistics_tx *tx,
                                            unsigned long stamp)
 {
-    unsigned int msecs;
+    unsigned long msecs;
 
     if (test_bit(STATUS_EXIT_PENDING, &priv->status))
         return;

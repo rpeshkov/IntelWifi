@@ -5,8 +5,7 @@
  *
  * GPL LICENSE SUMMARY
  *
- * Copyright(c) 2008 - 2014 Intel Corporation. All rights reserved.
- * Copyright(c) 2015 Intel Mobile Communications GmbH
+ * Copyright(c) 2014 Intel Mobile Communications GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
@@ -31,8 +30,7 @@
  *
  * BSD LICENSE
  *
- * Copyright(c) 2005 - 2014 Intel Corporation. All rights reserved.
- * Copyright(c) 2015 Intel Mobile Communications GmbH
+ * Copyright(c) 2014 Intel Mobile Communications GmbH
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,89 +58,86 @@
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  *****************************************************************************/
-#ifndef __iwl_eeprom_parse_h__
-#define __iwl_eeprom_parse_h__
 
-#include <linux/types.h>
-//#include <linux/if_ether.h>
-#include <net/cfg80211.h>
+#ifndef __iwl_scd_h__
+#define __iwl_scd_h__
+
 #include "iwl-trans.h"
+#include "iwl-io.h"
+#include "iwl-prph.h"
 
-#define ETH_ALEN 6
 
-struct iwl_nvm_data {
-	int n_hw_addrs;
-	u8 hw_addr[ETH_ALEN];
-
-	u8 calib_version;
-	__le16 calib_voltage;
-
-	__le16 raw_temperature;
-	__le16 kelvin_temperature;
-	__le16 kelvin_voltage;
-	__le16 xtal_calib[2];
-
-	bool sku_cap_band_24GHz_enable;
-	bool sku_cap_band_52GHz_enable;
-	bool sku_cap_11n_enable;
-	bool sku_cap_11ac_enable;
-	bool sku_cap_amt_enable;
-	bool sku_cap_ipan_enable;
-	bool sku_cap_mimo_disabled;
-
-	u16 radio_cfg_type;
-	u8 radio_cfg_step;
-	u8 radio_cfg_dash;
-	u8 radio_cfg_pnum;
-	u8 valid_tx_ant, valid_rx_ant;
-
-	u32 nvm_version;
-	s8 max_tx_pwr_half_dbm;
-
-	bool lar_enabled;
-	bool vht160_supported;
-	struct ieee80211_supported_band bands[NUM_NL80211_BANDS];
-	struct ieee80211_channel channels[];
-};
-
-/**
- * iwl_parse_eeprom_data - parse EEPROM data and return values
- *
- * @dev: device pointer we're parsing for, for debug only
- * @cfg: device configuration for parsing and overrides
- * @eeprom: the EEPROM data
- * @eeprom_size: length of the EEPROM data
- *
- * This function parses all EEPROM values we need and then
- * returns a (newly allocated) struct containing all the
- * relevant values for driver use. The struct must be freed
- * later with iwl_free_nvm_data().
- */
-struct iwl_nvm_data *
-iwl_parse_eeprom_data(struct device *dev, const struct iwl_cfg *cfg,
-		      const u8 *eeprom, size_t eeprom_size);
-
-int iwl_nvm_check_version(struct iwl_nvm_data *data,
-			  struct iwl_trans *trans);
-
-int iwl_init_sband_channels(struct iwl_nvm_data *data,
-			    struct ieee80211_supported_band *sband,
-			    int n_channels, enum nl80211_band band);
-
-void iwl_init_ht_hw_capab(const struct iwl_cfg *cfg,
-			  struct iwl_nvm_data *data,
-			  struct ieee80211_sta_ht_cap *ht_info,
-			  enum nl80211_band band,
-			  u8 tx_chains, u8 rx_chains);
-
-// https://github.com/spotify/linux/blob/master/lib/hweight.c
-static inline unsigned int hweight8(unsigned int w)
+static inline void iwl_scd_txq_set_chain(struct iwl_trans *trans,
+					 u16 txq_id)
 {
-    unsigned int res = w - ((w >> 1) & 0x55);
-    res = (res & 0x33) + ((res >> 2) & 0x33);
-    return (res + (res >> 4)) & 0x0F;
-};
+	iwl_set_bits_prph(trans, SCD_QUEUECHAIN_SEL, BIT(txq_id));
+}
 
+static inline void iwl_scd_txq_enable_agg(struct iwl_trans *trans,
+					  u16 txq_id)
+{
+	iwl_set_bits_prph(trans, SCD_AGGR_SEL, BIT(txq_id));
+}
 
-#endif /* __iwl_eeprom_parse_h__ */
+static inline void iwl_scd_txq_disable_agg(struct iwl_trans *trans,
+					   u16 txq_id)
+{
+	iwl_clear_bits_prph(trans, SCD_AGGR_SEL, BIT(txq_id));
+}
+
+static inline void iwl_scd_disable_agg(struct iwl_trans *trans)
+{
+	iwl_set_bits_prph(trans, SCD_AGGR_SEL, 0);
+}
+
+static inline void iwl_scd_activate_fifos(struct iwl_trans *trans)
+{
+	iwl_write_prph(trans, SCD_TXFACT, IWL_MASK(0, 7));
+}
+
+static inline void iwl_scd_deactivate_fifos(struct iwl_trans *trans)
+{
+	iwl_write_prph(trans, SCD_TXFACT, 0);
+}
+
+static inline void iwl_scd_enable_set_active(struct iwl_trans *trans,
+					     u32 value)
+{
+	iwl_write_prph(trans, SCD_EN_CTRL, value);
+}
+
+static inline unsigned int SCD_QUEUE_WRPTR(unsigned int chnl)
+{
+	if (chnl < 20)
+		return SCD_BASE + 0x18 + chnl * 4;
+	WARN_ON_ONCE(chnl >= 32);
+	return SCD_BASE + 0x284 + (chnl - 20) * 4;
+}
+
+static inline unsigned int SCD_QUEUE_RDPTR(unsigned int chnl)
+{
+	if (chnl < 20)
+		return SCD_BASE + 0x68 + chnl * 4;
+	WARN_ON_ONCE(chnl >= 32);
+	return SCD_BASE + 0x2B4 + chnl * 4;
+}
+
+static inline unsigned int SCD_QUEUE_STATUS_BITS(unsigned int chnl)
+{
+	if (chnl < 20)
+		return SCD_BASE + 0x10c + chnl * 4;
+	WARN_ON_ONCE(chnl >= 32);
+	return SCD_BASE + 0x334 + chnl * 4;
+}
+
+static inline void iwl_scd_txq_set_inactive(struct iwl_trans *trans,
+					    u16 txq_id)
+{
+	iwl_write_prph(trans, SCD_QUEUE_STATUS_BITS(txq_id),
+		       (0 << SCD_QUEUE_STTS_REG_POS_ACTIVE)|
+		       (1 << SCD_QUEUE_STTS_REG_POS_SCD_ACT_EN));
+}
+
+#endif

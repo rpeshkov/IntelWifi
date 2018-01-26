@@ -146,15 +146,7 @@ bool IntelWifi::start(IOService *provider) {
         releaseAll();
         return false;
     }
-    
-    
-    
-    eeprom = IntelEeprom::withIO(io, const_cast<struct iwl_cfg*>(fConfiguration), fTrans->hw_rev);
-    if (!eeprom) {
-        TraceLog("EEPROM init failed!");
-        releaseAll();
-        return false;
-    }
+
     
     /* if RTPM is in use, enable it in our device */
     if (fTrans->runtime_pm_mode != IWL_PLAT_PM_MODE_DISABLED) {
@@ -169,7 +161,7 @@ bool IntelWifi::start(IOService *provider) {
         //setIdleTimerPeriod(iwlwifi_mod_params.d0i3_timeout);
     }
     
-    opmode = new IwlDvmOpMode(this, io, eeprom);
+    opmode = new IwlDvmOpMode(this);
     hw = opmode->start(fTrans, fTrans->cfg, &fTrans->drv->fw, NULL);
     
     if (!hw) {
@@ -333,7 +325,7 @@ bool IntelWifi::interruptFilter(OSObject* owner, IOFilterInterruptEventSource * 
      * If we have something to service, the tasklet will re-enable ints.
      * If we *don't* have something, we'll re-enable before leaving here.
      */
-    me->io->iwl_write32(CSR_INT_MASK, 0x00000000);
+    iwl_write32(me->fTrans, CSR_INT_MASK, 0x00000000);
     
     return true;
 }

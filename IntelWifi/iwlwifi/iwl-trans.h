@@ -591,9 +591,9 @@ struct iwl_trans_ops {
 	void (*configure)(struct iwl_trans *trans,
 			  const struct iwl_trans_config *trans_cfg);
 	void (*set_pmi)(struct iwl_trans *trans, bool state);
-	bool (*grab_nic_access)(struct iwl_trans *trans, unsigned long *flags);
+	bool (*grab_nic_access)(struct iwl_trans *trans, IOInterruptState *state);
 	void (*release_nic_access)(struct iwl_trans *trans,
-				   unsigned long *flags);
+				   IOInterruptState *state);
 	void (*set_bits_mask)(struct iwl_trans *trans, u32 reg, u32 mask,
 			      u32 value);
 	void (*ref)(struct iwl_trans *trans);
@@ -1180,15 +1180,19 @@ iwl_trans_set_bits_mask(struct iwl_trans *trans, u32 reg, u32 mask, u32 value)
 	trans->ops->set_bits_mask(trans, reg, mask, value);
 }
 
-#define iwl_trans_grab_nic_access(trans, flags)	\
-	__cond_lock(nic_access,				\
-		    likely((trans)->ops->grab_nic_access(trans, flags)))
+//#define iwl_trans_grab_nic_access(trans, flags)	((trans)->ops->grab_nic_access(trans, flags))
 
-static inline void __releases(nic_access)
-iwl_trans_release_nic_access(struct iwl_trans *trans, unsigned long *flags)
+static inline bool
+iwl_trans_grab_nic_access(struct iwl_trans *trans, IOInterruptState *state)
 {
-	trans->ops->release_nic_access(trans, flags);
-	__release(nic_access);
+    return trans->ops->grab_nic_access(trans, state);
+}
+
+static inline void
+iwl_trans_release_nic_access(struct iwl_trans *trans, IOInterruptState *state)
+{
+	trans->ops->release_nic_access(trans, state);
+//	__release(nic_access);
 }
 
 static inline void iwl_trans_fw_error(struct iwl_trans *trans)

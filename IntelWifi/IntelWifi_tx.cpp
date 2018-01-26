@@ -201,13 +201,11 @@ void IntelWifi::iwl_pcie_txq_inc_wr_ptr(struct iwl_trans *trans,
          * uCode will wake up, and interrupt us again, so next
          * time we'll skip this part.
          */
-        reg = io->iwl_read32(CSR_UCODE_DRV_GP1);
+        reg = iwl_read32(trans, CSR_UCODE_DRV_GP1);
         
         if (reg & CSR_UCODE_DRV_GP1_BIT_MAC_SLEEP) {
-            IWL_DEBUG_INFO(trans, "Tx queue %d requesting wakeup, GP1 = 0x%x\n",
-                           txq_id, reg);
-            io->iwl_set_bit(CSR_GP_CNTRL,
-                        CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
+            IWL_DEBUG_INFO(trans, "Tx queue %d requesting wakeup, GP1 = 0x%x\n", txq_id, reg);
+            iwl_set_bit(trans, CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
             txq->need_update = true;
             return;
         }
@@ -219,8 +217,7 @@ void IntelWifi::iwl_pcie_txq_inc_wr_ptr(struct iwl_trans *trans,
      */
     IWL_DEBUG_TX(trans, "Q:%d WR: 0x%x\n", txq_id, txq->write_ptr);
     if (!txq->block)
-        io->iwl_write32(HBUS_TARG_WRPTR,
-                    txq->write_ptr | (txq_id << 8));
+        iwl_write32(trans, HBUS_TARG_WRPTR, txq->write_ptr | (txq_id << 8));
 }
 
 // line 292
@@ -510,7 +507,7 @@ void IntelWifi::iwl_pcie_clear_cmd_in_flight(struct iwl_trans *trans)
         return;
     
     trans_pcie->cmd_hold_nic_awake = false;
-    io->__iwl_trans_pcie_clear_bit(CSR_GP_CNTRL,
+    __iwl_trans_pcie_clear_bit(trans, CSR_GP_CNTRL,
                                CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
 }
 
@@ -530,24 +527,24 @@ void IntelWifi::iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr)
     memset(trans_pcie->queue_used, 0, sizeof(trans_pcie->queue_used));
     
     trans_pcie->scd_base_addr =
-    io->iwl_read_prph(SCD_SRAM_BASE_ADDR);
+    iwl_read_prph(trans, SCD_SRAM_BASE_ADDR);
     
 //    WARN_ON(scd_base_addr != 0 &&
 //            scd_base_addr != trans_pcie->scd_base_addr);
     
     /* reset context data, TX status and translation data */
-    io->iwl_trans_pcie_write_mem(trans_pcie->scd_base_addr +
+    iwl_trans_write_mem(trans, trans_pcie->scd_base_addr +
                         SCD_CONTEXT_MEM_LOWER_BOUND,
                         NULL, clear_dwords);
     
-    io->iwl_write_prph(SCD_DRAM_BASE_ADDR,
+    iwl_write_prph(trans, SCD_DRAM_BASE_ADDR,
                    (u32)trans_pcie->scd_bc_tbls.dma >> 10);
     
     /* The chain extension of the SCD doesn't work well. This feature is
      * enabled by default by the HW, so we need to disable it manually.
      */
     if (trans->cfg->base_params->scd_chain_ext_wa)
-        io->iwl_write_prph(SCD_CHAINEXT_EN, 0);
+        iwl_write_prph(trans, SCD_CHAINEXT_EN, 0);
     
     iwl_trans_ac_txq_enable(trans, trans_pcie->cmd_queue,
                             trans_pcie->cmd_fifo,
@@ -558,18 +555,18 @@ void IntelWifi::iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr)
     
     /* Enable DMA channel */
     for (chan = 0; chan < FH_TCSR_CHNL_NUM; chan++)
-        io->iwl_write_direct32(FH_TCSR_CHNL_TX_CONFIG_REG(chan),
+        iwl_write_direct32(trans, FH_TCSR_CHNL_TX_CONFIG_REG(chan),
                            FH_TCSR_TX_CONFIG_REG_VAL_DMA_CHNL_ENABLE |
                            FH_TCSR_TX_CONFIG_REG_VAL_DMA_CREDIT_ENABLE);
     
     /* Update FH chicken bits */
-    reg_val = io->iwl_read_direct32(FH_TX_CHICKEN_BITS_REG);
-    io->iwl_write_direct32(FH_TX_CHICKEN_BITS_REG,
+    reg_val = iwl_read_direct32(trans, FH_TX_CHICKEN_BITS_REG);
+    iwl_write_direct32(trans, FH_TX_CHICKEN_BITS_REG,
                        reg_val | FH_TX_CHICKEN_BITS_SCD_AUTO_RETRY_EN);
     
     /* Enable L1-Active */
     if (trans->cfg->device_family < IWL_DEVICE_FAMILY_8000)
-        io->iwl_clear_bits_prph(APMG_PCIDEV_STT_REG,
+        iwl_clear_bits_prph(trans, APMG_PCIDEV_STT_REG,
                             APMG_PCIDEV_STT_VAL_L1_ACT_DIS);
 }
 
@@ -583,23 +580,23 @@ void IntelWifi::iwl_pcie_tx_stop_fh(struct iwl_trans *trans)
 
     IOSimpleLockLock(trans_pcie->irq_lock);
     
-    if (!io->iwl_grab_nic_access(&state))
+    if (!iwl_trans_grab_nic_access(trans, &state))
         goto out;
     
     /* Stop each Tx DMA channel */
     for (ch = 0; ch < FH_TCSR_CHNL_NUM; ch++) {
-        io->iwl_write32(FH_TCSR_CHNL_TX_CONFIG_REG(ch), 0x0);
+        iwl_write32(trans, FH_TCSR_CHNL_TX_CONFIG_REG(ch), 0x0);
         mask |= FH_TSSR_TX_STATUS_REG_MSK_CHNL_IDLE(ch);
     }
     
     /* Wait for DMA channels to be idle */
-    ret = io->iwl_poll_bit(FH_TSSR_TX_STATUS_REG, mask, mask, 5000);
+    ret = iwl_poll_bit(trans, FH_TSSR_TX_STATUS_REG, mask, mask, 5000);
     if (ret < 0)
         IWL_ERR(trans,
                 "Failing on timeout while stopping DMA channel %d [0x%08x]\n",
-                ch, io->iwl_read32(FH_TSSR_TX_STATUS_REG));
+                ch, iwl_read32(trans, FH_TSSR_TX_STATUS_REG));
     
-    io->iwl_release_nic_access(&state);
+    iwl_trans_release_nic_access(trans, &state);
     
 out:
     IOSimpleLockUnlock(trans_pcie->irq_lock);
@@ -695,7 +692,7 @@ int IntelWifi::iwl_pcie_tx_init(struct iwl_trans *trans)
     iwl_scd_deactivate_fifos(trans);
     
     /* Tell NIC where to find the "keep warm" buffer */
-    io->iwl_write_direct32(FH_KW_MEM_ADDR_REG,
+    iwl_write_direct32(trans, FH_KW_MEM_ADDR_REG,
                        (u32)trans_pcie->kw.dma >> 4);
     
     // spin_unlock(&trans_pcie->irq_lock);
@@ -720,13 +717,13 @@ int IntelWifi::iwl_pcie_tx_init(struct iwl_trans *trans)
          * queue.
          * Circular buffer (TFD queue in DRAM) physical base address
          */
-        io->iwl_write_direct32(FH_MEM_CBBC_QUEUE(trans, txq_id),
+        iwl_write_direct32(trans, FH_MEM_CBBC_QUEUE(trans, txq_id),
                            (u32)trans_pcie->txq[txq_id]->dma_addr >> 8);
     }
     
-    io->iwl_set_bits_prph(SCD_GP_CTRL, SCD_GP_CTRL_AUTO_ACTIVE_MODE);
+    iwl_set_bits_prph(trans, SCD_GP_CTRL, SCD_GP_CTRL_AUTO_ACTIVE_MODE);
     if (trans->cfg->base_params->num_of_queues > 20)
-        io->iwl_set_bits_prph(SCD_GP_CTRL,
+        iwl_set_bits_prph(trans, SCD_GP_CTRL,
                           SCD_GP_CTRL_ENABLE_31_QUEUES);
     
     return 0;
@@ -789,16 +786,16 @@ int IntelWifi::iwl_pcie_set_cmd_in_flight(struct iwl_trans *trans, const struct 
      */
     if (trans->cfg->base_params->apmg_wake_up_wa &&
         !trans_pcie->cmd_hold_nic_awake) {
-        io->__iwl_trans_pcie_set_bit(CSR_GP_CNTRL,
+        __iwl_trans_pcie_set_bit(trans, CSR_GP_CNTRL,
                                  CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
         
-        ret = io->iwl_poll_bit(CSR_GP_CNTRL,
+        ret = iwl_poll_bit(trans, CSR_GP_CNTRL,
                            CSR_GP_CNTRL_REG_VAL_MAC_ACCESS_EN,
                            (CSR_GP_CNTRL_REG_FLAG_MAC_CLOCK_READY |
                             CSR_GP_CNTRL_REG_FLAG_GOING_TO_SLEEP),
                            15000);
         if (ret < 0) {
-            io->__iwl_trans_pcie_clear_bit(CSR_GP_CNTRL,
+            __iwl_trans_pcie_clear_bit(trans, CSR_GP_CNTRL,
                                        CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
             IWL_ERR(trans, "Failed to wake NIC for hcmd\n");
             return -EIO;
@@ -840,7 +837,7 @@ void IntelWifi::iwl_pcie_cmdq_reclaim(struct iwl_trans *trans, int txq_id, int i
         if (nfreed++ > 0) {
             IWL_ERR(trans, "HCMD skipped: index (%d) %d %d\n",
                     idx, txq->write_ptr, txq->read_ptr);
-            io->iwl_force_nmi(trans);
+            iwl_force_nmi(trans);
         }
     }
     
@@ -867,14 +864,14 @@ int IntelWifi::iwl_pcie_txq_set_ratid_map(struct iwl_trans *trans, u16 ra_tid,
     tbl_dw_addr = trans_pcie->scd_base_addr +
     SCD_TRANS_TBL_OFFSET_QUEUE(txq_id);
     
-    tbl_dw = io->iwl_trans_read_mem32(trans, tbl_dw_addr);
+    tbl_dw = iwl_trans_read_mem32(trans, tbl_dw_addr);
     
     if (txq_id & 0x1)
         tbl_dw = (scd_q2ratid << 16) | (tbl_dw & 0x0000FFFF);
     else
         tbl_dw = scd_q2ratid | (tbl_dw & 0xFFFF0000);
     
-    io->iwl_trans_write_mem32(trans, tbl_dw_addr, tbl_dw);
+    iwl_trans_write_mem32(trans, tbl_dw_addr, tbl_dw);
     
     return 0;
 }
@@ -959,33 +956,31 @@ bool IntelWifi::iwl_trans_pcie_txq_enable(struct iwl_trans *trans, int txq_id, u
      * Assumes that ssn_idx is valid (!= 0xFFF) */
     txq->read_ptr = (ssn & 0xff);
     txq->write_ptr = (ssn & 0xff);
-    io->iwl_write_direct32(HBUS_TARG_WRPTR,
-                       (ssn & 0xff) | (txq_id << 8));
+    iwl_write_direct32(trans, HBUS_TARG_WRPTR, (ssn & 0xff) | (txq_id << 8));
     
     if (cfg) {
         u8 frame_limit = cfg->frame_limit;
         
-        io->iwl_write_prph(SCD_QUEUE_RDPTR(txq_id), ssn);
+        iwl_write_prph(trans, SCD_QUEUE_RDPTR(txq_id), ssn);
         
         /* Set up Tx window size and frame limit for this queue */
-        io->iwl_trans_write_mem32(trans, trans_pcie->scd_base_addr +
+        iwl_trans_write_mem32(trans, trans_pcie->scd_base_addr +
                               SCD_CONTEXT_QUEUE_OFFSET(txq_id), 0);
-        io->iwl_trans_write_mem32(trans,
+        iwl_trans_write_mem32(trans,
                               trans_pcie->scd_base_addr +
                               SCD_CONTEXT_QUEUE_OFFSET(txq_id) + sizeof(u32),
                               SCD_QUEUE_CTX_REG2_VAL(WIN_SIZE, frame_limit) |
                               SCD_QUEUE_CTX_REG2_VAL(FRAME_LIMIT, frame_limit));
         
         /* Set up status area in SRAM, map to Tx DMA/FIFO, activate */
-        io->iwl_write_prph(SCD_QUEUE_STATUS_BITS(txq_id),
+        iwl_write_prph(trans, SCD_QUEUE_STATUS_BITS(txq_id),
                        (1 << SCD_QUEUE_STTS_REG_POS_ACTIVE) |
                        (cfg->fifo << SCD_QUEUE_STTS_REG_POS_TXF) |
                        (1 << SCD_QUEUE_STTS_REG_POS_WSL) |
                        SCD_QUEUE_STTS_REG_MSK);
         
         /* enable the scheduler for this queue (only) */
-        if (txq_id == trans_pcie->cmd_queue &&
-            trans_pcie->scd_set_active)
+        if (txq_id == trans_pcie->cmd_queue && trans_pcie->scd_set_active)
             iwl_scd_enable_set_active(trans, (u32)BIT(txq_id));
         
         IWL_DEBUG_TX_QUEUES(trans,
@@ -1038,7 +1033,7 @@ void IntelWifi::iwl_trans_pcie_txq_disable(struct iwl_trans *trans, int txq_id, 
     if (configure_scd) {
         iwl_scd_txq_set_inactive(trans, txq_id);
         
-        io->iwl_trans_pcie_write_mem(stts_addr, (void *)zero_val,
+        iwl_trans_write_mem(trans, stts_addr, (void *)zero_val,
                             ARRAY_SIZE(zero_val));
     }
     
@@ -1067,7 +1062,7 @@ int IntelWifi::iwl_pcie_enqueue_hcmd(struct iwl_trans *trans,
     struct iwl_txq *txq = trans_pcie->txq[trans_pcie->cmd_queue];
     struct iwl_device_cmd *out_cmd;
     struct iwl_cmd_meta *out_meta;
-    unsigned long flags;
+    IOInterruptState flags;
     void *dup_buf = NULL;
     dma_addr_t phys_addr;
     int idx;
@@ -1579,7 +1574,7 @@ int IntelWifi::iwl_pcie_send_hcmd_sync(struct iwl_trans *trans,
                        iwl_get_cmd_string(trans, cmd->id));
         ret = -ETIMEDOUT;
 
-        io->iwl_force_nmi(trans);
+        iwl_force_nmi(trans);
         // TODO: Implement
         //iwl_trans_fw_error(trans);
 

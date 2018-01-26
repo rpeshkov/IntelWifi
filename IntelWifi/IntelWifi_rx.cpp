@@ -177,12 +177,12 @@ __le32 IntelWifi::iwl_pcie_dma_addr2rbd_ptr(dma_addr_t dma_addr)
 int IntelWifi::iwl_pcie_rx_stop(struct iwl_trans *trans)
 {
     if (trans->cfg->mq_rx_supported) {
-        io->iwl_write_prph(RFH_RXF_DMA_CFG, 0);
-        return io->iwl_poll_prph_bit(RFH_GEN_STATUS,
+        iwl_write_prph(trans, RFH_RXF_DMA_CFG, 0);
+        return iwl_poll_prph_bit(trans, RFH_GEN_STATUS,
                                  RXF_DMA_IDLE, RXF_DMA_IDLE, 1000);
     } else {
-        io->iwl_write_direct32(FH_MEM_RCSR_CHNL0_CONFIG_REG, 0);
-        return io->iwl_poll_direct_bit(FH_MEM_RSSR_RX_STATUS_REG,
+        iwl_write_direct32(trans, FH_MEM_RCSR_CHNL0_CONFIG_REG, 0);
+        return iwl_poll_direct_bit(trans, FH_MEM_RSSR_RX_STATUS_REG,
                                    FH_RSSR_CHNL0_RX_STATUS_CHNL_IDLE,
                                    1000);
     }
@@ -204,11 +204,11 @@ void IntelWifi::iwl_pcie_rxq_inc_wr_ptr(struct iwl_trans *trans, struct iwl_rxq 
      */
     if (!trans->cfg->base_params->shadow_reg_enable &&
         test_bit(STATUS_TPOWER_PMI, &trans->status)) {
-        reg = io->iwl_read32(CSR_UCODE_DRV_GP1);
+        reg = iwl_read32(trans, CSR_UCODE_DRV_GP1);
         
         if (reg & CSR_UCODE_DRV_GP1_BIT_MAC_SLEEP) {
             IWL_DEBUG_INFO(trans, "Rx queue requesting wakeup, GP1 = 0x%x\n", reg);
-            io->iwl_set_bit(CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
+            iwl_set_bit(trans, CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
             rxq->need_update = true;
             return;
         }
@@ -219,10 +219,9 @@ void IntelWifi::iwl_pcie_rxq_inc_wr_ptr(struct iwl_trans *trans, struct iwl_rxq 
     //DebugLog("WRITE ACTUAL: %u\n", rxq->write);
     
     if (trans->cfg->mq_rx_supported)
-        io->iwl_write32(RFH_Q_FRBDCB_WIDX_TRG(rxq->id),
-                    rxq->write_actual);
+        iwl_write32(trans, RFH_Q_FRBDCB_WIDX_TRG(rxq->id), rxq->write_actual);
     else
-        io->iwl_write32(FH_RSCSR_CHNL0_WPTR, rxq->write_actual);
+        iwl_write32(trans, FH_RSCSR_CHNL0_WPTR, rxq->write_actual);
 }
 
 void IntelWifi::iwl_pcie_rxq_check_wrptr(struct iwl_trans *trans)
@@ -639,8 +638,8 @@ static void iwl_pcie_free_rbs_pool(struct iwl_trans *trans)
 //                     trans_pcie->rx_page_order);
         //IOFreePageable(trans_pcie->rx_pool[i].page, PAGE_SIZE);
         trans_pcie->rx_pool[i].page_dma = NULL;
-        trans_pcie->rx_pool[i].page->complete();
-        trans_pcie->rx_pool[i].page->release();
+//        trans_pcie->rx_pool[i].page->complete();
+//        trans_pcie->rx_pool[i].page->release();
         trans_pcie->rx_pool[i].page = NULL;
     }
 }
@@ -670,9 +669,9 @@ void IntelWifi::iwl_pcie_enable_rx_wake(struct iwl_trans *trans, bool enable)
      * bug where shadow registers are not in the retention list and their
      * value is lost when NIC powers down
      */
-    io->iwl_set_bit(CSR_MAC_SHADOW_REG_CTRL,
+    iwl_set_bit(trans, CSR_MAC_SHADOW_REG_CTRL,
                 CSR_MAC_SHADOW_REG_CTRL_RX_WAKE);
-    io->iwl_set_bit(CSR_MAC_SHADOW_REG_CTL2,
+    iwl_set_bit(trans, CSR_MAC_SHADOW_REG_CTL2,
                 CSR_MAC_SHADOW_REG_CTL2_RX_WAKE);
 }
 
@@ -697,31 +696,31 @@ void IntelWifi::iwl_pcie_rx_mq_hw_init(struct iwl_trans *trans)
             rb_size = RFH_RXF_DMA_RB_SIZE_4K;
     }
     
-    if (!io->iwl_grab_nic_access(&state))
+    if (!iwl_trans_grab_nic_access(trans, &state))
         return;
     
     /* Stop Rx DMA */
-    io->iwl_write_prph_no_grab(RFH_RXF_DMA_CFG, 0);
+    iwl_write_prph_no_grab(trans, RFH_RXF_DMA_CFG, 0);
     /* disable free amd used rx queue operation */
-    io->iwl_write_prph_no_grab(RFH_RXF_RXQ_ACTIVE, 0);
+    iwl_write_prph_no_grab(trans, RFH_RXF_RXQ_ACTIVE, 0);
     
     for (i = 0; i < trans->num_rx_queues; i++) {
         /* Tell device where to find RBD free table in DRAM */
-        io->iwl_write_prph64_no_grab(
+        iwl_write_prph64_no_grab(trans,
                                  RFH_Q_FRBDCB_BA_LSB(i),
                                  trans_pcie->rxq[i].bd_dma);
         /* Tell device where to find RBD used table in DRAM */
-        io->iwl_write_prph64_no_grab(
+        iwl_write_prph64_no_grab(trans,
                                  RFH_Q_URBDCB_BA_LSB(i),
                                  trans_pcie->rxq[i].used_bd_dma);
         /* Tell device where in DRAM to update its Rx status */
-        io->iwl_write_prph64_no_grab(
+        iwl_write_prph64_no_grab(trans,
                                  RFH_Q_URBD_STTS_WPTR_LSB(i),
                                  trans_pcie->rxq[i].rb_stts_dma);
         /* Reset device indice tables */
-        io->iwl_write_prph_no_grab(RFH_Q_FRBDCB_WIDX(i), 0);
-        io->iwl_write_prph_no_grab(RFH_Q_FRBDCB_RIDX(i), 0);
-        io->iwl_write_prph_no_grab(RFH_Q_URBDCB_WIDX(i), 0);
+        iwl_write_prph_no_grab(trans, RFH_Q_FRBDCB_WIDX(i), 0);
+        iwl_write_prph_no_grab(trans, RFH_Q_FRBDCB_RIDX(i), 0);
+        iwl_write_prph_no_grab(trans, RFH_Q_URBDCB_WIDX(i), 0);
         
         enabled |= BIT(i) | BIT(i + 16);
     }
@@ -733,7 +732,7 @@ void IntelWifi::iwl_pcie_rx_mq_hw_init(struct iwl_trans *trans)
      * Drop frames that exceed RB size
      * 512 RBDs
      */
-    io->iwl_write_prph_no_grab(RFH_RXF_DMA_CFG,
+    iwl_write_prph_no_grab(trans, RFH_RXF_DMA_CFG,
                            RFH_DMA_EN_ENABLE_VAL | rb_size |
                            RFH_RXF_DMA_MIN_RB_4_8 |
                            RFH_RXF_DMA_DROP_TOO_LARGE_MASK |
@@ -744,7 +743,7 @@ void IntelWifi::iwl_pcie_rx_mq_hw_init(struct iwl_trans *trans)
      * Set RX DMA chunk size to 64B for IOSF and 128B for PCIe
      * Default queue is 0
      */
-    io->iwl_write_prph_no_grab(RFH_GEN_CFG,
+    iwl_write_prph_no_grab(trans, RFH_GEN_CFG,
                            (u32)(RFH_GEN_CFG_RFH_DMA_SNOOP |
                            RFH_GEN_CFG_VAL(DEFAULT_RXQ_NUM, 0) |
                            RFH_GEN_CFG_SERVICE_DMA_SNOOP |
@@ -753,12 +752,12 @@ void IntelWifi::iwl_pcie_rx_mq_hw_init(struct iwl_trans *trans)
                                            RFH_GEN_CFG_RB_CHUNK_SIZE_64 :
                                            RFH_GEN_CFG_RB_CHUNK_SIZE_128)));
     /* Enable the relevant rx queues */
-    io->iwl_write_prph_no_grab(RFH_RXF_RXQ_ACTIVE, enabled);
+    iwl_write_prph_no_grab(trans, RFH_RXF_RXQ_ACTIVE, enabled);
     
-    io->iwl_release_nic_access(&state);
+    iwl_trans_release_nic_access(trans, &state);
     
     /* Set interrupt coalescing timer to default (2048 usecs) */
-    io->iwl_write8(CSR_INT_COALESCING, IWL_HOST_INT_TIMEOUT_DEF);
+    iwl_write8(trans, CSR_INT_COALESCING, IWL_HOST_INT_TIMEOUT_DEF);
     
     iwl_pcie_enable_rx_wake(trans, true);
 }
@@ -958,8 +957,8 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
         IWL_DEBUG_ISR(trans,
                       "ISR inta 0x%08x, enabled 0x%08x(sw), enabled(hw) 0x%08x, fh 0x%08x\n",
                       inta, trans_pcie->inta_mask,
-                      io->iwl_read32(CSR_INT_MASK),
-                      io->iwl_read32(CSR_FH_INT_STATUS));
+                      iwl_read32(trans, CSR_INT_MASK),
+                      iwl_read32(trans, CSR_FH_INT_STATUS));
         if (inta & (~trans_pcie->inta_mask))
             IWL_DEBUG_ISR(trans,
                           "We got a masked interrupt (0x%08x)\n",
@@ -1008,11 +1007,11 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
      * hardware bugs here by ACKing all the possible interrupts so that
      * interrupt coalescing can still be achieved.
      */
-    io->iwl_write32(CSR_INT, inta | ~trans_pcie->inta_mask);
+    iwl_write32(trans, CSR_INT, inta | ~trans_pcie->inta_mask);
     
     if (iwl_have_debug_level(IWL_DL_ISR))
         IWL_DEBUG_ISR(trans, "inta 0x%08x, enabled 0x%08x\n",
-                      inta, io->iwl_read32(CSR_INT_MASK));
+                      inta, iwl_read32(trans, CSR_INT_MASK));
 
     IOSimpleLockUnlock(trans_pcie->irq_lock);
     
@@ -1034,8 +1033,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
     if (iwl_have_debug_level(IWL_DL_ISR)) {
         /* NIC fires this, but we don't use it, redundant with WAKEUP */
         if (inta & CSR_INT_BIT_SCD) {
-            IWL_DEBUG_ISR(trans,
-                          "Scheduler finished to transmit the frame/frames.\n");
+            IWL_DEBUG_ISR(trans, "Scheduler finished to transmit the frame/frames.\n");
             isr_stats->sch++;
         }
     
@@ -1099,13 +1097,11 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
         IWL_DEBUG_ISR(trans, "Rx interrupt\n");
         if (inta & (CSR_INT_BIT_FH_RX | CSR_INT_BIT_SW_RX)) {
             handled |= (CSR_INT_BIT_FH_RX | CSR_INT_BIT_SW_RX);
-            io->iwl_write32(CSR_FH_INT_STATUS,
-                        CSR_FH_INT_RX_MASK);
+            iwl_write32(trans, CSR_FH_INT_STATUS, CSR_FH_INT_RX_MASK);
         }
         if (inta & CSR_INT_BIT_RX_PERIODIC) {
             handled |= CSR_INT_BIT_RX_PERIODIC;
-            io->iwl_write32(
-                        CSR_INT, CSR_INT_BIT_RX_PERIODIC);
+            iwl_write32(trans, CSR_INT, CSR_INT_BIT_RX_PERIODIC);
         }
         /* Sending RX interrupt require many steps to be done in the
          * the device:
@@ -1119,8 +1115,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
          */
         
         /* Disable periodic interrupt; we use it as just a one-shot. */
-        io->iwl_write8(CSR_INT_PERIODIC_REG,
-                   CSR_INT_PERIODIC_DIS);
+        iwl_write8(trans, CSR_INT_PERIODIC_REG, CSR_INT_PERIODIC_DIS);
         
         /*
          * Enable periodic interrupt in 8 msec only if we received
@@ -1130,8 +1125,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
          * to extend the periodic interrupt; one-shot is enough.
          */
         if (inta & (CSR_INT_BIT_FH_RX | CSR_INT_BIT_SW_RX))
-            io->iwl_write8(CSR_INT_PERIODIC_REG,
-                       CSR_INT_PERIODIC_ENA);
+            iwl_write8(trans, CSR_INT_PERIODIC_REG, CSR_INT_PERIODIC_ENA);
         
         isr_stats->rx++;
         
@@ -1144,7 +1138,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
     
     /* This "Tx" DMA channel is used only for loading uCode */
     if (inta & CSR_INT_BIT_FH_TX) {
-        io->iwl_write32(CSR_FH_INT_STATUS, CSR_FH_INT_TX_MASK);
+        iwl_write32(trans, CSR_FH_INT_STATUS, CSR_FH_INT_TX_MASK);
         IWL_DEBUG_ISR(trans, "uCode load interrupt\n");
         isr_stats->tx++;
         handled |= CSR_INT_BIT_FH_TX;
@@ -1208,7 +1202,7 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans,
         struct iwl_rx_cmd_buffer rxcb = {
             ._offset = (int)offset,
             ._rx_page_order = trans_pcie->rx_page_order,
-            ._page = rxb->page->getBytesNoCopy(),
+            ._page = static_cast<IOBufferMemoryDescriptor *>(rxb->page)->getBytesNoCopy(),
             ._page_stolen = false,
             .truesize = max_len,
         };
@@ -1297,8 +1291,8 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans,
     /* page was stolen from us -- free our reference */
     if (page_stolen) {
         //__free_pages(rxb->page, trans_pcie->rx_page_order);
-        rxb->page->complete();
-        rxb->page->release();
+//        rxb->page->complete();
+//        rxb->page->release();
         rxb->page = NULL;
     }
     
@@ -1460,7 +1454,7 @@ u32 IntelWifi::iwl_pcie_int_cause_non_ict(struct iwl_trans *trans)
 //    trace_iwlwifi_dev_irq(trans->dev);
     
     /* Discover which interrupts are active/pending */
-    inta = io->iwl_read32(CSR_INT);
+    inta = iwl_read32(trans, CSR_INT);
     
     /* the thread will service interrupts and re-enable them */
     return inta;
@@ -1522,9 +1516,9 @@ void IntelWifi::iwl_pcie_irq_handle_error(struct iwl_trans *trans)
     /* W/A for WiFi/WiMAX coex and WiMAX own the RF */
     if (trans->cfg->internal_wimax_coex &&
         !trans->cfg->apmg_not_supported &&
-        (!(io->iwl_read_prph(APMG_CLK_CTRL_REG) &
+        (!(iwl_read_prph(trans, APMG_CLK_CTRL_REG) &
            APMS_CLK_VAL_MRB_FUNC_MODE) ||
-         (io->iwl_read_prph(APMG_PS_CTRL_REG) &
+         (iwl_read_prph(trans, APMG_PS_CTRL_REG) &
           APMG_PS_CTRL_VAL_RESET_REQ))) {
              clear_bit(STATUS_SYNC_HCMD_ACTIVE, &trans->status);
              iwl_op_mode_wimax_active(trans->op_mode);
@@ -1577,10 +1571,10 @@ void IntelWifi::iwl_pcie_reset_ict(struct iwl_trans *trans)
     
     IWL_DEBUG_ISR(trans, "CSR_DRAM_INT_TBL_REG =0x%x\n", val);
     
-    io->iwl_write32(CSR_DRAM_INT_TBL_REG, val);
+    iwl_write32(trans, CSR_DRAM_INT_TBL_REG, val);
     trans_pcie->use_ict = true;
     trans_pcie->ict_index = 0;
-    io->iwl_write32(CSR_INT, trans_pcie->inta_mask);
+    iwl_write32(trans, CSR_INT, trans_pcie->inta_mask);
     _iwl_enable_interrupts(trans);
     IOSimpleLockUnlock(trans_pcie->irq_lock);
 }
@@ -1668,27 +1662,27 @@ void IntelWifi::iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq
             rb_size = FH_RCSR_RX_CONFIG_REG_VAL_RB_SIZE_4K;
     }
     
-    if (!io->iwl_grab_nic_access(&state)) {
+    if (!iwl_trans_grab_nic_access(trans, &state)) {
         DebugLog("IntelWifi: UNABLE TO GRAB NIC ACCESS");
         return;
     }
     
     /* Stop Rx DMA */
-    io->iwl_write32(FH_MEM_RCSR_CHNL0_CONFIG_REG, 0);
+    iwl_write32(trans, FH_MEM_RCSR_CHNL0_CONFIG_REG, 0);
     /* reset and flush pointers */
-    io->iwl_write32(FH_MEM_RCSR_CHNL0_RBDCB_WPTR, 0);
-    io->iwl_write32(FH_MEM_RCSR_CHNL0_FLUSH_RB_REQ, 0);
-    io->iwl_write32(FH_RSCSR_CHNL0_RDPTR, 0);
+    iwl_write32(trans, FH_MEM_RCSR_CHNL0_RBDCB_WPTR, 0);
+    iwl_write32(trans, FH_MEM_RCSR_CHNL0_FLUSH_RB_REQ, 0);
+    iwl_write32(trans, FH_RSCSR_CHNL0_RDPTR, 0);
     
     /* Reset driver's Rx queue write index */
-    io->iwl_write32(FH_RSCSR_CHNL0_RBDCB_WPTR_REG, 0);
+    iwl_write32(trans, FH_RSCSR_CHNL0_RBDCB_WPTR_REG, 0);
     
     /* Tell device where to find RBD circular buffer in DRAM */
-    io->iwl_write32(FH_RSCSR_CHNL0_RBDCB_BASE_REG,
+    iwl_write32(trans, FH_RSCSR_CHNL0_RBDCB_BASE_REG,
                 (u32)(rxq->bd_dma >> 8));
     
     /* Tell device where in DRAM to update its Rx status */
-    io->iwl_write32(FH_RSCSR_CHNL0_STTS_WPTR_REG,
+    iwl_write32(trans, FH_RSCSR_CHNL0_STTS_WPTR_REG,
                 (u32)(rxq->rb_stts_dma >> 4));
     
     /* Enable Rx DMA
@@ -1699,7 +1693,7 @@ void IntelWifi::iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq
      * RB timeout 0x10
      * 256 RBDs
      */
-    io->iwl_write32(FH_MEM_RCSR_CHNL0_CONFIG_REG,
+    iwl_write32(trans, FH_MEM_RCSR_CHNL0_CONFIG_REG,
                 FH_RCSR_RX_CONFIG_CHNL_EN_ENABLE_VAL |
                 FH_RCSR_CHNL0_RX_IGNORE_RXF_EMPTY |
                 FH_RCSR_CHNL0_RX_CONFIG_IRQ_DEST_INT_HOST_VAL |
@@ -1710,13 +1704,13 @@ void IntelWifi::iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq
     
     
     /* Set interrupt coalescing timer to default (2048 usecs) */
-    io->iwl_write8(CSR_INT_COALESCING, IWL_HOST_INT_TIMEOUT_DEF);
+    iwl_write8(trans, CSR_INT_COALESCING, IWL_HOST_INT_TIMEOUT_DEF);
     
     /* W/A for interrupt coalescing bug in 7260 and 3160 */
     if (trans->cfg->host_interrupt_operation_mode)
-        io->iwl_set_bit(CSR_INT_COALESCING, IWL_HOST_INT_OPER_MODE);
+        iwl_set_bit(trans, CSR_INT_COALESCING, IWL_HOST_INT_OPER_MODE);
     
-    io->iwl_release_nic_access(&state);
+    iwl_trans_release_nic_access(trans, &state);
 }
 
 int IntelWifi::iwl_pcie_rx_init(struct iwl_trans *trans)

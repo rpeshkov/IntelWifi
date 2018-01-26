@@ -11,17 +11,16 @@
 #ifndef iwl_trans_pcie_h
 #define iwl_trans_pcie_h
 
-#include <IOKit/IOBufferMemoryDescriptor.h>
+
 
 #include <linux/types.h>
 
 #include <sys/kernel_types.h>
 
-extern "C" {
+
 #include "iwl-modparams.h"
 #include "iwl-fh.h"
-}
-
+#include "iwl-io.h"
 
 /* We need 2 entries for the TX command and header, and another one might
  * be needed for potential data in the SKB's head. The remaining ones can
@@ -60,8 +59,7 @@ enum iwl_shared_irq_flags {
  */
 struct iwl_rx_mem_buffer {
     dma_addr_t page_dma;
-    //void *page;
-    IOBufferMemoryDescriptor *page;
+    void *page;
     u16 vid;
     bool invalid;
     struct list_head list;
@@ -381,6 +379,20 @@ struct iwl_trans_pcie {
     u32 hw_mask;
 };
 
+static inline struct iwl_trans_pcie *
+IWL_TRANS_GET_PCIE_TRANS(struct iwl_trans *trans)
+{
+    return (struct iwl_trans_pcie *)trans->trans_specific;
+}
+
+static inline struct iwl_trans *
+iwl_trans_pcie_get_trans(struct iwl_trans_pcie *trans_pcie)
+{
+    return container_of((void *)trans_pcie, struct iwl_trans,
+                        trans_specific);
+}
+
+
 static inline bool iwl_queue_used(const struct iwl_txq *q, int i)
 {
     return q->write_ptr >= q->read_ptr ?
@@ -401,6 +413,36 @@ static inline void *iwl_pcie_get_tfd(struct iwl_trans_pcie *trans_pcie,
 }
 
 
+static inline void __iwl_trans_pcie_set_bits_mask(struct iwl_trans *trans,
+                                                  u32 reg, u32 mask, u32 value)
+{
+    u32 v;
+    
+#ifdef CONFIG_IWLWIFI_DEBUG
+    WARN_ON_ONCE(value & ~mask);
+#endif
+    
+    v = iwl_read32(trans, reg);
+    v &= ~mask;
+    v |= value;
+    iwl_write32(trans, reg, v);
+}
+
+static inline void __iwl_trans_pcie_clear_bit(struct iwl_trans *trans,
+                                              u32 reg, u32 mask)
+{
+    __iwl_trans_pcie_set_bits_mask(trans, reg, mask, 0);
+}
+
+static inline void __iwl_trans_pcie_set_bit(struct iwl_trans *trans,
+                                            u32 reg, u32 mask)
+{
+    __iwl_trans_pcie_set_bits_mask(trans, reg, mask, mask);
+}
+
+
+extern const struct iwl_trans_ops trans_ops_pcie;
+extern const struct iwl_trans_ops trans_ops_pcie_gen2;
 
 
 #endif /* iwl_trans_pcie_h */
