@@ -6,14 +6,16 @@
 //  Copyright © 2018 Roman Peshkov. All rights reserved.
 //
 
-#include "IwlDvmOpMode.hpp"
-
-#include <linux/etherdevice.h>
-
 extern "C" {
 #include "agn.h"
 #include "dev.h"
 }
+
+#include "IwlDvmOpMode.hpp"
+
+#include <linux/etherdevice.h>
+
+
 
 
 /* line 35
@@ -211,12 +213,12 @@ int IwlDvmOpMode::iwlagn_send_rxon_assoc(struct iwl_priv *priv,
     rxon_assoc.reserved2 = 0;
     rxon_assoc.reserved3 = 0;
     rxon_assoc.ofdm_ht_single_stream_basic_rates =
-    ctx->staging.ofdm_ht_single_stream_basic_rates;
+            ctx->staging.ofdm_ht_single_stream_basic_rates;
     rxon_assoc.ofdm_ht_dual_stream_basic_rates =
-    ctx->staging.ofdm_ht_dual_stream_basic_rates;
+            ctx->staging.ofdm_ht_dual_stream_basic_rates;
     rxon_assoc.rx_chain_select_flags = ctx->staging.rx_chain;
     rxon_assoc.ofdm_ht_triple_stream_basic_rates =
-    ctx->staging.ofdm_ht_triple_stream_basic_rates;
+            ctx->staging.ofdm_ht_triple_stream_basic_rates;
     rxon_assoc.acquisition_data = ctx->staging.acquisition_data;
     
     ret = iwl_dvm_send_cmd_pdu(priv, ctx->rxon_assoc_cmd,
@@ -293,7 +295,7 @@ int IwlDvmOpMode::iwl_send_rxon_timing(struct iwl_priv *priv, struct iwl_rxon_co
         priv->contexts[IWL_RXON_CTX_BSS].vif &&
         priv->contexts[IWL_RXON_CTX_BSS].vif->bss_conf.beacon_int) {
         ctx->timing.beacon_interval =
-        priv->contexts[IWL_RXON_CTX_BSS].timing.beacon_interval;
+                priv->contexts[IWL_RXON_CTX_BSS].timing.beacon_interval;
         beacon_int = le16_to_cpu(ctx->timing.beacon_interval);
     } else if (ctx->ctxid == IWL_RXON_CTX_BSS &&
                iwl_is_associated(priv, IWL_RXON_CTX_PAN) &&
@@ -302,7 +304,7 @@ int IwlDvmOpMode::iwl_send_rxon_timing(struct iwl_priv *priv, struct iwl_rxon_co
                (!iwl_is_associated_ctx(ctx) || !ctx->vif ||
                 !ctx->vif->bss_conf.beacon_int)) {
                    ctx->timing.beacon_interval =
-                   priv->contexts[IWL_RXON_CTX_PAN].timing.beacon_interval;
+                        priv->contexts[IWL_RXON_CTX_PAN].timing.beacon_interval;
                    beacon_int = le16_to_cpu(ctx->timing.beacon_interval);
                } else {
                    beacon_int = iwl_adjust_beacon_interval(beacon_int,
@@ -362,13 +364,12 @@ int IwlDvmOpMode::iwlagn_rxon_disconn(struct iwl_priv *priv, struct iwl_rxon_con
     /* update -- might need P2P now */
     iwl_update_bcast_station(priv, ctx);
     
-    // TODO: Implement
-    //iwl_restore_stations(priv, ctx);
-//    ret = iwl_restore_default_wep_keys(priv, ctx);
-//    if (ret) {
-//        IWL_ERR(priv, "Failed to restore WEP keys (%d)\n", ret);
-//        return ret;
-//    }
+    iwl_restore_stations(priv, ctx);
+    ret = iwl_restore_default_wep_keys(priv, ctx);
+    if (ret) {
+        IWL_ERR(priv, "Failed to restore WEP keys (%d)\n", ret);
+        return ret;
+    }
     
     memcpy(active, &ctx->staging, sizeof(*active));
     return 0;
@@ -678,8 +679,7 @@ static int iwl_check_rxon_cmd(struct iwl_priv *priv,
         errors |= BIT(6);
     }
     
-    if ((rxon->flags & (RXON_FLG_CCK_MSK | RXON_FLG_SHORT_SLOT_MSK))
-        == (RXON_FLG_CCK_MSK | RXON_FLG_SHORT_SLOT_MSK)) {
+    if ((rxon->flags & (RXON_FLG_CCK_MSK | RXON_FLG_SHORT_SLOT_MSK)) == (RXON_FLG_CCK_MSK | RXON_FLG_SHORT_SLOT_MSK)) {
         IWL_WARN(priv, "CCK and short slot\n");
         errors |= BIT(7);
     }
@@ -690,9 +690,7 @@ static int iwl_check_rxon_cmd(struct iwl_priv *priv,
         errors |= BIT(8);
     }
     
-    if ((rxon->flags & (RXON_FLG_AUTO_DETECT_MSK |
-                        RXON_FLG_TGG_PROTECT_MSK)) ==
-        RXON_FLG_TGG_PROTECT_MSK) {
+    if ((rxon->flags & (RXON_FLG_AUTO_DETECT_MSK | RXON_FLG_TGG_PROTECT_MSK)) == RXON_FLG_TGG_PROTECT_MSK) {
         IWL_WARN(priv, "TGg but no auto-detect\n");
         errors |= BIT(9);
     }
@@ -702,8 +700,9 @@ static int iwl_check_rxon_cmd(struct iwl_priv *priv,
         errors |= BIT(10);
     }
     
-//    WARN(errors, "Invalid RXON (%#x), channel %d",
-//         errors, le16_to_cpu(rxon->channel));
+    if (errors) {
+        IWL_WARN(priv, "Invalid RXON (%#x), channel %d", errors, le16_to_cpu(rxon->channel));
+    }
     
     return errors ? -EINVAL : 0;
 }
@@ -722,19 +721,19 @@ static int iwl_full_rxon_required(struct iwl_priv *priv,
     const struct iwl_rxon_cmd *staging = &ctx->staging;
     const struct iwl_rxon_cmd *active = &ctx->active;
     
-#define CHK(cond)                            \
-if ((cond)) {                            \
-IWL_DEBUG_INFO(priv, "need full RXON - " #cond "\n");    \
-return 1;                        \
-}
+#define CHK(cond)                                                   \
+        if ((cond)) {                                               \
+            IWL_DEBUG_INFO(priv, "need full RXON - " #cond "\n");   \
+            return 1;                                               \
+        }
     
-#define CHK_NEQ(c1, c2)                        \
-if ((c1) != (c2)) {                    \
-IWL_DEBUG_INFO(priv, "need full RXON - "    \
-#c1 " != " #c2 " - %d != %d\n",    \
-(c1), (c2));            \
-return 1;                    \
-}
+#define CHK_NEQ(c1, c2)                                     \
+        if ((c1) != (c2)) {                                 \
+            IWL_DEBUG_INFO(priv, "need full RXON - "        \
+                           #c1 " != " #c2 " - %d != %d\n",  \
+                           (c1), (c2));                     \
+            return 1;                                       \
+        }
     
     /* These items are only settable from the full RXON command */
     CHK(!iwl_is_associated_ctx(ctx));
@@ -771,11 +770,38 @@ return 1;                    \
     return 0;
 }
 
+// line 907
+#ifdef CONFIG_IWLWIFI_DEBUG
+void iwl_print_rx_config_cmd(struct iwl_priv *priv,
+                             enum iwl_rxon_context_id ctxid)
+{
+    struct iwl_rxon_context *ctx = &priv->contexts[ctxid];
+    struct iwl_rxon_cmd *rxon = &ctx->staging;
+    
+//    IWL_DEBUG_RADIO(priv, "RX CONFIG:\n");
+//    iwl_print_hex_dump(priv, IWL_DL_RADIO, (u8 *) rxon, sizeof(*rxon));
+    IWL_DEBUG_RADIO(priv, "u16 channel: 0x%x\n",
+                    le16_to_cpu(rxon->channel));
+    IWL_DEBUG_RADIO(priv, "u32 flags: 0x%08X\n",
+                    le32_to_cpu(rxon->flags));
+    IWL_DEBUG_RADIO(priv, "u32 filter_flags: 0x%08x\n",
+                    le32_to_cpu(rxon->filter_flags));
+    IWL_DEBUG_RADIO(priv, "u8 dev_type: 0x%x\n", rxon->dev_type);
+    IWL_DEBUG_RADIO(priv, "u8 ofdm_basic_rates: 0x%02x\n",
+                    rxon->ofdm_basic_rates);
+    IWL_DEBUG_RADIO(priv, "u8 cck_basic_rates: 0x%02x\n",
+                    rxon->cck_basic_rates);
+    IWL_DEBUG_RADIO(priv, "u8[6] node_addr: %pM\n", rxon->node_addr);
+    IWL_DEBUG_RADIO(priv, "u8[6] bssid_addr: %pM\n", rxon->bssid_addr);
+    IWL_DEBUG_RADIO(priv, "u16 assoc_id: 0x%x\n",
+                    le16_to_cpu(rxon->assoc_id));
+}
+#endif
+
 
 
 // line 934
-static void iwl_calc_basic_rates(struct iwl_priv *priv,
-                                 struct iwl_rxon_context *ctx)
+static void iwl_calc_basic_rates(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     int lowest_present_ofdm = 100;
     int lowest_present_cck = 100;
@@ -784,26 +810,25 @@ static void iwl_calc_basic_rates(struct iwl_priv *priv,
     
     if (ctx->vif) {
         struct ieee80211_supported_band *sband;
-//        unsigned long basic = ctx->vif->bss_conf.basic_rates;
-//        int i;
+        unsigned long basic = ctx->vif->bss_conf.basic_rates;
+        unsigned long i;
         
         sband = priv->hw->wiphy->bands[priv->hw->conf.chandef.chan->band];
         
-        // TODO: Implement
-//        for_each_set_bit(i, &basic, BITS_PER_LONG) {
-//            int hw = sband->bitrates[i].hw_value;
-//            if (hw >= IWL_FIRST_OFDM_RATE) {
-//                ofdm |= BIT(hw - IWL_FIRST_OFDM_RATE);
-//                if (lowest_present_ofdm > hw)
-//                    lowest_present_ofdm = hw;
-//            } else {
-//                //BUILD_BUG_ON(IWL_FIRST_CCK_RATE != 0);
-//
-//                cck |= BIT(hw);
-//                if (lowest_present_cck > hw)
-//                    lowest_present_cck = hw;
-//            }
-//        }
+        for_each_set_bit(i, &basic, BITS_PER_LONG) {
+            int hw = sband->bitrates[i].hw_value;
+            if (hw >= IWL_FIRST_OFDM_RATE) {
+                ofdm |= BIT(hw - IWL_FIRST_OFDM_RATE);
+                if (lowest_present_ofdm > hw)
+                    lowest_present_ofdm = hw;
+            } else {
+                //BUILD_BUG_ON(IWL_FIRST_CCK_RATE != 0);
+
+                cck |= BIT(hw);
+                if (lowest_present_cck > hw)
+                    lowest_present_cck = hw;
+            }
+        }
     }
     
     /*
@@ -858,8 +883,7 @@ static void iwl_calc_basic_rates(struct iwl_priv *priv,
     /* 1M already there or needed so always add */
     cck |= IWL_RATE_1M_MASK >> IWL_FIRST_CCK_RATE;
     
-    IWL_DEBUG_RATE(priv, "Set basic rates cck:0x%.2x ofdm:0x%.2x\n",
-                   cck, ofdm);
+    IWL_DEBUG_RATE(priv, "Set basic rates cck:0x%.2x ofdm:0x%.2x\n", cck, ofdm);
     
     /* "basic_rates" is a misnomer here -- should be called ACK rates */
     ctx->staging.cck_basic_rates = cck;
@@ -982,7 +1006,6 @@ int IwlDvmOpMode::iwlagn_commit_rxon(struct iwl_priv *priv, struct iwl_rxon_cont
      * AP station must be done after the BSSID is set to correctly
      * set up filters in the device.
      */
-    // TODO: Implement
     ret = iwlagn_rxon_disconn(priv, ctx);
     if (ret)
         return ret;
@@ -1017,7 +1040,7 @@ void IwlDvmOpMode::iwlagn_post_scan(struct iwl_priv *priv)
     if (memcmp(&ctx->staging, &ctx->active, sizeof(ctx->staging)))
         iwlagn_commit_rxon(priv, ctx);
     
-    //iwlagn_set_pan_params(priv);
+    iwlagn_set_pan_params(priv);
 }
 
 

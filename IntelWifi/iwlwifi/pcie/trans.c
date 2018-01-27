@@ -259,9 +259,8 @@ static void iwl_trans_pcie_set_pmi(struct iwl_trans *trans, bool state)
         .grab_nic_access = iwl_trans_pcie_grab_nic_access,          \
         .release_nic_access = iwl_trans_pcie_release_nic_access,    \
         .set_bits_mask = iwl_trans_pcie_set_bits_mask,              \
-        .set_pmi = iwl_trans_pcie_set_pmi
-//        .configure = iwl_trans_pcie_configure,                      \
-
+        .set_pmi = iwl_trans_pcie_set_pmi,                          \
+        .configure = iwl_trans_pcie_configure
 //        .op_mode_leave = iwl_trans_pcie_op_mode_leave,              \
 //        .ref = iwl_trans_pcie_ref,                                  \
 //        .unref = iwl_trans_pcie_unref,                              \

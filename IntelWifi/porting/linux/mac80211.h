@@ -168,6 +168,10 @@ struct ieee80211_bss_conf {
     bool protected_keep_alive;
 };
 
+/* maximum number of rate table entries */
+#define IEEE80211_TX_RATE_TABLE_SIZE    4
+
+
 
 /**
  * struct ieee80211_vif - per-interface data
@@ -419,6 +423,37 @@ struct ieee80211_rx_status {
 };
 
 
+/** line 1249
+ * enum ieee80211_conf_flags - configuration flags
+ *
+ * Flags to define PHY configuration options
+ *
+ * @IEEE80211_CONF_MONITOR: there's a monitor interface present -- use this
+ *    to determine for example whether to calculate timestamps for packets
+ *    or not, do not use instead of filter flags!
+ * @IEEE80211_CONF_PS: Enable 802.11 power save mode (managed mode only).
+ *    This is the power save mode defined by IEEE 802.11-2007 section 11.2,
+ *    meaning that the hardware still wakes up for beacons, is able to
+ *    transmit frames and receive the possible acknowledgment frames.
+ *    Not to be confused with hardware specific wakeup/sleep states,
+ *    driver is responsible for that. See the section "Powersave support"
+ *    for more.
+ * @IEEE80211_CONF_IDLE: The device is running, but idle; if the flag is set
+ *    the driver should be prepared to handle configuration requests but
+ *    may turn the device off as much as possible. Typically, this flag will
+ *    be set when an interface is set UP but not associated or scanning, but
+ *    it can also be unset in that case when monitor interfaces are active.
+ * @IEEE80211_CONF_OFFCHANNEL: The device is currently not on its main
+ *    operating channel.
+ */
+enum ieee80211_conf_flags {
+    IEEE80211_CONF_MONITOR        = (1<<0),
+    IEEE80211_CONF_PS        = (1<<1),
+    IEEE80211_CONF_IDLE        = (1<<2),
+    IEEE80211_CONF_OFFCHANNEL    = (1<<3),
+};
+
+
 /** line 1305
  * enum ieee80211_smps_mode - spatial multiplexing power save mode
  *
@@ -511,6 +546,187 @@ struct ieee80211_channel_switch {
     struct cfg80211_chan_def chandef;
     u8 count;
 };
+
+/**
+ * enum ieee80211_sta_state - station state
+ *
+ * @IEEE80211_STA_NOTEXIST: station doesn't exist at all,
+ *    this is a special state for add/remove transitions
+ * @IEEE80211_STA_NONE: station exists without special state
+ * @IEEE80211_STA_AUTH: station is authenticated
+ * @IEEE80211_STA_ASSOC: station is associated
+ * @IEEE80211_STA_AUTHORIZED: station is authorized (802.1X)
+ */
+enum ieee80211_sta_state {
+    /* NOTE: These need to be ordered correctly! */
+    IEEE80211_STA_NOTEXIST,
+    IEEE80211_STA_NONE,
+    IEEE80211_STA_AUTH,
+    IEEE80211_STA_ASSOC,
+    IEEE80211_STA_AUTHORIZED,
+};
+
+/**
+ * enum ieee80211_sta_rx_bandwidth - station RX bandwidth
+ * @IEEE80211_STA_RX_BW_20: station can only receive 20 MHz
+ * @IEEE80211_STA_RX_BW_40: station can receive up to 40 MHz
+ * @IEEE80211_STA_RX_BW_80: station can receive up to 80 MHz
+ * @IEEE80211_STA_RX_BW_160: station can receive up to 160 MHz
+ *    (including 80+80 MHz)
+ *
+ * Implementation note: 20 must be zero to be initialized
+ *    correctly, the values must be sorted.
+ */
+enum ieee80211_sta_rx_bandwidth {
+    IEEE80211_STA_RX_BW_20 = 0,
+    IEEE80211_STA_RX_BW_40,
+    IEEE80211_STA_RX_BW_80,
+    IEEE80211_STA_RX_BW_160,
+};
+
+/**
+ * struct ieee80211_sta_rates - station rate selection table
+ *
+ * @rcu_head: RCU head used for freeing the table on update
+ * @rate: transmit rates/flags to be used by default.
+ *    Overriding entries per-packet is possible by using cb tx control.
+ */
+struct ieee80211_sta_rates {
+    //struct rcu_head rcu_head;
+    struct {
+        s8 idx;
+        u8 count;
+        u8 count_cts;
+        u8 count_rts;
+        u16 flags;
+    } rate[IEEE80211_TX_RATE_TABLE_SIZE];
+};
+
+
+/**
+ * struct ieee80211_sta - station table entry
+ *
+ * A station table entry represents a station we are possibly
+ * communicating with. Since stations are RCU-managed in
+ * mac80211, any ieee80211_sta pointer you get access to must
+ * either be protected by rcu_read_lock() explicitly or implicitly,
+ * or you must take good care to not use such a pointer after a
+ * call to your sta_remove callback that removed it.
+ *
+ * @addr: MAC address
+ * @aid: AID we assigned to the station if we're an AP
+ * @supp_rates: Bitmap of supported rates (per band)
+ * @ht_cap: HT capabilities of this STA; restricted to our own capabilities
+ * @vht_cap: VHT capabilities of this STA; restricted to our own capabilities
+ * @max_rx_aggregation_subframes: maximal amount of frames in a single AMPDU
+ *    that this station is allowed to transmit to us.
+ *    Can be modified by driver.
+ * @wme: indicates whether the STA supports QoS/WME (if local devices does,
+ *    otherwise always false)
+ * @drv_priv: data area for driver use, will always be aligned to
+ *    sizeof(void \*), size is determined in hw information.
+ * @uapsd_queues: bitmap of queues configured for uapsd. Only valid
+ *    if wme is supported. The bits order is like in
+ *    IEEE80211_WMM_IE_STA_QOSINFO_AC_*.
+ * @max_sp: max Service Period. Only valid if wme is supported.
+ * @bandwidth: current bandwidth the station can receive with
+ * @rx_nss: in HT/VHT, the maximum number of spatial streams the
+ *    station can receive at the moment, changed by operating mode
+ *    notifications and capabilities. The value is only valid after
+ *    the station moves to associated state.
+ * @smps_mode: current SMPS mode (off, static or dynamic)
+ * @rates: rate control selection table
+ * @tdls: indicates whether the STA is a TDLS peer
+ * @tdls_initiator: indicates the STA is an initiator of the TDLS link. Only
+ *    valid if the STA is a TDLS peer in the first place.
+ * @mfp: indicates whether the STA uses management frame protection or not.
+ * @max_amsdu_subframes: indicates the maximal number of MSDUs in a single
+ *    A-MSDU. Taken from the Extended Capabilities element. 0 means
+ *    unlimited.
+ * @support_p2p_ps: indicates whether the STA supports P2P PS mechanism or not.
+ * @max_rc_amsdu_len: Maximum A-MSDU size in bytes recommended by rate control.
+ * @txq: per-TID data TX queues (if driver uses the TXQ abstraction)
+ */
+struct ieee80211_sta {
+    u32 supp_rates[NUM_NL80211_BANDS];
+    u8 addr[ETH_ALEN];
+    u16 aid;
+    struct ieee80211_sta_ht_cap ht_cap;
+    struct ieee80211_sta_vht_cap vht_cap;
+    u8 max_rx_aggregation_subframes;
+    bool wme;
+    u8 uapsd_queues;
+    u8 max_sp;
+    u8 rx_nss;
+    enum ieee80211_sta_rx_bandwidth bandwidth;
+    enum ieee80211_smps_mode smps_mode;
+    struct ieee80211_sta_rates __rcu *rates;
+    bool tdls;
+    bool tdls_initiator;
+    bool mfp;
+    u8 max_amsdu_subframes;
+    
+    /**
+     * @max_amsdu_len:
+     * indicates the maximal length of an A-MSDU in bytes.
+     * This field is always valid for packets with a VHT preamble.
+     * For packets with a HT preamble, additional limits apply:
+     *
+     * * If the skb is transmitted as part of a BA agreement, the
+     *   A-MSDU maximal size is min(max_amsdu_len, 4065) bytes.
+     * * If the skb is not part of a BA aggreement, the A-MSDU maximal
+     *   size is min(max_amsdu_len, 7935) bytes.
+     *
+     * Both additional HT limits must be enforced by the low level
+     * driver. This is defined by the spec (IEEE 802.11-2012 section
+     * 8.3.2.2 NOTE 2).
+     */
+    u16 max_amsdu_len;
+    bool support_p2p_ps;
+    u16 max_rc_amsdu_len;
+    
+    struct ieee80211_txq *txq[IEEE80211_NUM_TIDS];
+    
+    /* must be last */
+    u8 drv_priv[0] __aligned(sizeof(void *));
+};
+
+/** line 1567
+ * struct ieee80211_key_conf - key information
+ *
+ * This key information is given by mac80211 to the driver by
+ * the set_key() callback in &struct ieee80211_ops.
+ *
+ * @hw_key_idx: To be set by the driver, this is the key index the driver
+ *    wants to be given when a frame is transmitted and needs to be
+ *    encrypted in hardware.
+ * @cipher: The key's cipher suite selector.
+ * @tx_pn: PN used for TX keys, may be used by the driver as well if it
+ *    needs to do software PN assignment by itself (e.g. due to TSO)
+ * @flags: key flags, see &enum ieee80211_key_flags.
+ * @keyidx: the key index (0-3)
+ * @keylen: key material length
+ * @key: key material. For ALG_TKIP the key is encoded as a 256-bit (32 byte)
+ *     data block:
+ *     - Temporal Encryption Key (128 bits)
+ *     - Temporal Authenticator Tx MIC Key (64 bits)
+ *     - Temporal Authenticator Rx MIC Key (64 bits)
+ * @icv_len: The ICV length for this key type
+ * @iv_len: The IV length for this key type
+ */
+struct ieee80211_key_conf {
+    u64 tx_pn;
+    u32 cipher;
+    u8 icv_len;
+    u8 iv_len;
+    u8 hw_key_idx;
+    u8 flags;
+    s8 keyidx;
+    u8 keylen;
+    u8 key[0];
+};
+
+
 
 
 

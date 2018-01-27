@@ -526,8 +526,8 @@ static void iwl6000_nic_config(struct iwl_priv *priv)
             iwl_set_bit(priv->trans, CSR_GP_DRIVER_REG,
                     CSR_GP_DRIVER_REG_BIT_6050_1x2);
             break;
-//        default:
-//            WARN_ON(1);
+        default:
+            DebugLog("Default");
     }
 }
 

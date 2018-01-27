@@ -72,19 +72,19 @@
 static inline void iwl_scd_txq_set_chain(struct iwl_trans *trans,
 					 u16 txq_id)
 {
-	iwl_set_bits_prph(trans, SCD_QUEUECHAIN_SEL, BIT(txq_id));
+	iwl_set_bits_prph(trans, SCD_QUEUECHAIN_SEL, (u32)BIT(txq_id));
 }
 
 static inline void iwl_scd_txq_enable_agg(struct iwl_trans *trans,
 					  u16 txq_id)
 {
-	iwl_set_bits_prph(trans, SCD_AGGR_SEL, BIT(txq_id));
+	iwl_set_bits_prph(trans, SCD_AGGR_SEL, (u32)BIT(txq_id));
 }
 
 static inline void iwl_scd_txq_disable_agg(struct iwl_trans *trans,
 					   u16 txq_id)
 {
-	iwl_clear_bits_prph(trans, SCD_AGGR_SEL, BIT(txq_id));
+	iwl_clear_bits_prph(trans, SCD_AGGR_SEL, (u32)BIT(txq_id));
 }
 
 static inline void iwl_scd_disable_agg(struct iwl_trans *trans)
@@ -112,7 +112,7 @@ static inline unsigned int SCD_QUEUE_WRPTR(unsigned int chnl)
 {
 	if (chnl < 20)
 		return SCD_BASE + 0x18 + chnl * 4;
-	WARN_ON_ONCE(chnl >= 32);
+	//WARN_ON_ONCE(chnl >= 32);
 	return SCD_BASE + 0x284 + (chnl - 20) * 4;
 }
 
@@ -120,7 +120,7 @@ static inline unsigned int SCD_QUEUE_RDPTR(unsigned int chnl)
 {
 	if (chnl < 20)
 		return SCD_BASE + 0x68 + chnl * 4;
-	WARN_ON_ONCE(chnl >= 32);
+	//WARN_ON_ONCE(chnl >= 32);
 	return SCD_BASE + 0x2B4 + chnl * 4;
 }
 
@@ -128,7 +128,7 @@ static inline unsigned int SCD_QUEUE_STATUS_BITS(unsigned int chnl)
 {
 	if (chnl < 20)
 		return SCD_BASE + 0x10c + chnl * 4;
-	WARN_ON_ONCE(chnl >= 32);
+	//WARN_ON_ONCE(chnl >= 32);
 	return SCD_BASE + 0x334 + chnl * 4;
 }
 

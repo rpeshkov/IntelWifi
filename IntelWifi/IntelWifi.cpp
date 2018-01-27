@@ -7,6 +7,7 @@ extern "C" {
 }
 
 #include <IOKit/IOInterruptController.h>
+#include "IwlDvmOpMode.hpp"
 
 
 

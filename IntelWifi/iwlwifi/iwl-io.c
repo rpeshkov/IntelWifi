@@ -51,8 +51,8 @@ IWL_EXPORT_SYMBOL(iwl_write32);
 void iwl_write64(struct iwl_trans *trans, u64 ofs, u64 val)
 {
 	//trace_iwlwifi_dev_iowrite64(trans->dev, ofs, val);
-	iwl_trans_write32(trans, ofs, lower_32_bits(val));
-	iwl_trans_write32(trans, ofs + 4, upper_32_bits(val));
+	iwl_trans_write32(trans, (u32)ofs, lower_32_bits(val));
+	iwl_trans_write32(trans, (u32)ofs + 4, upper_32_bits(val));
 }
 IWL_EXPORT_SYMBOL(iwl_write64);
 

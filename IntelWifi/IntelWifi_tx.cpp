@@ -32,6 +32,7 @@
 
 #include "IntelWifi.hpp"
 #include "iwlwifi/fw/api/tx.h"
+
 #include "iwlwifi/iwl-trans.h"
 
 
@@ -1402,14 +1403,9 @@ int IntelWifi::iwl_pcie_enqueue_hcmd(struct iwl_trans *trans,
 //        }
         
         IOBufferMemoryDescriptor *bmd =
-        IOBufferMemoryDescriptor::inTaskWithPhysicalMask(
-                                                         // task to hold the memory
-                                                         kernel_task,
-                                                         // options
+        IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task,
                                                          kIOMemoryPhysicallyContiguous,
-                                                         // size
                                                          copy_size - tb0_size,
-                                                         // physicalMask - 32 bit addressable and page aligned
                                                          0x00000000FFFFFFFFULL);
         
         
@@ -1704,7 +1700,7 @@ int IntelWifi::iwl_pcie_send_hcmd_sync(struct iwl_trans *trans,
 
         iwl_force_nmi(trans);
         // TODO: Implement
-        //iwl_trans_fw_error(trans);
+        // iwl_trans_fw_error(trans);
 
         goto cancel;
     }

@@ -32,17 +32,13 @@ extern "C" {
 #include "Logging.h"
 
 #include "IwlTransOps.h"
-#include "IwlDvmOpMode.hpp"
+#include "IwlOpModeOps.h"
+
 
 
 // Configuration
 #define CONFIG_IWLMVM // Need NVM mode at least to see that code is compiling
 #define CONFIG_IWLWIFI_PCIE_RTPM // Powerman
-
-#ifdef DEBUG
-#define CONFIG_IWLWIFI_DEBUG
-#endif
-
 
 #define    RELEASE(x)    if(x){(x)->release();(x)=NULL;}
 
@@ -147,25 +143,18 @@ private:
     
     int findMSIInterruptTypeIndex();
     
-    
-    
-    
-    
     // trans.c
     void iwl_pcie_set_pwr(struct iwl_trans *trans, bool vaux); // line 186
     void iwl_pcie_apm_config(struct iwl_trans *trans); // line 204
     int iwl_pcie_apm_init(struct iwl_trans *trans); // line 232
-    void iwl_pcie_apm_stop_master(struct iwl_trans *trans); // line 444
     void iwl_pcie_apm_stop(struct iwl_trans *trans, bool op_mode_leave); // line 460
     int iwl_pcie_nic_init(struct iwl_trans *trans); // line 505
-    int iwl_pcie_prepare_card_hw(struct iwl_trans *trans); // line 561
 
     void iwl_pcie_apply_destination(struct iwl_trans *trans); // line 826
     int iwl_pcie_load_given_ucode(struct iwl_trans *trans, const struct fw_img *image); // line 900
     int iwl_pcie_load_given_ucode_8000(struct iwl_trans *trans, const struct fw_img *image); // line 952
     bool iwl_pcie_check_hw_rf_kill(struct iwl_trans *trans); // line 989
 
-    void iwl_pcie_conf_msix_hw(struct iwl_trans_pcie *trans_pcie); // line 1084
     void iwl_pcie_init_msix(struct iwl_trans_pcie *trans_pcie); // line 1115
     
     void _iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power); // line 1130
@@ -180,7 +169,6 @@ private:
     int _iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power); // line 1636
     int iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power); // line 1675
     void iwl_trans_pcie_op_mode_leave(struct iwl_trans *trans); // line 1687
-    void iwl_trans_pcie_configure(struct iwl_trans *trans, const struct iwl_trans_config *trans_cfg); // line 1737
     
     void iwl_trans_pcie_free(struct iwl_trans* trans); // line 1776
     
@@ -200,19 +188,11 @@ private:
 
     
     // rx.c
-    int iwl_pcie_rx_stop(struct iwl_trans *trans);
-    void iwl_pcie_enable_rx_wake(struct iwl_trans *trans, bool enable);
-    void iwl_pcie_rx_mq_hw_init(struct iwl_trans *trans);
-    
-    int iwl_pcie_alloc_ict(struct iwl_trans *trans);
-    void iwl_pcie_disable_ict(struct iwl_trans *trans);
-    void iwl_pcie_free_ict(struct iwl_trans *trans);
     irqreturn_t iwl_pcie_irq_handler(int irq, void *dev_id);
     
     void iwl_pcie_handle_rfkill_irq(struct iwl_trans *trans);
     void iwl_pcie_irq_handle_error(struct iwl_trans *trans);
-    void iwl_pcie_reset_ict(struct iwl_trans *trans);
-    void iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq);
+    
     int iwl_pcie_rx_init(struct iwl_trans *trans);
     void iwl_pcie_rx_handle(struct iwl_trans *trans, int queue);
     void iwl_pcie_rx_handle_rb(struct iwl_trans *trans,

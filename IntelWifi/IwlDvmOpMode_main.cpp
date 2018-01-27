@@ -6,8 +6,6 @@
 //  Copyright © 2018 Roman Peshkov. All rights reserved.
 //
 
-#include "IwlDvmOpMode.hpp"
-
 extern "C" {
 #include "iwlwifi/dvm/commands.h"
 #include "iwlwifi/dvm/dev.h"
@@ -16,11 +14,14 @@ extern "C" {
 #include "iwlwifi/iwl-prph.h"
 #include "iwlwifi/iwl-io.h"
 #include "iwlwifi/iwl-eeprom-read.h"
-    #include "iwlwifi/iwl-eeprom-parse.h"
+#include "iwlwifi/iwl-eeprom-parse.h"
 }
 
-#define MAC_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
-#define MAC_BYTES(x) (x)[0],(x)[1],(x)[2],(x)[3],(x)[4],(x)[5]
+
+#include "IwlDvmOpMode.hpp"
+
+
+
 
 /* Please keep this array *SORTED* by hex value.
  * Access is done through binary search.
@@ -249,9 +250,9 @@ void IwlDvmOpMode::iwl_rf_kill_ct_config(struct iwl_priv *priv)
     
     if (priv->lib->support_ct_kill_exit) {
         adv_cmd.critical_temperature_enter =
-        cpu_to_le32(priv->hw_params.ct_kill_threshold);
+                cpu_to_le32(priv->hw_params.ct_kill_threshold);
         adv_cmd.critical_temperature_exit =
-        cpu_to_le32(priv->hw_params.ct_kill_exit_threshold);
+                cpu_to_le32(priv->hw_params.ct_kill_exit_threshold);
         
         ret = iwl_dvm_send_cmd_pdu(priv,
                                    REPLY_CT_KILL_CONFIG_CMD,
@@ -912,7 +913,9 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     iwl_setup_rx_handlers(priv);
 
     iwl_power_initialize(priv);
-//    iwl_tt_initialize(priv);
+    
+    // TODO: Implement Thermal Throttling
+    // iwl_tt_initialize(priv);
 
     snprintf(priv->hw->wiphy->fw_version,
              sizeof(priv->hw->wiphy->fw_version),
@@ -948,13 +951,11 @@ out_destroy_workqueue:
 //    iwl_tt_exit(priv);
 //    iwl_cancel_deferred_work(priv);
 //    destroy_workqueue(priv->workqueue);
-//    priv->workqueue = NULL;
-//    iwl_uninit_drv(priv);
+    priv->workqueue = NULL;
+    iwl_uninit_drv(priv);
 out_free_eeprom_blob:
-    //kfree(priv->eeprom_blob);
     IOFree(priv->eeprom_blob, priv->eeprom_blob_size);
 out_free_eeprom:
-//    kfree(priv->nvm_data);
     IOFree(priv->nvm_data, priv->nvm_data_size);
 out_free_hw:
 //    ieee80211_free_hw(priv->hw);
@@ -1056,7 +1057,6 @@ void IwlDvmOpMode::iwl_dvm_set_pmi(struct iwl_priv *priv, bool state)
         clear_bit(STATUS_POWER_PMI, &priv->status);
     
     iwl_trans_set_pmi(priv->trans, state);
-    //_ops->set_pmi(priv->trans, state);
 }
 
 

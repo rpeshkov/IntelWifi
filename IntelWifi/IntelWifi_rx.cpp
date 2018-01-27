@@ -174,7 +174,7 @@ static inline __le32 iwl_pcie_dma_addr2rbd_ptr(dma_addr_t dma_addr)
 /* line 164
  * iwl_pcie_rx_stop - stops the Rx DMA
  */
-int IntelWifi::iwl_pcie_rx_stop(struct iwl_trans *trans)
+int iwl_pcie_rx_stop(struct iwl_trans *trans)
 {
     if (trans->cfg->mq_rx_supported) {
         iwl_write_prph(trans, RFH_RXF_DMA_CFG, 0);
@@ -381,7 +381,7 @@ static IOBufferMemoryDescriptor *iwl_pcie_rx_alloc_page(struct iwl_trans *trans)
  */
 static void iwl_pcie_rxq_alloc_rbs(struct iwl_trans *trans, struct iwl_rxq *rxq)
 {
-    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    //struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     struct iwl_rx_mem_buffer *rxb;
     IOBufferMemoryDescriptor *page;
     
@@ -763,7 +763,7 @@ static int iwl_pcie_rx_alloc(struct iwl_trans *trans)
 }
 
 // line 693
-void IntelWifi::iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq)
+static void iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     u32 rb_size;
@@ -835,7 +835,7 @@ void IntelWifi::iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq
 }
 
 // line 762
-void IntelWifi::iwl_pcie_enable_rx_wake(struct iwl_trans *trans, bool enable)
+void iwl_pcie_enable_rx_wake(struct iwl_trans *trans, bool enable)
 {
     if (trans->cfg->device_family != IWL_DEVICE_FAMILY_9000)
         return;
@@ -860,7 +860,7 @@ void IntelWifi::iwl_pcie_enable_rx_wake(struct iwl_trans *trans, bool enable)
 }
 
 // line 786
-void IntelWifi::iwl_pcie_rx_mq_hw_init(struct iwl_trans *trans)
+static void iwl_pcie_rx_mq_hw_init(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     u32 rb_size, enabled = 0;
@@ -1850,7 +1850,7 @@ out:
 /* line 1807
  * Free dram table
  */
-void IntelWifi::iwl_pcie_free_ict(struct iwl_trans *trans)
+void iwl_pcie_free_ict(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
@@ -1869,7 +1869,7 @@ void IntelWifi::iwl_pcie_free_ict(struct iwl_trans *trans)
  * block of ICT_SIZE.
  * also reset all data related to ICT table interrupt.
  */
-int IntelWifi::iwl_pcie_alloc_ict(struct iwl_trans *trans)
+int iwl_pcie_alloc_ict(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
@@ -1910,7 +1910,7 @@ int IntelWifi::iwl_pcie_alloc_ict(struct iwl_trans *trans)
  * Device is going up inform it about using ICT interrupt table,
  * also we need to tell the driver to start using ICT interrupt.
  */
-void IntelWifi::iwl_pcie_reset_ict(struct iwl_trans *trans)
+void iwl_pcie_reset_ict(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     u32 val;
@@ -1945,7 +1945,7 @@ void IntelWifi::iwl_pcie_reset_ict(struct iwl_trans *trans)
 /* line 1877
  * Device is going down disable ict interrupt usage
  */
-void IntelWifi::iwl_pcie_disable_ict(struct iwl_trans *trans)
+void iwl_pcie_disable_ict(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     

@@ -14,6 +14,24 @@
 #include <linux/netdevice.h>
 
 
+/*
+ * DS bit usage
+ *
+ * TA = transmitter address
+ * RA = receiver address
+ * DA = destination address
+ * SA = source address
+ *
+ * ToDS    FromDS  A1(RA)  A2(TA)  A3      A4      Use
+ * -----------------------------------------------------------------
+ *  0       0       DA      SA      BSSID   -       IBSS/DLS
+ *  0       1       DA      BSSID   SA      -       AP -> STA
+ *  1       0       BSSID   SA      DA      -       AP <- STA
+ *  1       1       RA      TA      DA      SA      unspecified (WDS)
+ */
+
+#define FCS_LEN 4
+
 #define IEEE80211_FCTL_VERS        0x0003
 #define IEEE80211_FCTL_FTYPE        0x000c
 #define IEEE80211_FCTL_STYPE        0x00f0
@@ -26,6 +44,75 @@
 #define IEEE80211_FCTL_PROTECTED    0x4000
 #define IEEE80211_FCTL_ORDER        0x8000
 #define IEEE80211_FCTL_CTL_EXT        0x0f00
+
+#define IEEE80211_SCTL_FRAG        0x000F
+#define IEEE80211_SCTL_SEQ        0xFFF0
+
+#define IEEE80211_FTYPE_MGMT        0x0000
+#define IEEE80211_FTYPE_CTL        0x0004
+#define IEEE80211_FTYPE_DATA        0x0008
+#define IEEE80211_FTYPE_EXT        0x000c
+
+/* management */
+#define IEEE80211_STYPE_ASSOC_REQ    0x0000
+#define IEEE80211_STYPE_ASSOC_RESP    0x0010
+#define IEEE80211_STYPE_REASSOC_REQ    0x0020
+#define IEEE80211_STYPE_REASSOC_RESP    0x0030
+#define IEEE80211_STYPE_PROBE_REQ    0x0040
+#define IEEE80211_STYPE_PROBE_RESP    0x0050
+#define IEEE80211_STYPE_BEACON        0x0080
+#define IEEE80211_STYPE_ATIM        0x0090
+#define IEEE80211_STYPE_DISASSOC    0x00A0
+#define IEEE80211_STYPE_AUTH        0x00B0
+#define IEEE80211_STYPE_DEAUTH        0x00C0
+#define IEEE80211_STYPE_ACTION        0x00D0
+
+/* control */
+#define IEEE80211_STYPE_CTL_EXT        0x0060
+#define IEEE80211_STYPE_BACK_REQ    0x0080
+#define IEEE80211_STYPE_BACK        0x0090
+#define IEEE80211_STYPE_PSPOLL        0x00A0
+#define IEEE80211_STYPE_RTS        0x00B0
+#define IEEE80211_STYPE_CTS        0x00C0
+#define IEEE80211_STYPE_ACK        0x00D0
+#define IEEE80211_STYPE_CFEND        0x00E0
+#define IEEE80211_STYPE_CFENDACK    0x00F0
+
+/* data */
+#define IEEE80211_STYPE_DATA            0x0000
+#define IEEE80211_STYPE_DATA_CFACK        0x0010
+#define IEEE80211_STYPE_DATA_CFPOLL        0x0020
+#define IEEE80211_STYPE_DATA_CFACKPOLL        0x0030
+#define IEEE80211_STYPE_NULLFUNC        0x0040
+#define IEEE80211_STYPE_CFACK            0x0050
+#define IEEE80211_STYPE_CFPOLL            0x0060
+#define IEEE80211_STYPE_CFACKPOLL        0x0070
+#define IEEE80211_STYPE_QOS_DATA        0x0080
+#define IEEE80211_STYPE_QOS_DATA_CFACK        0x0090
+#define IEEE80211_STYPE_QOS_DATA_CFPOLL        0x00A0
+#define IEEE80211_STYPE_QOS_DATA_CFACKPOLL    0x00B0
+#define IEEE80211_STYPE_QOS_NULLFUNC        0x00C0
+#define IEEE80211_STYPE_QOS_CFACK        0x00D0
+#define IEEE80211_STYPE_QOS_CFPOLL        0x00E0
+#define IEEE80211_STYPE_QOS_CFACKPOLL        0x00F0
+
+/* extension, added by 802.11ad */
+#define IEEE80211_STYPE_DMG_BEACON        0x0000
+
+/* control extension - for IEEE80211_FTYPE_CTL | IEEE80211_STYPE_CTL_EXT */
+#define IEEE80211_CTL_EXT_POLL        0x2000
+#define IEEE80211_CTL_EXT_SPR        0x3000
+#define IEEE80211_CTL_EXT_GRANT    0x4000
+#define IEEE80211_CTL_EXT_DMG_CTS    0x5000
+#define IEEE80211_CTL_EXT_DMG_DTS    0x6000
+#define IEEE80211_CTL_EXT_SSW        0x8000
+#define IEEE80211_CTL_EXT_SSW_FBACK    0x9000
+#define IEEE80211_CTL_EXT_SSW_ACK    0xa000
+
+
+#define IEEE80211_SN_MASK        ((IEEE80211_SCTL_SEQ) >> 4)
+#define IEEE80211_MAX_SN        IEEE80211_SN_MASK
+#define IEEE80211_SN_MODULO        (IEEE80211_MAX_SN + 1)
 
 
 // line 149
@@ -178,6 +265,232 @@ struct ieee80211_bar {
 #define IEEE80211_BAR_CTRL_TID_INFO_SHIFT    12
 
 #define IEEE80211_HT_MCS_MASK_LEN        10
+
+/** line 691
+ * struct ieee80211_quiet_ie
+ *
+ * This structure refers to "Quiet information element"
+ */
+struct ieee80211_quiet_ie {
+    u8 count;
+    u8 period;
+    __le16 duration;
+    __le16 offset;
+} __packed;
+
+/** line 703
+ * struct ieee80211_msrment_ie
+ *
+ * This structure refers to "Measurement Request/Report information element"
+ */
+struct ieee80211_msrment_ie {
+    u8 token;
+    u8 mode;
+    u8 type;
+    u8 request[0];
+} __packed;
+
+/** line 715
+ * struct ieee80211_channel_sw_ie
+ *
+ * This structure refers to "Channel Switch Announcement information element"
+ */
+struct ieee80211_channel_sw_ie {
+    u8 mode;
+    u8 new_ch_num;
+    u8 count;
+} __packed;
+
+/** line 726
+ * struct ieee80211_ext_chansw_ie
+ *
+ * This structure represents the "Extended Channel Switch Announcement element"
+ */
+struct ieee80211_ext_chansw_ie {
+    u8 mode;
+    u8 new_operating_class;
+    u8 new_ch_num;
+    u8 count;
+} __packed;
+
+
+#define WLAN_SA_QUERY_TR_ID_LEN 2
+#define WLAN_MEMBERSHIP_LEN 8
+#define WLAN_USER_POSITION_LEN 16
+
+/**
+ * struct ieee80211_tpc_report_ie
+ *
+ * This structure refers to "TPC Report element"
+ */
+struct ieee80211_tpc_report_ie {
+    u8 tx_power;
+    u8 link_margin;
+} __packed;
+
+// line 884
+struct ieee80211_mgmt {
+    __le16 frame_control;
+    __le16 duration;
+    u8 da[ETH_ALEN];
+    u8 sa[ETH_ALEN];
+    u8 bssid[ETH_ALEN];
+    __le16 seq_ctrl;
+    union {
+        struct {
+            __le16 auth_alg;
+            __le16 auth_transaction;
+            __le16 status_code;
+            /* possibly followed by Challenge text */
+            u8 variable[0];
+        } __packed auth;
+        struct {
+            __le16 reason_code;
+        } __packed deauth;
+        struct {
+            __le16 capab_info;
+            __le16 listen_interval;
+            /* followed by SSID and Supported rates */
+            u8 variable[0];
+        } __packed assoc_req;
+        struct {
+            __le16 capab_info;
+            __le16 status_code;
+            __le16 aid;
+            /* followed by Supported rates */
+            u8 variable[0];
+        } __packed assoc_resp, reassoc_resp;
+        struct {
+            __le16 capab_info;
+            __le16 listen_interval;
+            u8 current_ap[ETH_ALEN];
+            /* followed by SSID and Supported rates */
+            u8 variable[0];
+        } __packed reassoc_req;
+        struct {
+            __le16 reason_code;
+        } __packed disassoc;
+        struct {
+            __le64 timestamp;
+            __le16 beacon_int;
+            __le16 capab_info;
+            /* followed by some of SSID, Supported rates,
+             * FH Params, DS Params, CF Params, IBSS Params, TIM */
+            u8 variable[0];
+        } __packed beacon;
+        struct {
+            /* only variable items: SSID, Supported rates */
+            u8 variable[0];
+        } __packed probe_req;
+        struct {
+            __le64 timestamp;
+            __le16 beacon_int;
+            __le16 capab_info;
+            /* followed by some of SSID, Supported rates,
+             * FH Params, DS Params, CF Params, IBSS Params */
+            u8 variable[0];
+        } __packed probe_resp;
+        struct {
+            u8 category;
+            union {
+                struct {
+                    u8 action_code;
+                    u8 dialog_token;
+                    u8 status_code;
+                    u8 variable[0];
+                } __packed wme_action;
+                struct{
+                    u8 action_code;
+                    u8 variable[0];
+                } __packed chan_switch;
+                struct{
+                    u8 action_code;
+                    struct ieee80211_ext_chansw_ie data;
+                    u8 variable[0];
+                } __packed ext_chan_switch;
+                struct{
+                    u8 action_code;
+                    u8 dialog_token;
+                    u8 element_id;
+                    u8 length;
+                    struct ieee80211_msrment_ie msr_elem;
+                } __packed measurement;
+                struct{
+                    u8 action_code;
+                    u8 dialog_token;
+                    __le16 capab;
+                    __le16 timeout;
+                    __le16 start_seq_num;
+                } __packed addba_req;
+                struct{
+                    u8 action_code;
+                    u8 dialog_token;
+                    __le16 status;
+                    __le16 capab;
+                    __le16 timeout;
+                } __packed addba_resp;
+                struct{
+                    u8 action_code;
+                    __le16 params;
+                    __le16 reason_code;
+                } __packed delba;
+                struct {
+                    u8 action_code;
+                    u8 variable[0];
+                } __packed self_prot;
+                struct{
+                    u8 action_code;
+                    u8 variable[0];
+                } __packed mesh_action;
+                struct {
+                    u8 action;
+                    u8 trans_id[WLAN_SA_QUERY_TR_ID_LEN];
+                } __packed sa_query;
+                struct {
+                    u8 action;
+                    u8 smps_control;
+                } __packed ht_smps;
+                struct {
+                    u8 action_code;
+                    u8 chanwidth;
+                } __packed ht_notify_cw;
+                struct {
+                    u8 action_code;
+                    u8 dialog_token;
+                    __le16 capability;
+                    u8 variable[0];
+                } __packed tdls_discover_resp;
+                struct {
+                    u8 action_code;
+                    u8 operating_mode;
+                } __packed vht_opmode_notif;
+                struct {
+                    u8 action_code;
+                    u8 membership[WLAN_MEMBERSHIP_LEN];
+                    u8 position[WLAN_USER_POSITION_LEN];
+                } __packed vht_group_notif;
+                struct {
+                    u8 action_code;
+                    u8 dialog_token;
+                    u8 tpc_elem_id;
+                    u8 tpc_elem_length;
+                    struct ieee80211_tpc_report_ie tpc;
+                } __packed tpc_report;
+                struct {
+                    u8 action_code;
+                    u8 dialog_token;
+                    u8 follow_up;
+                    u8 tod[6];
+                    u8 toa[6];
+                    __le16 tod_error;
+                    __le16 toa_error;
+                    u8 variable[0];
+                } __packed ftm;
+            } u;
+        } __packed action;
+    } u;
+} __packed __aligned(2);
+
 
 
 /**

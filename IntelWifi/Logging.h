@@ -55,6 +55,7 @@
 #define IWL_DEBUG_STATS(priv, args...) DebugLog("DEBUG STATS: " args)
 #define IWL_DEBUG_DROP(priv, args...) DebugLog("DEBUG DROP: " args)
 #define IWL_DEBUG_STATS_LIMIT(priv, args...) DebugLog("DEBUG STATS LIMIT: " args)
+#define IWL_DEBUG_WEP(priv, args...) DebugLog("DEBUG WEP: " args)
 
 
 #endif /* Logging_h */

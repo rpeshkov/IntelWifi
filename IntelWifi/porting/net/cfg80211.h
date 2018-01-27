@@ -288,6 +288,114 @@ enum rate_info_bw {
 // line 1094
 #define IEEE80211_MAX_CHAINS    4
 
+/** line 1501
+ * DOC: Scanning and BSS list handling
+ *
+ * The scanning process itself is fairly simple, but cfg80211 offers quite
+ * a bit of helper functionality. To start a scan, the scan operation will
+ * be invoked with a scan definition. This scan definition contains the
+ * channels to scan, and the SSIDs to send probe requests for (including the
+ * wildcard, if desired). A passive scan is indicated by having no SSIDs to
+ * probe. Additionally, a scan request may contain extra information elements
+ * that should be added to the probe request. The IEs are guaranteed to be
+ * well-formed, and will not exceed the maximum length the driver advertised
+ * in the wiphy structure.
+ *
+ * When scanning finds a BSS, cfg80211 needs to be notified of that, because
+ * it is responsible for maintaining the BSS list; the driver should not
+ * maintain a list itself. For this notification, various functions exist.
+ *
+ * Since drivers do not maintain a BSS list, there are also a number of
+ * functions to search for a BSS and obtain information about it from the
+ * BSS structure cfg80211 maintains. The BSS list is also made available
+ * to userspace.
+ */
+
+/** line 1524
+ * struct cfg80211_ssid - SSID description
+ * @ssid: the SSID
+ * @ssid_len: length of the ssid
+ */
+struct cfg80211_ssid {
+    u8 ssid[IEEE80211_MAX_SSID_LEN];
+    u8 ssid_len;
+};
+
+/** line 1534
+ * struct cfg80211_scan_info - information about completed scan
+ * @scan_start_tsf: scan start time in terms of the TSF of the BSS that the
+ *    wireless device that requested the scan is connected to. If this
+ *    information is not available, this field is left zero.
+ * @tsf_bssid: the BSSID according to which %scan_start_tsf is set.
+ * @aborted: set to true if the scan was aborted for any reason,
+ *    userspace will be notified of that
+ */
+struct cfg80211_scan_info {
+    u64 scan_start_tsf;
+    u8 tsf_bssid[ETH_ALEN] __aligned(2);
+    bool aborted;
+};
+
+/** line 1549
+ * struct cfg80211_scan_request - scan request description
+ *
+ * @ssids: SSIDs to scan for (active scan only)
+ * @n_ssids: number of SSIDs
+ * @channels: channels to scan on.
+ * @n_channels: total number of channels to scan
+ * @scan_width: channel width for scanning
+ * @ie: optional information element(s) to add into Probe Request or %NULL
+ * @ie_len: length of ie in octets
+ * @duration: how long to listen on each channel, in TUs. If
+ *    %duration_mandatory is not set, this is the maximum dwell time and
+ *    the actual dwell time may be shorter.
+ * @duration_mandatory: if set, the scan duration must be as specified by the
+ *    %duration field.
+ * @flags: bit field of flags controlling operation
+ * @rates: bitmap of rates to advertise for each band
+ * @wiphy: the wiphy this was for
+ * @scan_start: time (in jiffies) when the scan started
+ * @wdev: the wireless device to scan for
+ * @info: (internal) information about completed scan
+ * @notified: (internal) scan request was notified as done or aborted
+ * @no_cck: used to send probe requests at non CCK rate in 2GHz band
+ * @mac_addr: MAC address used with randomisation
+ * @mac_addr_mask: MAC address mask used with randomisation, bits that
+ *    are 0 in the mask should be randomised, bits that are 1 should
+ *    be taken from the @mac_addr
+ * @bssid: BSSID to scan for (most commonly, the wildcard BSSID)
+ */
+struct cfg80211_scan_request {
+    struct cfg80211_ssid *ssids;
+    int n_ssids;
+    u32 n_channels;
+    enum nl80211_bss_scan_width scan_width;
+    const u8 *ie;
+    size_t ie_len;
+    u16 duration;
+    bool duration_mandatory;
+    u32 flags;
+    
+    u32 rates[NUM_NL80211_BANDS];
+    
+    struct wireless_dev *wdev;
+    
+    u8 mac_addr[ETH_ALEN] __aligned(2);
+    u8 mac_addr_mask[ETH_ALEN] __aligned(2);
+    u8 bssid[ETH_ALEN] __aligned(2);
+    
+    /* internal */
+    struct wiphy *wiphy;
+    unsigned long scan_start;
+    struct cfg80211_scan_info info;
+    bool notified;
+    bool no_cck;
+    
+    /* keep last */
+    struct ieee80211_channel *channels[0];
+};
+
+
 
 
 /** line 1746

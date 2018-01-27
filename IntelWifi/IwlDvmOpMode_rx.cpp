@@ -116,8 +116,8 @@ static void iwlagn_rx_spectrum_measure_notif(struct iwl_priv *priv,
 static void iwlagn_rx_pm_sleep_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
 {
 #ifdef CONFIG_IWLWIFI_DEBUG
-    struct iwl_rx_packet *pkt = rxb_addr(rxb);
-    struct iwl_sleep_notification *sleep = (void *)pkt->data;
+    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
+    struct iwl_sleep_notification *sleep = (struct iwl_sleep_notification *)pkt->data;
     IWL_DEBUG_RX(priv, "sleep mode: %d, src: %d\n",
                  sleep->pm_sleep_mode, sleep->pm_wakeup_src);
 #endif
@@ -378,11 +378,11 @@ static void iwlagn_rx_statistics(struct iwl_priv *priv, struct iwl_rx_cmd_buffer
     
     
     unsigned long stamp = microsecs;
-    const int reg_recalib_period = 60;
+    //const int reg_recalib_period = 60;
     int change;
     struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
     u32 len = iwl_rx_packet_payload_len(pkt);
-    __le32 *flag;
+    __le32 flag;
     struct statistics_general_common *common;
     struct statistics_rx_non_phy *rx_non_phy;
     struct statistics_rx_phy *rx_ofdm;
@@ -398,7 +398,7 @@ static void iwlagn_rx_statistics(struct iwl_priv *priv, struct iwl_rx_cmd_buffer
     if (len == sizeof(struct iwl_bt_notif_statistics)) {
         struct iwl_bt_notif_statistics *stats;
         stats = (struct iwl_bt_notif_statistics *)&pkt->data;
-        flag = &stats->flag;
+        flag = stats->flag;
         common = &stats->general.common;
         rx_non_phy = &stats->rx.general.common;
         rx_ofdm = &stats->rx.ofdm;
@@ -416,7 +416,7 @@ static void iwlagn_rx_statistics(struct iwl_priv *priv, struct iwl_rx_cmd_buffer
     } else if (len == sizeof(struct iwl_notif_statistics)) {
         struct iwl_notif_statistics *stats;
         stats = (struct iwl_notif_statistics *)&pkt->data;
-        flag = &stats->flag;
+        flag = stats->flag;
         common = &stats->general.common;
         rx_non_phy = &stats->rx.general;
         rx_ofdm = &stats->rx.ofdm;
@@ -434,7 +434,7 @@ static void iwlagn_rx_statistics(struct iwl_priv *priv, struct iwl_rx_cmd_buffer
     }
 
     change = common->temperature != priv->statistics.common.temperature ||
-            (*flag & STATISTICS_REPLY_FLG_HT40_MODE_MSK) !=
+            (flag & STATISTICS_REPLY_FLG_HT40_MODE_MSK) !=
             (priv->statistics.flag & STATISTICS_REPLY_FLG_HT40_MODE_MSK);
 
     iwlagn_accumulative_statistics(priv, common, rx_non_phy, rx_ofdm,
@@ -442,7 +442,7 @@ static void iwlagn_rx_statistics(struct iwl_priv *priv, struct iwl_rx_cmd_buffer
 
     iwlagn_recover_from_statistics(priv, rx_ofdm, rx_ofdm_ht, tx, stamp);
 
-    priv->statistics.flag = *flag;
+    priv->statistics.flag = flag;
     memcpy(&priv->statistics.common, common, sizeof(*common));
     memcpy(&priv->statistics.rx_non_phy, rx_non_phy, sizeof(*rx_non_phy));
     memcpy(&priv->statistics.rx_ofdm, rx_ofdm, sizeof(*rx_ofdm));
@@ -466,12 +466,13 @@ static void iwlagn_rx_statistics(struct iwl_priv *priv, struct iwl_rx_cmd_buffer
     // TODO: Implement
 //    mod_timer(&priv->statistics_periodic, jiffies +
 //              msecs_to_jiffies(reg_recalib_period * 1000));
-//
-//    if (unlikely(!test_bit(STATUS_SCANNING, &priv->status)) &&
-//        (pkt->hdr.cmd == STATISTICS_NOTIFICATION)) {
-//        iwlagn_rx_calc_noise(priv);
-//        queue_work(priv->workqueue, &priv->run_time_calib_work);
-//    }
+
+    if (unlikely(!test_bit(STATUS_SCANNING, &priv->status)) &&
+        (pkt->hdr.cmd == STATISTICS_NOTIFICATION)) {
+        iwlagn_rx_calc_noise(priv);
+        // TODO: Implement
+        // queue_work(priv->workqueue, &priv->run_time_calib_work);
+    }
     if (priv->lib->temperature && change)
         priv->lib->temperature(priv);
 
@@ -507,7 +508,7 @@ static void iwlagn_rx_card_state_notif(struct iwl_priv *priv,
     struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
     struct iwl_card_state_notif *card_state_notif = (struct iwl_card_state_notif *)pkt->data;
     u32 flags = le32_to_cpu(card_state_notif->flags);
-    unsigned long status = priv->status;
+    //unsigned long status = priv->status;
 
     IWL_DEBUG_RF_KILL(priv, "Card state received: HW:%s SW:%s CT:%s\n",
                       (flags & HW_CARD_DISABLED) ? "Kill" : "On",
@@ -545,9 +546,10 @@ static void iwlagn_rx_card_state_notif(struct iwl_priv *priv,
         clear_bit(STATUS_RF_KILL_HW, &priv->status);
 
 
-//    if (!(flags & RXON_CARD_DISABLED))
-//        iwl_scan_cancel(priv);
-//
+    if (!(flags & RXON_CARD_DISABLED))
+        iwl_scan_cancel(priv);
+
+    // TODO: Implement
 //    if ((test_bit(STATUS_RF_KILL_HW, &status) !=
 //         test_bit(STATUS_RF_KILL_HW, &priv->status)))
 //        wiphy_rfkill_set_hw_state(priv->hw->wiphy,
@@ -587,8 +589,7 @@ static void iwlagn_rx_reply_rx_phy(struct iwl_priv *priv,
 
     priv->last_phy_res_valid = true;
     priv->ampdu_ref++;
-    memcpy(&priv->last_phy_res, pkt->data,
-           sizeof(struct iwl_rx_phy_res));
+    memcpy(&priv->last_phy_res, pkt->data, sizeof(struct iwl_rx_phy_res));
 }
 
 /*
@@ -853,7 +854,7 @@ static void iwlagn_rx_reply_rx(struct iwl_priv *priv,
     /* rx_status carries information about the packet to mac80211 */
     rx_status.mactime = le64_to_cpu(phy_res->timestamp);
     rx_status.band = (phy_res->phy_flags & RX_RES_PHY_FLAGS_BAND_24_MSK) ?
-    NL80211_BAND_2GHZ : NL80211_BAND_5GHZ;
+            NL80211_BAND_2GHZ : NL80211_BAND_5GHZ;
     rx_status.freq = ieee80211_channel_to_frequency(le16_to_cpu(phy_res->channel), (enum nl80211_band)rx_status.band);
     rx_status.rate_idx = iwlagn_hwrate_to_mac80211_idx(rate_n_flags, (enum nl80211_band)rx_status.band);
     rx_status.flag = 0;
@@ -884,8 +885,8 @@ static void iwlagn_rx_reply_rx(struct iwl_priv *priv,
      * as a bitmask.
      */
     rx_status.antenna =
-    (le16_to_cpu(phy_res->phy_flags) & RX_RES_PHY_FLAGS_ANTENNA_MSK)
-    >> RX_RES_PHY_FLAGS_ANTENNA_POS;
+            (le16_to_cpu(phy_res->phy_flags) & RX_RES_PHY_FLAGS_ANTENNA_MSK)
+            >> RX_RES_PHY_FLAGS_ANTENNA_POS;
 
     /* set the preamble flag if appropriate */
     if (phy_res->phy_flags & RX_RES_PHY_FLAGS_SHORT_PREAMBLE_MSK)
@@ -981,7 +982,7 @@ void IwlDvmOpMode::iwl_setup_rx_handlers(struct iwl_priv *priv)
     handlers[PM_SLEEP_NOTIFICATION] = iwlagn_rx_pm_sleep_notif;
     handlers[PM_DEBUG_STATISTIC_NOTIFIC] = iwlagn_rx_pm_debug_statistics_notif;
     handlers[BEACON_NOTIFICATION] = iwlagn_rx_beacon_notif;
-//    handlers[REPLY_ADD_STA] = iwl_add_sta_callback;
+    handlers[REPLY_ADD_STA] = iwl_add_sta_callback;
 
     handlers[REPLY_WIPAN_NOA_NOTIFICATION]    = iwlagn_rx_noa_notification;
 

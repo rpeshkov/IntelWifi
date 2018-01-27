@@ -369,6 +369,25 @@ void IwlDvmOpMode::iwlagn_set_rxon_chain(struct iwl_priv *priv, struct iwl_rxon_
 //            active_rx_cnt < idle_rx_cnt);
 }
 
+// line 859
+u8 iwl_toggle_tx_ant(struct iwl_priv *priv, u8 ant, u8 valid)
+{
+    int i;
+    u8 ind = ant;
+    
+    if (priv->band == NL80211_BAND_2GHZ &&
+        priv->bt_traffic_load >= IWL_BT_COEX_TRAFFIC_LOAD_HIGH)
+        return 0;
+    
+    for (i = 0; i < RATE_ANT_NUM - 1; i++) {
+        ind = (ind + 1) < RATE_ANT_NUM ?  ind + 1 : 0;
+        if (valid & BIT(ind))
+            return ind;
+    }
+    return ant;
+}
+
+
 
 // line 1237
 int IwlDvmOpMode::iwl_dvm_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *cmd)
@@ -403,9 +422,7 @@ int IwlDvmOpMode::iwl_dvm_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *c
 //    if (!(cmd->flags & CMD_ASYNC))
 //        lockdep_assert_held(&priv->mutex);
     
-    // TODO: Implement
     return _ops->iwl_trans_send_cmd(priv->trans, cmd);
-    return 0;
 }
 
 // line 1271

@@ -82,6 +82,15 @@ static inline int fls(int x)
     return r;
 }
 
+unsigned long find_next_bit(const unsigned long *addr, unsigned long size, unsigned long offset);
+
+#define for_each_set_bit(bit, addr, size) \
+        for ((bit) = find_first_bit((addr), (size));        \
+            (bit) < (size);                    \
+            (bit) = find_next_bit((addr), (size), (bit) + 1))
+
+#define find_first_bit(addr, size) find_next_bit((addr), (size), 0)
+
 
 
 

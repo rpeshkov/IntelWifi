@@ -17,8 +17,10 @@ extern "C" {
 #include <IOKit/IOBufferMemoryDescriptor.h>
 
 #include "IwlOpModeOps.h"
+#include "dev.h"
 
-
+#define MAC_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
+#define MAC_BYTES(x) (x)[0],(x)[1],(x)[2],(x)[3],(x)[4],(x)[5]
 
 
 class IwlDvmOpMode : public IwlOpModeOps {
@@ -76,9 +78,32 @@ private:
                            struct iwl_rx_packet *pkt, void *data);
     
     // sta.c
+    int iwl_send_add_sta(struct iwl_priv *priv, struct iwl_addsta_cmd *sta, u8 flags); // line 102
     u8 iwl_prep_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
                                       const u8 *addr, bool is_ap, struct ieee80211_sta *sta); // line 252
     void iwl_clear_ucode_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 619
+    void iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 654
+    int iwl_send_lq_cmd(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
+                                      struct iwl_link_quality_cmd *lq, u8 flags, bool init); // line 825
+    
+    int iwl_send_static_wepkey_cmd(struct iwl_priv *priv,
+                                          struct iwl_rxon_context *ctx,
+                                          bool send_if_empty); // line 947
+    
+    int iwl_restore_default_wep_keys(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 1001
+    
+    
+    
+    int iwl_remove_default_wep_key(struct iwl_priv *priv,
+                                   struct iwl_rxon_context *ctx,
+                                   struct ieee80211_key_conf *keyconf); // line 1009
+    
+    
+    
+    int iwl_set_default_wep_key(struct iwl_priv *priv,
+                                struct iwl_rxon_context *ctx,
+                                struct ieee80211_key_conf *keyconf); // line 1034
+    
     int iwlagn_alloc_bcast_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 1276
     int iwl_update_bcast_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 1316
     
@@ -138,7 +163,13 @@ private:
     void iwl_do_scan_abort(struct iwl_priv *priv); // line 182
     void iwl_scan_cancel_timeout(struct iwl_priv *priv, unsigned long ms); // line 216
     void iwl_setup_rx_scan_handlers(struct iwl_priv *priv); // line 357
+    int iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif); // line 632
     void iwl_init_scan_params(struct iwl_priv *priv); // line 929
+    int iwl_scan_initiate(struct iwl_priv *priv,
+                                        struct ieee80211_vif *vif,
+                                        enum iwl_scan_type scan_type,
+                                        enum nl80211_band band); // line 938
+
     
     static void iwl_rx_reply_scan(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb);
     static void iwl_rx_scan_start_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb);

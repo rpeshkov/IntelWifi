@@ -28,7 +28,7 @@
  *
  *****************************************************************************/
 
-#include "IwlDvmOpMode.hpp"
+
 
 #include <linux/kernel.h>
 
@@ -44,6 +44,8 @@ extern "C" {
 #include "agn.h"
 #include "calib.h"
 }
+
+#include "IwlDvmOpMode.hpp"
 
 /******************************************************************************
  *

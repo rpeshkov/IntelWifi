@@ -357,7 +357,7 @@ static void iwl_pcie_apm_lp_xtal_enable(struct iwl_trans *trans)
 }
 
 // line 444
-void IntelWifi::iwl_pcie_apm_stop_master(struct iwl_trans* trans)
+void iwl_pcie_apm_stop_master(struct iwl_trans* trans)
 {
     int ret;
     
@@ -483,7 +483,7 @@ static int iwl_pcie_set_hw_ready(struct iwl_trans *trans)
 /* line 561
  * Note: returns standard 0/-ERROR code
  */
-int IntelWifi::iwl_pcie_prepare_card_hw(struct iwl_trans *trans)
+int iwl_pcie_prepare_card_hw(struct iwl_trans *trans)
 {
     int ret;
     int t = 0;
@@ -766,7 +766,7 @@ static int iwl_pcie_load_cpu_sections(struct iwl_trans *trans,
 // line 826
 void IntelWifi::iwl_pcie_apply_destination(struct iwl_trans *trans)
 {
-    //struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     const struct iwl_fw_dbg_dest_tlv *dest = trans->dbg_dest_tlv;
     int i;
     
@@ -778,11 +778,13 @@ void IntelWifi::iwl_pcie_apply_destination(struct iwl_trans *trans)
     IWL_INFO(trans, "Applying debug destination %s\n",
              get_fw_dbg_mode_string(dest->monitor_mode));
     
-    // TODO: Implement
-    //    if (dest->monitor_mode == EXTERNAL_MODE)
-    //        iwl_pcie_alloc_fw_monitor(trans, dest->size_power);
-    //    else
-    //        IWL_WARN(trans, "PCI should have external buffer debug\n");
+    
+    if (dest->monitor_mode == EXTERNAL_MODE) {
+        // TODO: Implement
+        // iwl_pcie_alloc_fw_monitor(trans, dest->size_power);
+    }
+    else
+        IWL_WARN(trans, "PCI should have external buffer debug\n");
     
     for (i = 0; i < trans->dbg_dest_reg_num; i++) {
         u32 addr = le32_to_cpu(dest->reg_ops[i].addr);
@@ -810,7 +812,7 @@ void IntelWifi::iwl_pcie_apply_destination(struct iwl_trans *trans)
             case PRPH_BLOCKBIT:
                 if (iwl_read_prph(trans, addr) & BIT(val)) {
                     IWL_ERR(trans, "BIT(%u) in address 0x%x is 1, stopping FW configuration\n", val, addr);
-                    //goto monitor;
+                    goto monitor;
                 }
                 break;
             default:
@@ -820,21 +822,21 @@ void IntelWifi::iwl_pcie_apply_destination(struct iwl_trans *trans)
     }
     
     // TODO: Implement
-    //monitor:
-    //    if (dest->monitor_mode == EXTERNAL_MODE && trans_pcie->fw_mon_size) {
-    //        iwl_write_prph(trans, le32_to_cpu(dest->base_reg),
-    //                       trans_pcie->fw_mon_phys >> dest->base_shift);
-    //        if (trans->cfg->device_family >= IWL_DEVICE_FAMILY_8000)
-    //            iwl_write_prph(trans, le32_to_cpu(dest->end_reg),
-    //                           (trans_pcie->fw_mon_phys +
-    //                            trans_pcie->fw_mon_size - 256) >>
-    //                           dest->end_shift);
-    //        else
-    //            iwl_write_prph(trans, le32_to_cpu(dest->end_reg),
-    //                           (trans_pcie->fw_mon_phys +
-    //                            trans_pcie->fw_mon_size) >>
-    //                           dest->end_shift);
-    //    }
+monitor:
+    if (dest->monitor_mode == EXTERNAL_MODE && trans_pcie->fw_mon_size) {
+        iwl_write_prph(trans, le32_to_cpu(dest->base_reg),
+                       (u32)(trans_pcie->fw_mon_phys >> dest->base_shift));
+        if (trans->cfg->device_family >= IWL_DEVICE_FAMILY_8000)
+            iwl_write_prph(trans, le32_to_cpu(dest->end_reg),
+                           (u32)((trans_pcie->fw_mon_phys +
+                            trans_pcie->fw_mon_size - 256) >>
+                           dest->end_shift));
+        else
+            iwl_write_prph(trans, le32_to_cpu(dest->end_reg),
+                           (u32)((trans_pcie->fw_mon_phys +
+                            trans_pcie->fw_mon_size) >>
+                           dest->end_shift));
+    }
 }
 
 // line 900
@@ -874,11 +876,8 @@ int IntelWifi::iwl_pcie_load_given_ucode(struct iwl_trans *trans,
         //iwl_pcie_alloc_fw_monitor(trans, 0);
 
         if (trans_pcie->fw_mon_size) {
-            iwl_write_prph(trans, MON_BUFF_BASE_ADDR,
-                           trans_pcie->fw_mon_phys >> 4);
-            iwl_write_prph(trans, MON_BUFF_END_ADDR,
-                           (trans_pcie->fw_mon_phys +
-                            trans_pcie->fw_mon_size) >> 4);
+            iwl_write_prph(trans, MON_BUFF_BASE_ADDR, (u32)(trans_pcie->fw_mon_phys >> 4));
+            iwl_write_prph(trans, MON_BUFF_END_ADDR, (u32)((trans_pcie->fw_mon_phys + trans_pcie->fw_mon_size) >> 4));
         }
     } else if (trans->dbg_dest_tlv) {
         iwl_pcie_apply_destination(trans);
@@ -1032,7 +1031,7 @@ static void iwl_pcie_map_rx_causes(struct iwl_trans *trans)
 }
 
 // line 1084
-void IntelWifi::iwl_pcie_conf_msix_hw(struct iwl_trans_pcie *trans_pcie)
+void iwl_pcie_conf_msix_hw(struct iwl_trans_pcie *trans_pcie)
 {
     struct iwl_trans *trans = trans_pcie->trans;
     
@@ -1084,7 +1083,7 @@ void IntelWifi::_iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_po
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
-    //    lockdep_assert_held(&trans_pcie->mutex);
+    // lockdep_assert_held(&trans_pcie->mutex);
     
     if (trans_pcie->is_down)
         return;
@@ -1106,8 +1105,7 @@ void IntelWifi::_iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_po
      */
     if (test_and_clear_bit(STATUS_DEVICE_ENABLED, &trans->status)) {
         IWL_DEBUG_INFO(trans, "DEVICE_ENABLED bit was set and is now cleared\n");
-        // TODO: Implement
-        // iwl_pcie_tx_stop(trans);
+        iwl_pcie_tx_stop(trans);
         iwl_pcie_rx_stop(trans);
         
         /* Power-down device's busmaster DMA clocks */
@@ -1472,7 +1470,7 @@ void IntelWifi::iwl_trans_pcie_op_mode_leave(struct iwl_trans *trans)
 }
 
 // line 1737
-void IntelWifi::iwl_trans_pcie_configure(struct iwl_trans *trans,
+void iwl_trans_pcie_configure(struct iwl_trans *trans,
                                          const struct iwl_trans_config *trans_cfg)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
@@ -1615,8 +1613,6 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
         trans_pcie->tfd_size = sizeof(struct iwl_tfd);
     }
     trans->max_skb_frags = IWL_PCIE_MAX_FRAGS(trans_pcie);
-    
-    DebugLog("Addr Size: %d", addr_size);
     
     // original linux code: pci_set_master(pdev);
     pciDevice->setBusMasterEnable(true);

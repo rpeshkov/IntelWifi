@@ -184,12 +184,12 @@ void iwlagn_temperature(struct iwl_priv *priv);
 //int iwlagn_send_beacon_cmd(struct iwl_priv *priv);
 //int iwl_send_statistics_request(struct iwl_priv *priv,
 //                u8 flags, bool clear);
-//
-//static inline const struct ieee80211_supported_band *iwl_get_hw_mode(
-//            struct iwl_priv *priv, enum nl80211_band band)
-//{
-//    return priv->hw->wiphy->bands[band];
-//}
+
+static inline const struct ieee80211_supported_band *iwl_get_hw_mode(
+            struct iwl_priv *priv, enum nl80211_band band)
+{
+    return priv->hw->wiphy->bands[band];
+}
 
 #ifdef CONFIG_PM_SLEEP
 //int iwlagn_send_patterns(struct iwl_priv *priv,
@@ -242,8 +242,8 @@ static inline bool iwl_is_tx_success(u32 status)
 	       (status == TX_STATUS_DIRECT_DONE);
 }
 
-//u8 iwl_toggle_tx_ant(struct iwl_priv *priv, u8 ant_idx, u8 valid);
-//
+u8 iwl_toggle_tx_ant(struct iwl_priv *priv, u8 ant_idx, u8 valid);
+
 ///* scan */
 //void iwlagn_post_scan(struct iwl_priv *priv);
 //int iwl_force_rf_reset(struct iwl_priv *priv, bool external);
@@ -307,7 +307,7 @@ int iwlagn_manage_ibss_station(struct iwl_priv *priv,
 #define IWL_STA_BCAST BIT(4) /* this station is the special bcast station */
 
 
-//void iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx);
+void iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx);
 //void iwl_clear_ucode_stations(struct iwl_priv *priv,
 //                  struct iwl_rxon_context *ctx);
 //void iwl_dealloc_bcast_stations(struct iwl_priv *priv);
@@ -326,13 +326,13 @@ int iwlagn_manage_ibss_station(struct iwl_priv *priv,
 //
 //int iwl_send_lq_cmd(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
 //            struct iwl_link_quality_cmd *lq, u8 flags, bool init);
-//void iwl_add_sta_callback(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb);
+void iwl_add_sta_callback(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb);
 //int iwl_sta_update_ht(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
 //              struct ieee80211_sta *sta);
 //
-//bool iwl_is_ht40_tx_allowed(struct iwl_priv *priv,
-//                struct iwl_rxon_context *ctx,
-//                struct ieee80211_sta *sta);
+bool iwl_is_ht40_tx_allowed(struct iwl_priv *priv,
+                struct iwl_rxon_context *ctx,
+                struct ieee80211_sta *sta);
 //
 //static inline int iwl_sta_id(struct ieee80211_sta *sta)
 //{
