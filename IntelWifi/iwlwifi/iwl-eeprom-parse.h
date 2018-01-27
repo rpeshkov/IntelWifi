@@ -121,7 +121,7 @@ struct iwl_nvm_data {
  */
 struct iwl_nvm_data *
 iwl_parse_eeprom_data(struct device *dev, const struct iwl_cfg *cfg,
-		      const u8 *eeprom, size_t eeprom_size);
+		      const u8 *eeprom, size_t eeprom_size, vm_size_t *nvm_data_size);
 
 int iwl_nvm_check_version(struct iwl_nvm_data *data,
 			  struct iwl_trans *trans);

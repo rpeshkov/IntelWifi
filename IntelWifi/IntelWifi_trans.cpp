@@ -1,3 +1,70 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual BSD/GPLv2 license.  When using or
+ * redistributing this file, you may do so under either license.
+ *
+ * GPL LICENSE SUMMARY
+ *
+ * Copyright(c) 2007 - 2015 Intel Corporation. All rights reserved.
+ * Copyright(c) 2013 - 2015 Intel Mobile Communications GmbH
+ * Copyright(c) 2016 - 2017 Intel Deutschland GmbH
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110,
+ * USA
+ *
+ * The full GNU General Public License is included in this distribution
+ * in the file called COPYING.
+ *
+ * Contact Information:
+ *  Intel Linux Wireless <linuxwifi@intel.com>
+ * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
+ *
+ * BSD LICENSE
+ *
+ * Copyright(c) 2005 - 2015 Intel Corporation. All rights reserved.
+ * Copyright(c) 2013 - 2015 Intel Mobile Communications GmbH
+ * Copyright(c) 2016 - 2017 Intel Deutschland GmbH
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name Intel Corporation nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
+
 //
 //  IntelWifi_trans.cpp
 //  IntelWifi
@@ -10,16 +77,11 @@
 
 #include <kern/task.h>
 
-
-/* PCI registers */
-#define PCI_CFG_RETRY_TIMEOUT    0x041
-
-#define HW_READY_TIMEOUT (50)
-
 /* extended range in FW SRAM */
 #define IWL_FW_MEM_EXTENDED_START    0x40000
 #define IWL_FW_MEM_EXTENDED_END        0x57FFF
 
+// line 172
 static u32 iwl_trans_pcie_read_shr(struct iwl_trans *trans, u32 reg)
 {
     iwl_write32(trans, HEEP_CTRL_WRD_PCIEX_CTRL_REG,
@@ -27,139 +89,12 @@ static u32 iwl_trans_pcie_read_shr(struct iwl_trans *trans, u32 reg)
     return iwl_read32(trans, HEEP_CTRL_WRD_PCIEX_DATA_REG);
 }
 
+// line 179
 static void iwl_trans_pcie_write_shr(struct iwl_trans *trans, u32 reg, u32 val)
 {
     iwl_write32(trans, HEEP_CTRL_WRD_PCIEX_DATA_REG, val);
     iwl_write32(trans, HEEP_CTRL_WRD_PCIEX_CTRL_REG,
                 ((reg & 0x0000ffff) | (3 << 28)));
-}
-
-
-// internal.h line 562
-void IntelWifi::_iwl_disable_interrupts(struct iwl_trans *trans)
-{
-    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
-    
-    clear_bit(STATUS_INT_ENABLED, &trans->status);
-    if (!trans_pcie->msix_enabled) {
-        /* disable interrupts from uCode/NIC to host */
-        iwl_write32(trans, CSR_INT_MASK, 0x00000000);
-        
-        /* acknowledge/clear/reset any interrupts still pending
-         * from uCode or flow handler (Rx/Tx DMA) */
-        iwl_write32(trans, CSR_INT, 0xffffffff);
-        iwl_write32(trans, CSR_FH_INT_STATUS, 0xffffffff);
-    } else {
-        /* disable all the interrupt we might use */
-        iwl_write32(trans, CSR_MSIX_FH_INT_MASK_AD,
-                        trans_pcie->fh_init_mask);
-        iwl_write32(trans, CSR_MSIX_HW_INT_MASK_AD,
-                        trans_pcie->hw_init_mask);
-    }
-    IWL_DEBUG_ISR(trans, "Disabled interrupts\n");
-}
-
-// internal.h line 585
-void IntelWifi::iwl_disable_interrupts(struct iwl_trans *trans)
-{
-    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
-    
-    IOSimpleLockLock(trans_pcie->irq_lock);
-    _iwl_disable_interrupts(trans);
-    IOSimpleLockUnlock(trans_pcie->irq_lock);
-}
-
-// internal.h line 594
-void IntelWifi::_iwl_enable_interrupts(struct iwl_trans *trans)
-{
-    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
-    
-    IWL_DEBUG_ISR(trans, "Enabling interrupts\n");
-    set_bit(STATUS_INT_ENABLED, &trans->status);
-    
-    if (!trans_pcie->msix_enabled) {
-        trans_pcie->inta_mask = CSR_INI_SET_MASK;
-        iwl_write32(trans, CSR_INT_MASK, trans_pcie->inta_mask);
-    } else {
-        /*
-         * fh/hw_mask keeps all the unmasked causes.
-         * Unlike msi, in msix cause is enabled when it is unset.
-         */
-        trans_pcie->hw_mask = trans_pcie->hw_init_mask;
-        trans_pcie->fh_mask = trans_pcie->fh_init_mask;
-        iwl_write32(trans, CSR_MSIX_FH_INT_MASK_AD,
-                        ~trans_pcie->fh_mask);
-        iwl_write32(trans, CSR_MSIX_HW_INT_MASK_AD,
-                        ~trans_pcie->hw_mask);
-    }
-}
-
-// internal.h line 617
-void IntelWifi::iwl_enable_interrupts(struct iwl_trans *trans)
-{
-    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
-    
-    IOSimpleLockLock(trans_pcie->irq_lock);
-    _iwl_enable_interrupts(trans);
-    IOSimpleLockUnlock(trans_pcie->irq_lock);
-}
-
-
-// internal.h line 625
-void IntelWifi::iwl_enable_hw_int_msk_msix(struct iwl_trans *trans, u32 msk)
-{
-    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
-    
-    iwl_write32(trans, CSR_MSIX_HW_INT_MASK_AD, ~msk);
-    trans_pcie->hw_mask = msk;
-}
-
-// internal.h line 657
-void IntelWifi::iwl_pcie_sw_reset(struct iwl_trans* trans)
-{
-    /* Reset entire device - do controller reset (results in SHRD_HW_RST) */
-    iwl_set_bit(trans, CSR_RESET, CSR_RESET_REG_FLAG_SW_RESET);
-    IODelay(6000);
-}
-
-// internal.h line 676
-void IntelWifi::iwl_enable_rfkill_int(struct iwl_trans *trans)
-{
-    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
-    
-    IWL_DEBUG_ISR(trans, "Enabling rfkill interrupt\n");
-    if (!trans_pcie->msix_enabled) {
-        trans_pcie->inta_mask = CSR_INT_BIT_RF_KILL;
-        iwl_write32(trans, CSR_INT_MASK, trans_pcie->inta_mask);
-    } else {
-        iwl_write32(trans, CSR_MSIX_FH_INT_MASK_AD,
-                        trans_pcie->fh_init_mask);
-        iwl_enable_hw_int_msk_msix(trans,
-                                   MSIX_HW_INT_CAUSES_REG_RF_KILL);
-    }
-    
-    if (trans->cfg->device_family == IWL_DEVICE_FAMILY_9000) {
-        /*
-         * On 9000-series devices this bit isn't enabled by default, so
-         * when we power down the device we need set the bit to allow it
-         * to wake up the PCI-E bus for RF-kill interrupts.
-         */
-        iwl_set_bit(trans, CSR_GP_CNTRL,
-                        CSR_GP_CNTRL_REG_FLAG_RFKILL_WAKE_L1A_EN);
-    }
-}
-
-// internal.h line 735
-bool IntelWifi::iwl_is_rfkill_set(struct iwl_trans *trans)
-{
-    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
-    
-    //lockdep_assert_held(&trans_pcie->mutex);
-    
-    if (trans_pcie->debug_rfkill)
-        return true;
-    
-    return !(iwl_read32(trans, CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
 }
 
 // line 186
@@ -177,6 +112,9 @@ void IntelWifi::iwl_pcie_set_pwr(struct iwl_trans *trans, bool vaux)
                                    APMG_PS_CTRL_VAL_PWR_SRC_VMAIN,
                                    ~APMG_PS_CTRL_MSK_PWR_SRC);
 }
+
+/* PCI registers */
+#define PCI_CFG_RETRY_TIMEOUT    0x041
 
 
 // line 204
@@ -330,7 +268,7 @@ int IntelWifi::iwl_pcie_apm_init(struct iwl_trans* trans)
  * Configure device's "persistence" mode to avoid resetting XTAL again when
  * SHRD_HW_RST occurs in S3.
  */
-void IntelWifi::iwl_pcie_apm_lp_xtal_enable(struct iwl_trans *trans)
+static void iwl_pcie_apm_lp_xtal_enable(struct iwl_trans *trans)
 {
     int ret;
     u32 apmg_gp1_reg;
@@ -338,11 +276,8 @@ void IntelWifi::iwl_pcie_apm_lp_xtal_enable(struct iwl_trans *trans)
     u32 dl_cfg_reg;
     
     /* Force XTAL ON */
-    // TODO: Double check here. In original code you see that no lock is acquired. Weird... Below there are some lines with lock acquiring
-    //__iwl_trans_pcie_set_bit(trans, CSR_GP_CNTRL,
-    //                         CSR_GP_CNTRL_REG_FLAG_XTAL_ON);
-    iwl_set_bit(trans, CSR_GP_CNTRL,
-                    CSR_GP_CNTRL_REG_FLAG_XTAL_ON);
+    __iwl_trans_pcie_set_bit(trans, CSR_GP_CNTRL,
+                             CSR_GP_CNTRL_REG_FLAG_XTAL_ON);
     
     iwl_pcie_sw_reset(trans);
     
@@ -495,17 +430,13 @@ int IntelWifi::iwl_pcie_nic_init(struct iwl_trans *trans)
     IOSimpleLockLock(trans_pcie->irq_lock);
     ret = iwl_pcie_apm_init(trans);
     IOSimpleLockUnlock(trans_pcie->irq_lock);
-    DebugLog("iwl_pcie_apm_init(trans); status: %lu", trans->status);
     
     if (ret)
         return ret;
     
     iwl_pcie_set_pwr(trans, false);
-    DebugLog("iwl_pcie_set_pwr(trans, false); status: %lu", trans->status);
     
     opmode->nic_config(0);
-    
-    DebugLog("opmode->nic_config(0); status: %lu", trans->status);
     
     /* Allocate the RX queue, or reset if it is already allocated */
     iwl_pcie_rx_init(trans);
@@ -523,10 +454,12 @@ int IntelWifi::iwl_pcie_nic_init(struct iwl_trans *trans)
     return 0;
 }
 
+#define HW_READY_TIMEOUT (50)
+
 /* line 540
  * Note: returns poll_bit return value, which is >= 0 if success
  */
-int IntelWifi::iwl_pcie_set_hw_ready(struct iwl_trans *trans)
+static int iwl_pcie_set_hw_ready(struct iwl_trans *trans)
 {
     int ret;
     
@@ -593,7 +526,7 @@ int IntelWifi::iwl_pcie_prepare_card_hw(struct iwl_trans *trans)
 /* line 600
  * ucode
  */
-void IntelWifi::iwl_pcie_load_firmware_chunk_fh(struct iwl_trans *trans,
+static void iwl_pcie_load_firmware_chunk_fh(struct iwl_trans *trans,
                                             u32 dst_addr, dma_addr_t phy_addr,
                                             u32 byte_cnt)
 {
@@ -622,7 +555,7 @@ void IntelWifi::iwl_pcie_load_firmware_chunk_fh(struct iwl_trans *trans,
 }
 
 // line 631
-int IntelWifi::iwl_pcie_load_firmware_chunk(struct iwl_trans *trans,
+static int iwl_pcie_load_firmware_chunk(struct iwl_trans *trans,
                                         u32 dst_addr, dma_addr_t phy_addr,
                                         u32 byte_cnt)
 {
@@ -635,8 +568,7 @@ int IntelWifi::iwl_pcie_load_firmware_chunk(struct iwl_trans *trans,
     if (!iwl_trans_grab_nic_access(trans, &state))
         return -EIO;
     
-    iwl_pcie_load_firmware_chunk_fh(trans, dst_addr, phy_addr,
-                                    byte_cnt);
+    iwl_pcie_load_firmware_chunk_fh(trans, dst_addr, phy_addr, byte_cnt);
     iwl_trans_release_nic_access(trans, &state);
     
     IOLockLock(trans_pcie->ucode_write_waitq);
@@ -656,25 +588,8 @@ int IntelWifi::iwl_pcie_load_firmware_chunk(struct iwl_trans *trans,
     return 0;
 }
 
-// line 641
-void IntelWifi::iwl_enable_fw_load_int(struct iwl_trans *trans)
-{
-    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
-    
-    IWL_DEBUG_ISR(trans, "Enabling FW load interrupt\n");
-    if (!trans_pcie->msix_enabled) {
-        trans_pcie->inta_mask = CSR_INT_BIT_FH_TX;
-        iwl_write32(trans, CSR_INT_MASK, trans_pcie->inta_mask);
-    } else {
-        iwl_write32(trans, CSR_MSIX_HW_INT_MASK_AD,
-                        trans_pcie->hw_init_mask);
-        //        iwl_enable_fh_int_msk_msix(trans,
-        //                                   MSIX_FH_INT_CAUSES_D2S_CH0_NUM);
-    }
-}
-
 // line 658
-int IntelWifi::iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
+static int iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
                                      const struct fw_desc *section)
 {
     u32 offset, chunk_sz = min(FH_MEM_TB_MAX_LENGTH, (u32)section->len);
@@ -683,11 +598,9 @@ int IntelWifi::iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
     IWL_DEBUG_FW(trans, "[%d] uCode section being loaded...\n", section_num);
     
     IOBufferMemoryDescriptor *bmd =
-    
-    IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, 0, section->len, 0x00000000ffffffffULL);
+            IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, 0, section->len, 0x00000000ffffffffULL);
     
     bmd->prepare();
-    
     
     IODMACommand *cmd = IODMACommand::withSpecification(kIODMACommandOutputHost32, 32, 0, IODMACommand::kMapped, 0, 1);
     cmd->setMemoryDescriptor(bmd);
@@ -741,7 +654,7 @@ int IntelWifi::iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
 }
 
 // line 715
-int IntelWifi::iwl_pcie_load_cpu_sections_8000(struct iwl_trans *trans,
+static int iwl_pcie_load_cpu_sections_8000(struct iwl_trans *trans,
                                            const struct fw_img *image,
                                            int cpu,
                                            int *first_ucode_section)
@@ -808,7 +721,7 @@ int IntelWifi::iwl_pcie_load_cpu_sections_8000(struct iwl_trans *trans,
 }
 
 // line 785
-int IntelWifi::iwl_pcie_load_cpu_sections(struct iwl_trans *trans,
+static int iwl_pcie_load_cpu_sections(struct iwl_trans *trans,
                                           const struct fw_img *image,
                                           int cpu,
                                           int *first_ucode_section)
@@ -928,7 +841,7 @@ void IntelWifi::iwl_pcie_apply_destination(struct iwl_trans *trans)
 int IntelWifi::iwl_pcie_load_given_ucode(struct iwl_trans *trans,
                                          const struct fw_img *image)
 {
-    //struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     int ret = 0;
     int first_ucode_section;
     
@@ -954,20 +867,20 @@ int IntelWifi::iwl_pcie_load_given_ucode(struct iwl_trans *trans,
     }
     
     /* supported for 7000 only for the moment */
-    // TODO: Implement
-    //    if (iwlwifi_mod_params.fw_monitor &&
-    //        trans->cfg->device_family == IWL_DEVICE_FAMILY_7000) {
-    //        iwl_pcie_alloc_fw_monitor(trans, 0);
-    //
-    //        if (trans_pcie->fw_mon_size) {
-    //            iwl_write_prph(trans, MON_BUFF_BASE_ADDR,
-    //                           trans_pcie->fw_mon_phys >> 4);
-    //            iwl_write_prph(trans, MON_BUFF_END_ADDR,
-    //                           (trans_pcie->fw_mon_phys +
-    //                            trans_pcie->fw_mon_size) >> 4);
-    //        }
-    //    } else
-    if (trans->dbg_dest_tlv) {
+    
+    if (iwlwifi_mod_params.fw_monitor &&
+        trans->cfg->device_family == IWL_DEVICE_FAMILY_7000) {
+        // TODO: Implement
+        //iwl_pcie_alloc_fw_monitor(trans, 0);
+
+        if (trans_pcie->fw_mon_size) {
+            iwl_write_prph(trans, MON_BUFF_BASE_ADDR,
+                           trans_pcie->fw_mon_phys >> 4);
+            iwl_write_prph(trans, MON_BUFF_END_ADDR,
+                           (trans_pcie->fw_mon_phys +
+                            trans_pcie->fw_mon_size) >> 4);
+        }
+    } else if (trans->dbg_dest_tlv) {
         iwl_pcie_apply_destination(trans);
     }
     
@@ -1070,7 +983,7 @@ static struct iwl_causes_list causes_list[] = {
 
 
 // line 1036
-void IntelWifi::iwl_pcie_map_non_rx_causes(struct iwl_trans *trans)
+static void iwl_pcie_map_non_rx_causes(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie =  IWL_TRANS_GET_PCIE_TRANS(trans);
     int val = trans_pcie->def_irq | MSIX_NON_AUTO_CLEAR_CAUSE;
@@ -1089,7 +1002,7 @@ void IntelWifi::iwl_pcie_map_non_rx_causes(struct iwl_trans *trans)
 
 
 // line 1054
-void IntelWifi::iwl_pcie_map_rx_causes(struct iwl_trans *trans)
+static void iwl_pcie_map_rx_causes(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     u32 offset = trans_pcie->shared_vec_mask & IWL_SHARED_IRQ_FIRST_RSS ? 1 : 0;
@@ -1399,12 +1312,12 @@ void IntelWifi::iwl_trans_pcie_rf_kill(struct iwl_trans *trans, bool state)
              state ? "disabled" : "enabled");
     
     // TODO: implement
-    //    if (iwl_op_mode_hw_rf_kill(trans->op_mode, state)) {
-    //        if (trans->cfg->gen2)
-    //            _iwl_trans_pcie_gen2_stop_device(trans, true);
-    //        else
-    //            _iwl_trans_pcie_stop_device(trans, true);
-    //    }
+    //if (iwl_op_mode_hw_rf_kill(trans->op_mode, state)) {
+    //    if (trans->cfg->gen2)
+    //        _iwl_trans_pcie_gen2_stop_device(trans, true);
+    //    else
+    //        _iwl_trans_pcie_stop_device(trans, true);
+    //}
 }
 
 // line 1489
@@ -1602,42 +1515,41 @@ void IntelWifi::iwl_trans_pcie_configure(struct iwl_trans *trans,
 void IntelWifi::iwl_trans_pcie_free(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
-    //    int i;
-    //
-    //    iwl_pcie_synchronize_irqs(trans);
-    //
-    //    if (trans->cfg->gen2)
-    //        iwl_pcie_gen2_tx_free(trans);
-    //    else
-    //        iwl_pcie_tx_free(trans);
-    //    iwl_pcie_rx_free(trans);
-    //
-    //    if (trans_pcie->rba.alloc_wq) {
-    //        destroy_workqueue(trans_pcie->rba.alloc_wq);
-    //        trans_pcie->rba.alloc_wq = NULL;
-    //    }
-    //
-    //    if (trans_pcie->msix_enabled) {
-    //        for (i = 0; i < trans_pcie->alloc_vecs; i++) {
-    //            irq_set_affinity_hint(
-    //                                  trans_pcie->msix_entries[i].vector,
-    //                                  NULL);
-    //        }
-    //
-    //        trans_pcie->msix_enabled = false;
-    //    } else {
-    //        iwl_pcie_free_ict(trans);
-    //    }
-    //
-    //    iwl_pcie_free_fw_monitor(trans);
-    //
-    //    for_each_possible_cpu(i) {
-    //        struct iwl_tso_hdr_page *p =
-    //        per_cpu_ptr(trans_pcie->tso_hdr_page, i);
-    //
-    //        if (p->page)
-    //            __free_page(p->page);
-    //    }
+//    int i;
+
+//    iwl_pcie_synchronize_irqs(trans);
+
+    if (trans->cfg->gen2) {
+//        iwl_pcie_gen2_tx_free(trans);
+    }
+    else
+        iwl_pcie_tx_free(trans);
+    iwl_pcie_rx_free(trans);
+
+//    if (trans_pcie->rba.alloc_wq) {
+//        destroy_workqueue(trans_pcie->rba.alloc_wq);
+//        trans_pcie->rba.alloc_wq = NULL;
+//    }
+
+    if (trans_pcie->msix_enabled) {
+//        for (i = 0; i < trans_pcie->alloc_vecs; i++) {
+//            irq_set_affinity_hint(trans_pcie->msix_entries[i].vector, NULL);
+//        }
+
+        trans_pcie->msix_enabled = false;
+    } else {
+        iwl_pcie_free_ict(trans);
+    }
+
+    //iwl_pcie_free_fw_monitor(trans);
+
+//    for_each_possible_cpu(i) {
+//        struct iwl_tso_hdr_page *p =
+//        per_cpu_ptr(trans_pcie->tso_hdr_page, i);
+//
+//        if (p->page)
+//            __free_page(p->page);
+//    }
     
     //    free_percpu(trans_pcie->tso_hdr_page);
     IOSimpleLockFree(trans_pcie->irq_lock);

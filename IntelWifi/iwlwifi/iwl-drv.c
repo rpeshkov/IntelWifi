@@ -1599,7 +1599,7 @@ void iwl_drv_stop(struct iwl_drv *drv)
 {
 	//wait_for_completion(&drv->request_firmware_complete);
 
-	_iwl_op_mode_stop(drv);
+	//_iwl_op_mode_stop(drv);
 
 	iwl_dealloc_ucode(drv);
 

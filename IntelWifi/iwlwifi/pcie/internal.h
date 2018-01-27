@@ -21,6 +21,7 @@
 #include "iwl-modparams.h"
 #include "iwl-fh.h"
 #include "iwl-io.h"
+#include "iwl-csr.h"
 
 /* We need 2 entries for the TX command and header, and another one might
  * be needed for potential data in the SKB's head. The remaining ones can
@@ -154,6 +155,9 @@ struct iwl_dma_ptr {
     dma_addr_t dma;
     void *addr;
     size_t size;
+    
+    void *bmd; // IOBufferMemoryDescriptor
+    void *cmd; // IODMACommand
 };
 
 
@@ -368,6 +372,10 @@ struct iwl_trans_pcie {
     IOSimpleLock* reg_lock;
     bool cmd_hold_nic_awake;
     bool ref_cmd_in_flight;
+    
+    u32 fw_mon_size;
+    dma_addr_t fw_mon_phys;
+    void *fw_mon_page;
   
     bool msix_enabled;
     u8 shared_vec_mask;
@@ -391,6 +399,204 @@ iwl_trans_pcie_get_trans(struct iwl_trans_pcie *trans_pcie)
     return container_of((void *)trans_pcie, struct iwl_trans,
                         trans_specific);
 }
+
+/*****************************************************
+ * RX
+ ******************************************************/
+//int iwl_pcie_rx_init(struct iwl_trans *trans);
+int iwl_pcie_gen2_rx_init(struct iwl_trans *trans);
+//irqreturn_t iwl_pcie_msix_isr(int irq, void *data);
+//irqreturn_t iwl_pcie_irq_handler(int irq, void *dev_id);
+//irqreturn_t iwl_pcie_irq_msix_handler(int irq, void *dev_id);
+//irqreturn_t iwl_pcie_irq_rx_msix_handler(int irq, void *dev_id);
+//int iwl_pcie_rx_stop(struct iwl_trans *trans);
+void iwl_pcie_rx_free(struct iwl_trans *trans);
+
+/*****************************************************
+ * TX / HCMD
+ ******************************************************/
+//int iwl_pcie_tx_init(struct iwl_trans *trans);
+//int iwl_pcie_gen2_tx_init(struct iwl_trans *trans);
+//void iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr);
+int iwl_pcie_tx_stop(struct iwl_trans *trans);
+void iwl_pcie_tx_free(struct iwl_trans *trans);
+//bool iwl_trans_pcie_txq_enable(struct iwl_trans *trans, int queue, u16 ssn,
+//                               const struct iwl_trans_txq_scd_cfg *cfg,
+//                               unsigned int wdg_timeout);
+//void iwl_trans_pcie_txq_disable(struct iwl_trans *trans, int queue,
+//                                bool configure_scd);
+void iwl_trans_pcie_txq_set_shared_mode(struct iwl_trans *trans, u32 txq_id,
+                                        bool shared_mode);
+//void iwl_trans_pcie_log_scd_error(struct iwl_trans *trans,
+//                                  struct iwl_txq *txq);
+//int iwl_trans_pcie_tx(struct iwl_trans *trans, struct sk_buff *skb,
+//                      struct iwl_device_cmd *dev_cmd, int txq_id);
+void iwl_pcie_txq_check_wrptrs(struct iwl_trans *trans);
+//int iwl_trans_pcie_send_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd);
+//void iwl_pcie_hcmd_complete(struct iwl_trans *trans,
+//                            struct iwl_rx_cmd_buffer *rxb);
+//void iwl_trans_pcie_reclaim(struct iwl_trans *trans, int txq_id, int ssn,
+//                            struct sk_buff_head *skbs);
+//void iwl_trans_pcie_tx_reset(struct iwl_trans *trans);
+
+/*****************************************************
+ * Helpers
+ ******************************************************/
+// line 562
+static inline void _iwl_disable_interrupts(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    clear_bit(STATUS_INT_ENABLED, &trans->status);
+    if (!trans_pcie->msix_enabled) {
+        /* disable interrupts from uCode/NIC to host */
+        iwl_write32(trans, CSR_INT_MASK, 0x00000000);
+        
+        /* acknowledge/clear/reset any interrupts still pending
+         * from uCode or flow handler (Rx/Tx DMA) */
+        iwl_write32(trans, CSR_INT, 0xffffffff);
+        iwl_write32(trans, CSR_FH_INT_STATUS, 0xffffffff);
+    } else {
+        /* disable all the interrupt we might use */
+        iwl_write32(trans, CSR_MSIX_FH_INT_MASK_AD,
+                    trans_pcie->fh_init_mask);
+        iwl_write32(trans, CSR_MSIX_HW_INT_MASK_AD,
+                    trans_pcie->hw_init_mask);
+    }
+    IWL_DEBUG_ISR(trans, "Disabled interrupts\n");
+}
+
+// line 585
+static inline void iwl_disable_interrupts(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    IOSimpleLockLock(trans_pcie->irq_lock);
+    _iwl_disable_interrupts(trans);
+    IOSimpleLockUnlock(trans_pcie->irq_lock);
+}
+
+// line 594
+static inline void _iwl_enable_interrupts(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    IWL_DEBUG_ISR(trans, "Enabling interrupts\n");
+    set_bit(STATUS_INT_ENABLED, &trans->status);
+    
+    if (!trans_pcie->msix_enabled) {
+        trans_pcie->inta_mask = CSR_INI_SET_MASK;
+        iwl_write32(trans, CSR_INT_MASK, trans_pcie->inta_mask);
+    } else {
+        /*
+         * fh/hw_mask keeps all the unmasked causes.
+         * Unlike msi, in msix cause is enabled when it is unset.
+         */
+        trans_pcie->hw_mask = trans_pcie->hw_init_mask;
+        trans_pcie->fh_mask = trans_pcie->fh_init_mask;
+        iwl_write32(trans, CSR_MSIX_FH_INT_MASK_AD,
+                    ~trans_pcie->fh_mask);
+        iwl_write32(trans, CSR_MSIX_HW_INT_MASK_AD,
+                    ~trans_pcie->hw_mask);
+    }
+}
+
+// line 617
+static inline void iwl_enable_interrupts(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    IOSimpleLockLock(trans_pcie->irq_lock);
+    _iwl_enable_interrupts(trans);
+    IOSimpleLockUnlock(trans_pcie->irq_lock);
+}
+
+
+// line 625
+static inline void iwl_enable_hw_int_msk_msix(struct iwl_trans *trans, u32 msk)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    iwl_write32(trans, CSR_MSIX_HW_INT_MASK_AD, ~msk);
+    trans_pcie->hw_mask = msk;
+}
+
+// line 633
+static inline void iwl_enable_fh_int_msk_msix(struct iwl_trans *trans, u32 msk)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    iwl_write32(trans, CSR_MSIX_FH_INT_MASK_AD, ~msk);
+    trans_pcie->fh_mask = msk;
+}
+
+// line 641
+static inline void iwl_enable_fw_load_int(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    IWL_DEBUG_ISR(trans, "Enabling FW load interrupt\n");
+    if (!trans_pcie->msix_enabled) {
+        trans_pcie->inta_mask = CSR_INT_BIT_FH_TX;
+        iwl_write32(trans, CSR_INT_MASK, trans_pcie->inta_mask);
+    } else {
+        iwl_write32(trans, CSR_MSIX_HW_INT_MASK_AD,
+                    trans_pcie->hw_init_mask);
+        iwl_enable_fh_int_msk_msix(trans,
+                                   MSIX_FH_INT_CAUSES_D2S_CH0_NUM);
+    }
+}
+
+
+// line 657
+static inline void iwl_pcie_sw_reset(struct iwl_trans* trans)
+{
+    /* Reset entire device - do controller reset (results in SHRD_HW_RST) */
+    iwl_set_bit(trans, CSR_RESET, CSR_RESET_REG_FLAG_SW_RESET);
+    IODelay(6000);
+}
+
+// line 676
+static inline void iwl_enable_rfkill_int(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    IWL_DEBUG_ISR(trans, "Enabling rfkill interrupt\n");
+    if (!trans_pcie->msix_enabled) {
+        trans_pcie->inta_mask = CSR_INT_BIT_RF_KILL;
+        iwl_write32(trans, CSR_INT_MASK, trans_pcie->inta_mask);
+    } else {
+        iwl_write32(trans, CSR_MSIX_FH_INT_MASK_AD,
+                    trans_pcie->fh_init_mask);
+        iwl_enable_hw_int_msk_msix(trans,
+                                   MSIX_HW_INT_CAUSES_REG_RF_KILL);
+    }
+    
+    if (trans->cfg->device_family == IWL_DEVICE_FAMILY_9000) {
+        /*
+         * On 9000-series devices this bit isn't enabled by default, so
+         * when we power down the device we need set the bit to allow it
+         * to wake up the PCI-E bus for RF-kill interrupts.
+         */
+        iwl_set_bit(trans, CSR_GP_CNTRL,
+                    CSR_GP_CNTRL_REG_FLAG_RFKILL_WAKE_L1A_EN);
+    }
+}
+
+// line 735
+static inline bool iwl_is_rfkill_set(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    
+    //lockdep_assert_held(&trans_pcie->mutex);
+    
+    if (trans_pcie->debug_rfkill)
+        return true;
+    
+    return !(iwl_read32(trans, CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW);
+}
+
+
 
 
 static inline bool iwl_queue_used(const struct iwl_txq *q, int i)
@@ -439,6 +645,52 @@ static inline void __iwl_trans_pcie_set_bit(struct iwl_trans *trans,
 {
     __iwl_trans_pcie_set_bits_mask(trans, reg, mask, mask);
 }
+
+/* common functions that are used by gen2 transport */
+//void iwl_pcie_apm_config(struct iwl_trans *trans);
+//int iwl_pcie_prepare_card_hw(struct iwl_trans *trans);
+//void iwl_pcie_synchronize_irqs(struct iwl_trans *trans);
+//bool iwl_pcie_check_hw_rf_kill(struct iwl_trans *trans);
+//void iwl_trans_pcie_handle_stop_rfkill(struct iwl_trans *trans,
+//                                       bool was_in_rfkill);
+//void iwl_pcie_txq_free_tfd(struct iwl_trans *trans, struct iwl_txq *txq);
+int iwl_queue_space(const struct iwl_txq *q);
+//void iwl_pcie_apm_stop_master(struct iwl_trans *trans);
+//void iwl_pcie_conf_msix_hw(struct iwl_trans_pcie *trans_pcie);
+//int iwl_pcie_txq_init(struct iwl_trans *trans, struct iwl_txq *txq,
+//                      int slots_num, bool cmd_queue);
+//int iwl_pcie_txq_alloc(struct iwl_trans *trans,
+//                       struct iwl_txq *txq, int slots_num,  bool cmd_queue);
+int iwl_pcie_alloc_dma_ptr(struct iwl_trans *trans,
+                           struct iwl_dma_ptr *ptr, size_t size);
+void iwl_pcie_free_dma_ptr(struct iwl_trans *trans, struct iwl_dma_ptr *ptr);
+//void iwl_pcie_apply_destination(struct iwl_trans *trans);
+//void iwl_pcie_free_tso_page(struct iwl_trans_pcie *trans_pcie,
+//                            struct sk_buff *skb);
+//#ifdef CONFIG_INET
+//struct iwl_tso_hdr_page *get_page_hdr(struct iwl_trans *trans, size_t len);
+//#endif
+//
+///* transport gen 2 exported functions */
+//int iwl_trans_pcie_gen2_start_fw(struct iwl_trans *trans,
+//                                 const struct fw_img *fw, bool run_in_rfkill);
+//void iwl_trans_pcie_gen2_fw_alive(struct iwl_trans *trans, u32 scd_addr);
+//int iwl_trans_pcie_dyn_txq_alloc(struct iwl_trans *trans,
+//                                 struct iwl_tx_queue_cfg_cmd *cmd,
+//                                 int cmd_id,
+//                                 unsigned int timeout);
+//void iwl_trans_pcie_dyn_txq_free(struct iwl_trans *trans, int queue);
+//int iwl_trans_pcie_gen2_tx(struct iwl_trans *trans, struct sk_buff *skb,
+//                           struct iwl_device_cmd *dev_cmd, int txq_id);
+//int iwl_trans_pcie_gen2_send_hcmd(struct iwl_trans *trans,
+//                                  struct iwl_host_cmd *cmd);
+//void iwl_trans_pcie_gen2_stop_device(struct iwl_trans *trans,
+//                                     bool low_power);
+//void _iwl_trans_pcie_gen2_stop_device(struct iwl_trans *trans, bool low_power);
+//void iwl_pcie_gen2_txq_unmap(struct iwl_trans *trans, int txq_id);
+//void iwl_pcie_gen2_tx_free(struct iwl_trans *trans);
+//void iwl_pcie_gen2_tx_stop(struct iwl_trans *trans);
+
 
 
 extern const struct iwl_trans_ops trans_ops_pcie;

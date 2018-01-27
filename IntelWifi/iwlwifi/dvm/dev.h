@@ -881,6 +881,7 @@ struct iwl_priv {
 #endif /* CONFIG_IWLWIFI_DEBUGFS */
 
 	struct iwl_nvm_data *nvm_data;
+    vm_size_t nvm_data_size;
 	/* eeprom blob for debugfs */
 	u8 *eeprom_blob;
 	size_t eeprom_blob_size;

@@ -61,7 +61,7 @@
  *
  ***************************************************/
 
-int IntelWifi::iwl_queue_space(const struct iwl_txq *q)
+int iwl_queue_space(const struct iwl_txq *q)
 {
     unsigned int max;
     unsigned int used;
@@ -92,7 +92,7 @@ int IntelWifi::iwl_queue_space(const struct iwl_txq *q)
 /*
  * iwl_queue_init - Initialize queue's high/low-water and read/write indexes
  */
-int IntelWifi::iwl_queue_init(struct iwl_txq *q, int slots_num)
+static int iwl_queue_init(struct iwl_txq *q, int slots_num)
 {
     q->n_window = slots_num;
     
@@ -116,14 +116,16 @@ int IntelWifi::iwl_queue_init(struct iwl_txq *q, int slots_num)
 }
 
 // line 127
-int IntelWifi::iwl_pcie_alloc_dma_ptr(struct iwl_trans *trans,
-                           struct iwl_dma_ptr *ptr, size_t size)
+int iwl_pcie_alloc_dma_ptr(struct iwl_trans *trans, struct iwl_dma_ptr *ptr, size_t size)
 {
     if (ptr->addr)
         return -EINVAL;
     
+    IOOptionBits options = kIODirectionInOut | kIOMemoryPhysicallyContiguous | kIOMapInhibitCache;
+    
     IOBufferMemoryDescriptor *bmd =
-    IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionInOut | kIOMemoryPhysicallyContiguous | kIOMapInhibitCache), size, 0x00000000FFFFFFFFULL);
+            IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, options, size, 0x00000000FFFFFFFFULL);
+    bmd->prepare();
     
     IODMACommand *cmd = IODMACommand::withSpecification(kIODMACommandOutputHost64, 64, 0, IODMACommand::kMapped, 0, 1);
     cmd->setMemoryDescriptor(bmd);
@@ -144,12 +146,33 @@ int IntelWifi::iwl_pcie_alloc_dma_ptr(struct iwl_trans *trans,
         return -ENOMEM;
     ptr->dma = seg.fIOVMAddr;
     ptr->size = size;
+    ptr->bmd = bmd;
+    ptr->cmd = cmd;
     return 0;
 }
 
+// line 141
+void iwl_pcie_free_dma_ptr(struct iwl_trans *trans, struct iwl_dma_ptr *ptr)
+{
+    if (unlikely(!ptr->addr))
+        return;
+    
+    //dma_free_coherent(trans->dev, ptr->size, ptr->addr, ptr->dma);
+    IOBufferMemoryDescriptor *bmd = static_cast<IOBufferMemoryDescriptor *>(ptr->bmd);
+    IODMACommand *cmd = static_cast<IODMACommand *>(ptr->cmd);
+    
+    cmd->complete();
+    cmd->release();
+    
+    bmd->complete();
+    
+    memset(ptr, 0, sizeof(*ptr));
+}
+
+
 
 // line 217
-void IntelWifi::iwl_pcie_txq_inval_byte_cnt_tbl(struct iwl_trans *trans, struct iwl_txq *txq)
+static void iwl_pcie_txq_inval_byte_cnt_tbl(struct iwl_trans *trans, struct iwl_txq *txq)
 {
     struct iwl_trans_pcie *trans_pcie =
     IWL_TRANS_GET_PCIE_TRANS(trans);
@@ -178,8 +201,7 @@ void IntelWifi::iwl_pcie_txq_inval_byte_cnt_tbl(struct iwl_trans *trans, struct 
 /* line 244
  * iwl_pcie_txq_inc_wr_ptr - Send new write index to hardware
  */
-void IntelWifi::iwl_pcie_txq_inc_wr_ptr(struct iwl_trans *trans,
-                                    struct iwl_txq *txq)
+static void iwl_pcie_txq_inc_wr_ptr(struct iwl_trans *trans, struct iwl_txq *txq)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     u32 reg = 0;
@@ -221,7 +243,7 @@ void IntelWifi::iwl_pcie_txq_inc_wr_ptr(struct iwl_trans *trans,
 }
 
 // line 292
-void IntelWifi::iwl_pcie_txq_check_wrptrs(struct iwl_trans *trans)
+void iwl_pcie_txq_check_wrptrs(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     int i;
@@ -246,7 +268,6 @@ void IntelWifi::iwl_pcie_txq_check_wrptrs(struct iwl_trans *trans)
 // line 312
 static dma_addr_t iwl_pcie_tfd_tb_get_addr(struct iwl_trans *trans, void *_tfd, u8 idx)
 {
-    
     if (trans->cfg->use_tfh) {
         struct iwl_tfh_tfd *tfd = (struct iwl_tfh_tfd *)_tfd;
         struct iwl_tfh_tb *tb = &tfd->tbs[idx];
@@ -471,7 +492,6 @@ int IntelWifi::iwl_pcie_txq_init(struct iwl_trans *trans, struct iwl_txq *txq,
     if (ret)
         return ret;
     
-    //spin_lock_init(&txq->lock);
     txq->lock = IOSimpleLockAlloc();
     
     if (cmd_queue) {
@@ -488,7 +508,7 @@ int IntelWifi::iwl_pcie_txq_init(struct iwl_trans *trans, struct iwl_txq *txq,
 }
 
 // line 593
-void IntelWifi::iwl_pcie_clear_cmd_in_flight(struct iwl_trans *trans)
+static void iwl_pcie_clear_cmd_in_flight(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
@@ -502,6 +522,7 @@ void IntelWifi::iwl_pcie_clear_cmd_in_flight(struct iwl_trans *trans)
     
     if (!trans->cfg->base_params->apmg_wake_up_wa)
         return;
+    
     if (WARN_ON(!trans_pcie->cmd_hold_nic_awake))
         return;
     
@@ -626,7 +647,7 @@ void IntelWifi::iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr)
 }
 
 // line 812
-void IntelWifi::iwl_pcie_tx_stop_fh(struct iwl_trans *trans)
+static void iwl_pcie_tx_stop_fh(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     IOInterruptState state;
@@ -657,6 +678,41 @@ out:
     IOSimpleLockUnlock(trans_pcie->irq_lock);
 }
 
+/* line 843
+ * iwl_pcie_tx_stop - Stop all Tx DMA channels
+ */
+int iwl_pcie_tx_stop(struct iwl_trans *trans)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    //int txq_id;
+    
+    /* Turn off all Tx DMA fifos */
+    iwl_scd_deactivate_fifos(trans);
+    
+    /* Turn off all Tx DMA channels */
+    iwl_pcie_tx_stop_fh(trans);
+    
+    /*
+     * This function can be called before the op_mode disabled the
+     * queues. This happens when we have an rfkill interrupt.
+     * Since we stop Tx altogether - mark the queues as stopped.
+     */
+    memset(trans_pcie->queue_stopped, 0, sizeof(trans_pcie->queue_stopped));
+    memset(trans_pcie->queue_used, 0, sizeof(trans_pcie->queue_used));
+    
+    /* This can happen: start_hw, stop_device */
+    if (!trans_pcie->txq_memory)
+        return 0;
+    
+    /* Unmap DMA from host system and free skb's */
+    // TODO: Implement
+//    for (txq_id = 0; txq_id < trans->cfg->base_params->num_of_queues; txq_id++)
+//        iwl_pcie_txq_unmap(trans, txq_id);
+    
+    return 0;
+}
+
+
 /* line 877
  * iwl_trans_tx_free - Free TXQ Context
  *
@@ -682,9 +738,9 @@ void iwl_pcie_tx_free(struct iwl_trans *trans)
     IOFree(trans_pcie->txq_memory, sizeof(struct iwl_txq) * trans->cfg->base_params->num_of_queues);
     trans_pcie->txq_memory = NULL;
     
-//    iwl_pcie_free_dma_ptr(trans, &trans_pcie->kw);
-//
-//    iwl_pcie_free_dma_ptr(trans, &trans_pcie->scd_bc_tbls);
+    iwl_pcie_free_dma_ptr(trans, &trans_pcie->kw);
+
+    iwl_pcie_free_dma_ptr(trans, &trans_pcie->scd_bc_tbls);
 }
 
 
@@ -847,7 +903,7 @@ void IntelWifi::iwl_pcie_txq_progress(struct iwl_txq *txq)
 
 
 // line 1168
-int IntelWifi::iwl_pcie_set_cmd_in_flight(struct iwl_trans *trans, const struct iwl_host_cmd *cmd)
+static int iwl_pcie_set_cmd_in_flight(struct iwl_trans *trans, const struct iwl_host_cmd *cmd)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     int ret;
@@ -932,8 +988,7 @@ void IntelWifi::iwl_pcie_cmdq_reclaim(struct iwl_trans *trans, int txq_id, int i
 }
 
 // line 1254
-int IntelWifi::iwl_pcie_txq_set_ratid_map(struct iwl_trans *trans, u16 ra_tid,
-                                      u16 txq_id)
+static int iwl_pcie_txq_set_ratid_map(struct iwl_trans *trans, u16 ra_tid, u16 txq_id)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     u32 tbl_dw_addr;
@@ -972,9 +1027,9 @@ bool IntelWifi::iwl_trans_pcie_txq_enable(struct iwl_trans *trans, int txq_id, u
     int fifo = -1;
     bool scd_bug = false;
     
-//    if (test_and_set_bit(txq_id, trans_pcie->queue_used))
-//        WARN_ONCE(1, "queue %d already used - expect issues", txq_id);
-    
+    if (test_and_set_bit(txq_id, trans_pcie->queue_used)) {
+        IWL_DEBUG_TX_QUEUES(trans, "queue %d already used - expect issues", txq_id);
+    }
     
     //txq->wd_timeout = msecs_to_jiffies(wdg_timeout);
     // Macro is this:     return (m + (MSEC_PER_SEC / HZ) - 1) / (MSEC_PER_SEC / HZ);
@@ -1077,7 +1132,7 @@ bool IntelWifi::iwl_trans_pcie_txq_enable(struct iwl_trans *trans, int txq_id, u
 }
 
 // line 1395
-void IntelWifi::iwl_trans_pcie_txq_set_shared_mode(struct iwl_trans *trans, u32 txq_id,
+void iwl_trans_pcie_txq_set_shared_mode(struct iwl_trans *trans, u32 txq_id,
                                         bool shared_mode)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
@@ -1106,8 +1161,8 @@ void IntelWifi::iwl_trans_pcie_txq_disable(struct iwl_trans *trans, int txq_id, 
      * stop_device.
      */
     if (!test_and_clear_bit(txq_id, trans_pcie->queue_used)) {
-//        WARN_ONCE(test_bit(STATUS_DEVICE_ENABLED, &trans->status),
-//                  "queue %d not used", txq_id);
+        if (test_bit(STATUS_DEVICE_ENABLED, &trans->status))
+            IWL_DEBUG_TX_QUEUES(trans, "queue %d not used", txq_id);
         return;
     }
     
@@ -1206,8 +1261,6 @@ int IntelWifi::iwl_pcie_enqueue_hcmd(struct iwl_trans *trans,
                 goto free_dup_buf;
             }
             
-//            dup_buf = kmemdup(cmddata[i], cmdlen[i],
-//                              GFP_ATOMIC);
             dup_buf = IOMalloc(cmdlen[i]);
             if (!dup_buf)
                 return -ENOMEM;
@@ -1563,7 +1616,7 @@ void IntelWifi::iwl_pcie_hcmd_complete(struct iwl_trans *trans,
         clear_bit(STATUS_SYNC_HCMD_ACTIVE, &trans->status);
         IWL_DEBUG_INFO(trans, "Clearing HCMD_ACTIVE for command %s\n",
                        iwl_get_cmd_string(trans, cmd_id));
-        //wake_up(&trans_pcie->wait_command_queue);
+
         IOLockLock(trans_pcie->wait_command_queue);
         IOLockWakeup(trans_pcie->wait_command_queue, &trans->status, true);
         IOLockUnlock(trans_pcie->wait_command_queue);

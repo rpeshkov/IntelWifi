@@ -67,7 +67,7 @@ int IwlDvmOpMode::__iwl_up(struct iwl_priv *priv)
     
 error:
     set_bit(STATUS_EXIT_PENDING, &priv->status);
-    //iwl_down(priv);
+    iwl_down(priv);
     clear_bit(STATUS_EXIT_PENDING, &priv->status);
     
     IWL_ERR(priv, "Unable to initialize device.\n");

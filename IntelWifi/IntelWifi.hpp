@@ -148,15 +148,6 @@ private:
     int findMSIInterruptTypeIndex();
     
     
-    // internal.h
-    void _iwl_disable_interrupts(struct iwl_trans *trans); // line 562
-    void iwl_disable_interrupts(struct iwl_trans *trans); // line 585
-    void _iwl_enable_interrupts(struct iwl_trans *trans); // line 594
-    void iwl_enable_interrupts(struct iwl_trans *trans); // line 617
-    void iwl_enable_hw_int_msk_msix(struct iwl_trans *trans, u32 msk); // line 625
-    void iwl_pcie_sw_reset(struct iwl_trans *trans); // line 657
-    void iwl_enable_rfkill_int(struct iwl_trans *trans); // line 676
-    bool iwl_is_rfkill_set(struct iwl_trans *trans); // line 735
     
     
     
@@ -164,35 +155,16 @@ private:
     void iwl_pcie_set_pwr(struct iwl_trans *trans, bool vaux); // line 186
     void iwl_pcie_apm_config(struct iwl_trans *trans); // line 204
     int iwl_pcie_apm_init(struct iwl_trans *trans); // line 232
-    void iwl_pcie_apm_lp_xtal_enable(struct iwl_trans *trans); // line 343
     void iwl_pcie_apm_stop_master(struct iwl_trans *trans); // line 444
     void iwl_pcie_apm_stop(struct iwl_trans *trans, bool op_mode_leave); // line 460
     int iwl_pcie_nic_init(struct iwl_trans *trans); // line 505
-    int iwl_pcie_set_hw_ready(struct iwl_trans *trans); // line 540
     int iwl_pcie_prepare_card_hw(struct iwl_trans *trans); // line 561
-    
-    void iwl_pcie_load_firmware_chunk_fh(struct iwl_trans *trans,
-                                         u32 dst_addr, dma_addr_t phy_addr,
-                                         u32 byte_cnt); // line 600
-    int iwl_pcie_load_firmware_chunk(struct iwl_trans *trans,
-                                     u32 dst_addr, dma_addr_t phy_addr,
-                                     u32 byte_cnt); // line 631
-    void iwl_enable_fw_load_int(struct iwl_trans *trans); // line 641
-    int iwl_pcie_load_section(struct iwl_trans *trans, u8 section_num,
-                              const struct fw_desc *section); // line 658
-    int iwl_pcie_load_cpu_sections_8000(struct iwl_trans *trans,
-                                        const struct fw_img *image,
-                                        int cpu,
-                                        int *first_ucode_section); // line 715
-    int iwl_pcie_load_cpu_sections(struct iwl_trans *trans, const struct fw_img *image,
-                                   int cpu, int *first_ucode_section); // line 785
+
     void iwl_pcie_apply_destination(struct iwl_trans *trans); // line 826
     int iwl_pcie_load_given_ucode(struct iwl_trans *trans, const struct fw_img *image); // line 900
     int iwl_pcie_load_given_ucode_8000(struct iwl_trans *trans, const struct fw_img *image); // line 952
     bool iwl_pcie_check_hw_rf_kill(struct iwl_trans *trans); // line 989
-    
-    void iwl_pcie_map_non_rx_causes(struct iwl_trans *trans); // line 1036
-    void iwl_pcie_map_rx_causes(struct iwl_trans *trans); // line 1054
+
     void iwl_pcie_conf_msix_hw(struct iwl_trans_pcie *trans_pcie); // line 1084
     void iwl_pcie_init_msix(struct iwl_trans_pcie *trans_pcie); // line 1115
     
@@ -228,37 +200,18 @@ private:
 
     
     // rx.c
-    int iwl_rxq_space(const struct iwl_rxq *rxq);
-    __le32 iwl_pcie_dma_addr2rbd_ptr(dma_addr_t dma_addr);
     int iwl_pcie_rx_stop(struct iwl_trans *trans);
-    void iwl_pcie_rxq_inc_wr_ptr(struct iwl_trans *trans, struct iwl_rxq *rxq);
-    void iwl_pcie_rxq_check_wrptr(struct iwl_trans *trans);
-    
-    void iwl_pcie_rxmq_restock(struct iwl_trans *trans,
-                                          struct iwl_rxq *rxq);
-    void iwl_pcie_rxsq_restock(struct iwl_trans *trans,
-                                          struct iwl_rxq *rxq);
-    void iwl_pcie_rxq_restock(struct iwl_trans *trans, struct iwl_rxq *rxq);
-    
-    
     void iwl_pcie_enable_rx_wake(struct iwl_trans *trans, bool enable);
     void iwl_pcie_rx_mq_hw_init(struct iwl_trans *trans);
-    
-    int iwl_pcie_rx_alloc(struct iwl_trans *trans);
-    int _iwl_pcie_rx_init(struct iwl_trans *trans);
-    
-    void iwl_pcie_rx_init_rxb_lists(struct iwl_rxq *rxq);
     
     int iwl_pcie_alloc_ict(struct iwl_trans *trans);
     void iwl_pcie_disable_ict(struct iwl_trans *trans);
     void iwl_pcie_free_ict(struct iwl_trans *trans);
     irqreturn_t iwl_pcie_irq_handler(int irq, void *dev_id);
     
-    u32 iwl_pcie_int_cause_non_ict(struct iwl_trans *trans);
     void iwl_pcie_handle_rfkill_irq(struct iwl_trans *trans);
     void iwl_pcie_irq_handle_error(struct iwl_trans *trans);
     void iwl_pcie_reset_ict(struct iwl_trans *trans);
-    u32 iwl_pcie_int_cause_ict(struct iwl_trans *trans);
     void iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq);
     int iwl_pcie_rx_init(struct iwl_trans *trans);
     void iwl_pcie_rx_handle(struct iwl_trans *trans, int queue);
@@ -268,32 +221,16 @@ private:
                                           bool emergency);
     
     // tx.c
-    int iwl_queue_space(const struct iwl_txq *q);
-    int iwl_queue_init(struct iwl_txq *q, int slots_num);
-    int iwl_pcie_alloc_dma_ptr(struct iwl_trans *trans, struct iwl_dma_ptr *ptr, size_t size); // line 127
-    void iwl_pcie_txq_inval_byte_cnt_tbl(struct iwl_trans *trans, struct iwl_txq *txq); // line 217
-    void iwl_pcie_txq_inc_wr_ptr(struct iwl_trans *trans, struct iwl_txq *txq); // line 244
-    void iwl_pcie_txq_check_wrptrs(struct iwl_trans *trans); // line 292
-    dma_addr_t iwl_pcie_tfd_tb_get_addr(struct iwl_trans *trans, void *_tfd, u8 idx); // line 312
-    void iwl_pcie_tfd_set_tb(struct iwl_trans *trans, void *tfd,
-                             u8 idx, dma_addr_t addr, u16 len); // line 341
-    u8 iwl_pcie_tfd_get_num_tbs(struct iwl_trans *trans, void *_tfd); // line 357
     int iwl_pcie_txq_alloc(struct iwl_trans *trans, struct iwl_txq *txq, int slots_num, bool cmd_queue); // line 487
     int iwl_pcie_txq_init(struct iwl_trans *trans, struct iwl_txq *txq, int slots_num, bool cmd_queue); // line 551
-    void iwl_pcie_clear_cmd_in_flight(struct iwl_trans *trans); // line 593
     void iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr); // line 715
-    void iwl_pcie_tx_stop_fh(struct iwl_trans *trans); // line 812
     int iwl_pcie_tx_alloc(struct iwl_trans *trans); // line 907
     int iwl_pcie_tx_init(struct iwl_trans *trans); // line 973
     void iwl_pcie_txq_progress(struct iwl_txq *txq); // line 1034
-    int iwl_pcie_set_cmd_in_flight(struct iwl_trans *trans, const struct iwl_host_cmd *cmd); // line 1168
     void iwl_pcie_cmdq_reclaim(struct iwl_trans *trans, int txq_id, int idx); // line 1211
-    int iwl_pcie_txq_set_ratid_map(struct iwl_trans *trans, u16 ra_tid, u16 txq_id); // line 1254
     bool iwl_trans_pcie_txq_enable(struct iwl_trans *trans, int txq_id, u16 ssn,
                                    const struct iwl_trans_txq_scd_cfg *cfg,
                                    unsigned int wdg_timeout); // line 1283
-    void iwl_trans_pcie_txq_set_shared_mode(struct iwl_trans *trans, u32 txq_id,
-                                            bool shared_mode);
     void iwl_trans_pcie_txq_disable(struct iwl_trans *trans, int txq_id, bool configure_scd); // line 1404
     int iwl_pcie_enqueue_hcmd(struct iwl_trans *trans,
                                          struct iwl_host_cmd *cmd); // line 1440
@@ -308,7 +245,7 @@ private:
     int iwl_trans_pcie_tx(struct iwl_trans *trans, struct sk_buff *skb,
                           struct iwl_device_cmd *dev_cmd, int txq_id); // line 2256
     
-    // SCD
+    // other
     
     inline void iwl_trans_txq_enable(struct iwl_trans *trans, int queue,
                                              int fifo, int sta_id, int tid,

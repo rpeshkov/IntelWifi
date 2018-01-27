@@ -19,7 +19,8 @@ int IntelWifi::start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool r
 }
 
 void IntelWifi::op_mode_leave(struct iwl_trans *trans) {
-    iwl_trans_op_mode_leave(trans);
+    //iwl_trans_op_mode_leave(trans);
+    iwl_trans_pcie_op_mode_leave(trans);
 }
 
 void IntelWifi::set_pmi(struct iwl_trans *trans, bool state) {

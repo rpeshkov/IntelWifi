@@ -158,14 +158,14 @@ bool IntelWifi::start(IOService *provider) {
         
         changePowerStateTo(kOffPowerState);// Set the public power state to the lowest level
         registerPowerDriver(this, gPowerStates, kNumPowerStates);
-        //setIdleTimerPeriod(iwlwifi_mod_params.d0i3_timeout);
+        setIdleTimerPeriod(iwlwifi_mod_params.d0i3_timeout);
     }
     
     opmode = new IwlDvmOpMode(this);
     hw = opmode->start(fTrans, fTrans->cfg, &fTrans->drv->fw, NULL);
     
     if (!hw) {
-        //TraceLog("ERROR: Error while preparing HW: %d", err);
+        TraceLog("ERROR: Error while preparing HW");
         releaseAll();
         return false;
     }
@@ -201,10 +201,13 @@ void IntelWifi::stop(IOService *provider) {
         }
     }
     
-    //opmode->stop(0);
     
-    iwl_trans_pcie_stop_device(fTrans, true);
     
+    //iwl_trans_pcie_stop_device(fTrans, true);
+    
+    struct iwl_priv *priv = (struct iwl_priv *)hw->priv;
+    
+    opmode->stop(priv);
     iwl_drv_stop(fTrans->drv);
     iwl_trans_pcie_free(fTrans);
     fTrans = NULL;

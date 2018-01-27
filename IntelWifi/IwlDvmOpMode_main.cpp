@@ -129,8 +129,7 @@ void IwlDvmOpMode::iwl_update_chain_flags(struct iwl_priv *priv)
 int IwlDvmOpMode::iwl_send_statistics_request(struct iwl_priv *priv, u8 flags, bool clear)
 {
     struct iwl_statistics_cmd statistics_cmd = {
-        .configuration_flags =
-        clear ? IWL_STATS_CONF_CLEAR_STATS : 0,
+        .configuration_flags = clear ? IWL_STATS_CONF_CLEAR_STATS : 0,
     };
     
     if (flags & CMD_ASYNC)
@@ -297,7 +296,6 @@ int IwlDvmOpMode::iwlagn_send_calib_cfg_rt(struct iwl_priv *priv, u32 cfg)
     calib_cfg_cmd.ucd_calib_cfg.once.is_enable = IWL_CALIB_RT_CFG_ALL;
     calib_cfg_cmd.ucd_calib_cfg.once.start = cpu_to_le32(cfg);
     
-    
     return iwl_dvm_send_cmd(priv, &cmd);
 }
 
@@ -343,8 +341,6 @@ void IwlDvmOpMode::iwl_send_bt_config(struct iwl_priv *priv)
                              0, sizeof(struct iwl_bt_cmd), &bt_cmd))
         IWL_ERR(priv, "failed to send BT Coex Config\n");
 }
-
-
 
 
 
@@ -451,6 +447,43 @@ int IwlDvmOpMode::iwl_alive_start(struct iwl_priv *priv)
     return iwl_power_update_mode(priv, true);
 }
 
+/** line 882
+ * iwl_clear_driver_stations - clear knowledge of all stations from driver
+ * @priv: iwl priv struct
+ *
+ * This is called during iwl_down() to make sure that in the case
+ * we're coming there from a hardware restart mac80211 will be
+ * able to reconfigure stations -- if we're getting there in the
+ * normal down flow then the stations will already be cleared.
+ */
+static void iwl_clear_driver_stations(struct iwl_priv *priv)
+{
+    struct iwl_rxon_context *ctx;
+    
+    //spin_lock_bh(&priv->sta_lock);
+    IOSimpleLockLock(priv->sta_lock);
+    memset(priv->stations, 0, sizeof(priv->stations));
+    priv->num_stations = 0;
+    
+    priv->ucode_key_table = 0;
+    
+    for_each_context(priv, ctx) {
+        /*
+         * Remove all key information that is not stored as part
+         * of station information since mac80211 may not have had
+         * a chance to remove all the keys. When device is
+         * reconfigured by mac80211 after an error all keys will
+         * be reconfigured.
+         */
+        memset(ctx->wep_keys, 0, sizeof(ctx->wep_keys));
+        ctx->key_mapping_keys = 0;
+    }
+    
+    //spin_unlock_bh(&priv->sta_lock);
+    IOSimpleLockUnlock(priv->sta_lock);
+}
+
+
 // line 916
 void IwlDvmOpMode::iwl_down(struct iwl_priv *priv)
 {
@@ -464,9 +497,9 @@ void IwlDvmOpMode::iwl_down(struct iwl_priv *priv)
     
     exit_pending = test_and_set_bit(STATUS_EXIT_PENDING, &priv->status);
     
-//    iwl_clear_ucode_stations(priv, NULL);
+    iwl_clear_ucode_stations(priv, NULL);
 //    iwl_dealloc_bcast_stations(priv);
-//    iwl_clear_driver_stations(priv);
+    iwl_clear_driver_stations(priv);
     
     /* reset BT coex data */
     priv->bt_status = 0;
@@ -800,10 +833,6 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
         goto out_free_hw;
     
     /* Read the EEPROM */
-    
-    
-    
-    
     if (iwl_read_eeprom(priv->trans, &priv->eeprom_blob, &priv->eeprom_blob_size)) {
         IWL_ERR(priv, "Unable to init EEPROM\n");
         goto out_free_hw;
@@ -812,7 +841,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     /* Reset chip to save power until we load uCode during "up". */
     _ops->stop_device(priv->trans, true);
     
-    priv->nvm_data = iwl_parse_eeprom_data(NULL, priv->cfg, priv->eeprom_blob, priv->eeprom_blob_size);
+    priv->nvm_data = iwl_parse_eeprom_data(NULL, priv->cfg, priv->eeprom_blob, priv->eeprom_blob_size, &priv->nvm_data_size);
     
     if (!priv->nvm_data)
         goto out_free_eeprom_blob;
@@ -890,12 +919,12 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
              "%s", fw->fw_version);
 
     priv->new_scan_threshold_behaviour =
-    !!(ucode_flags & IWL_UCODE_TLV_FLAGS_NEWSCAN);
+            !!(ucode_flags & IWL_UCODE_TLV_FLAGS_NEWSCAN);
 
     priv->phy_calib_chain_noise_reset_cmd =
-    fw->ucode_capa.standard_phy_calibration_size;
+            fw->ucode_capa.standard_phy_calibration_size;
     priv->phy_calib_chain_noise_gain_cmd =
-    fw->ucode_capa.standard_phy_calibration_size + 1;
+            fw->ucode_capa.standard_phy_calibration_size + 1;
 
     /* initialize all valid contexts */
     iwl_init_context(priv, ucode_flags);
@@ -922,9 +951,11 @@ out_destroy_workqueue:
 //    priv->workqueue = NULL;
 //    iwl_uninit_drv(priv);
 out_free_eeprom_blob:
-//    kfree(priv->eeprom_blob);
+    //kfree(priv->eeprom_blob);
+    IOFree(priv->eeprom_blob, priv->eeprom_blob_size);
 out_free_eeprom:
 //    kfree(priv->nvm_data);
+    IOFree(priv->nvm_data, priv->nvm_data_size);
 out_free_hw:
 //    ieee80211_free_hw(priv->hw);
 out:
@@ -938,27 +969,28 @@ void IwlDvmOpMode::iwl_op_mode_dvm_stop(struct iwl_priv* priv)
     IWL_DEBUG_INFO(priv, "*** UNLOAD DRIVER ***\n");
     
 //    iwlagn_mac_unregister(priv);
-//
+
 //    iwl_tt_exit(priv);
-//
-//    kfree(priv->eeprom_blob);
-//    kfree(priv->nvm_data);
-//
-//    /*netif_stop_queue(dev); */
-//    flush_workqueue(priv->workqueue);
-//
-//    /* ieee80211_unregister_hw calls iwlagn_mac_stop, which flushes
-//     * priv->workqueue... so we can't take down the workqueue
-//     * until now... */
-//    destroy_workqueue(priv->workqueue);
-//    priv->workqueue = NULL;
-//
-//    iwl_uninit_drv(priv);
-//
-//    dev_kfree_skb(priv->beacon_skb);
-//
-//    iwl_trans_op_mode_leave(priv->trans);
-//    ieee80211_free_hw(priv->hw);
+
+    IOFree((void *)priv->eeprom_blob, priv->eeprom_blob_size);
+    IOFree(priv->nvm_data, priv->nvm_data_size);
+
+    /*netif_stop_queue(dev); */
+    //flush_workqueue(priv->workqueue);
+
+    /* ieee80211_unregister_hw calls iwlagn_mac_stop, which flushes
+     * priv->workqueue... so we can't take down the workqueue
+     * until now... */
+    //destroy_workqueue(priv->workqueue);
+    priv->workqueue = NULL;
+
+    iwl_uninit_drv(priv);
+
+    //dev_kfree_skb(priv->beacon_skb);
+
+    _ops->op_mode_leave(priv->trans);
+    
+    //ieee80211_free_hw(priv->hw);
 }
 
 
@@ -981,12 +1013,9 @@ void IwlDvmOpMode::iwl_nic_config(struct iwl_priv *priv)
     /* write radio config values to register */
     if (priv->nvm_data->radio_cfg_type <= EEPROM_RF_CONFIG_TYPE_MAX) {
         u32 reg_val =
-        priv->nvm_data->radio_cfg_type <<
-        CSR_HW_IF_CONFIG_REG_POS_PHY_TYPE |
-        priv->nvm_data->radio_cfg_step <<
-        CSR_HW_IF_CONFIG_REG_POS_PHY_STEP |
-        priv->nvm_data->radio_cfg_dash <<
-        CSR_HW_IF_CONFIG_REG_POS_PHY_DASH;
+            priv->nvm_data->radio_cfg_type << CSR_HW_IF_CONFIG_REG_POS_PHY_TYPE |
+            priv->nvm_data->radio_cfg_step << CSR_HW_IF_CONFIG_REG_POS_PHY_STEP |
+            priv->nvm_data->radio_cfg_dash << CSR_HW_IF_CONFIG_REG_POS_PHY_DASH;
         
         iwl_trans_set_bits_mask(priv->trans, CSR_HW_IF_CONFIG_REG,
                                 CSR_HW_IF_CONFIG_REG_MSK_PHY_TYPE |
@@ -1026,9 +1055,8 @@ void IwlDvmOpMode::iwl_dvm_set_pmi(struct iwl_priv *priv, bool state)
     else
         clear_bit(STATUS_POWER_PMI, &priv->status);
     
-    //iwl_trans_set_pmi(priv->trans, state);
-    _ops->set_pmi(priv->trans, state);
-    
+    iwl_trans_set_pmi(priv->trans, state);
+    //_ops->set_pmi(priv->trans, state);
 }
 
 

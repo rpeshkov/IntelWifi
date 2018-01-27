@@ -842,7 +842,7 @@ static void iwl_init_sbands(struct device *dev, const struct iwl_cfg *cfg,
 
 struct iwl_nvm_data *
 iwl_parse_eeprom_data(struct device *dev, const struct iwl_cfg *cfg,
-		      const u8 *eeprom, size_t eeprom_size)
+		      const u8 *eeprom, size_t eeprom_size, vm_size_t *nvm_data_size)
 {
 	struct iwl_nvm_data *data;
 	const void *tmp;
@@ -851,9 +851,9 @@ iwl_parse_eeprom_data(struct device *dev, const struct iwl_cfg *cfg,
 	if (WARN_ON(!cfg || !cfg->eeprom_params))
 		return NULL;
 
-    vm_size_t data_size = sizeof(*data) + sizeof(struct ieee80211_channel) * IWL_NUM_CHANNELS;
+    *nvm_data_size = sizeof(*data) + sizeof(struct ieee80211_channel) * IWL_NUM_CHANNELS;
     
-	data = IOMalloc(data_size);
+	data = IOMalloc(*nvm_data_size);
 	if (!data)
 		return NULL;
 
@@ -924,7 +924,7 @@ iwl_parse_eeprom_data(struct device *dev, const struct iwl_cfg *cfg,
 
 	return data;
  err_free:
-	IOFree(data, data_size);
+	IOFree(data, *nvm_data_size);
 	return NULL;
 }
 IWL_EXPORT_SYMBOL(iwl_parse_eeprom_data);
