@@ -1228,8 +1228,7 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans,
             int i;
             
             for (i = 0; i < trans_pcie->n_no_reclaim_cmds; i++) {
-                if (trans_pcie->no_reclaim_cmds[i] ==
-                    pkt->hdr.cmd) {
+                if (trans_pcie->no_reclaim_cmds[i] == pkt->hdr.cmd) {
                     reclaim = false;
                     break;
                 }
@@ -1526,8 +1525,7 @@ static u32 iwl_pcie_int_cause_ict(struct iwl_trans *trans)
         IWL_DEBUG_ISR(trans, "ICT index %d value 0x%08X\n",
                       trans_pcie->ict_index, read);
         trans_pcie->ict_tbl[trans_pcie->ict_index] = 0;
-        trans_pcie->ict_index =
-        ((trans_pcie->ict_index + 1) & (ICT_COUNT - 1));
+        trans_pcie->ict_index = ((trans_pcie->ict_index + 1) & (ICT_COUNT - 1));
         
         read = le32_to_cpu(trans_pcie->ict_tbl[trans_pcie->ict_index]);
         //        trace_iwlwifi_dev_ict_read(trans->dev, trans_pcie->ict_index,

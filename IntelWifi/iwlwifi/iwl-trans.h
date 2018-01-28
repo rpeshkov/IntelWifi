@@ -280,7 +280,6 @@ static inline void *rxb_addr(struct iwl_rx_cmd_buffer *r)
 {
     
 	//return (void *)((unsigned long)page_address(r->_page) + r->_offset);
-    // TODO: BANG!!!
     return (void *)((unsigned long)r->_page + r->_offset);//(void *) ((u8*)r->_page + r->_offset);
 }
 
@@ -732,7 +731,7 @@ struct iwl_trans {
 	enum iwl_trans_state state;
 	unsigned long status;
 
-	struct device *dev;
+	
 	u32 max_skb_frags;
 	u32 hw_rev;
 	u32 hw_rf_id;
@@ -781,6 +780,10 @@ struct iwl_trans {
     
     // Added by rpeshkov
     u32 priv_size;
+    
+    void *dev;
+    void *intf;
+    void *gate;
 
 	/* pointer to trans specific struct */
 	/*Ensure that this pointer will always be aligned to sizeof pointer */
@@ -1211,7 +1214,7 @@ static inline void iwl_trans_fw_error(struct iwl_trans *trans)
  * transport helper functions
  *****************************************************/
 struct iwl_trans *iwl_trans_alloc(unsigned int priv_size,
-				  struct device *dev,
+				  
 				  const struct iwl_cfg *cfg,
 				  const struct iwl_trans_ops *ops);
 void iwl_trans_free(struct iwl_trans *trans);

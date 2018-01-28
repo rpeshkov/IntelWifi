@@ -42,6 +42,12 @@ extern "C" {
 #include "iwlwifi/iwl-io.h"
 }
 
+#include <sys/kpi_mbuf.h>
+#include <IOKit/network/IOEthernetController.h>
+#include <IOKit/IOCommandGate.h>
+
+
+
 #include "IwlDvmOpMode.hpp"
 
 
@@ -641,54 +647,78 @@ static int iwlagn_set_decrypted_flag(struct iwl_priv *priv,
     return 0;
 }
 
-//static void iwlagn_pass_packet_to_mac80211(struct iwl_priv *priv,
-//                                           struct ieee80211_hdr *hdr,
-//                                           u16 len,
-//                                           u32 ampdu_status,
-//                                           struct iwl_rx_cmd_buffer *rxb,
-//                                           struct ieee80211_rx_status *stats)
-//{
-//    struct sk_buff *skb;
+static void iwlagn_pass_packet_to_mac80211(struct iwl_priv *priv,
+                                           struct ieee80211_hdr *hdr,
+                                           u16 len,
+                                           u32 ampdu_status,
+                                           struct iwl_rx_cmd_buffer *rxb,
+                                           struct ieee80211_rx_status *stats)
+{
+//    //struct sk_buff *skb;
+//
 //    __le16 fc = hdr->frame_control;
 //    struct iwl_rxon_context *ctx;
 //    unsigned int hdrlen, fraglen;
 //
+//
+//
+//
+//
 //    /* We only process data packets if the interface is open */
-//    if (unlikely(!priv->is_open)) {
-//        IWL_DEBUG_DROP_LIMIT(priv,
-//                             "Dropping packet while interface is not open.\n");
+//    if (unlikely(!priv->is_open || priv->trans->intf == NULL)) {
+//        IWL_DEBUG_DROP_LIMIT(priv, "Dropping packet while interface is not open.\n");
 //        return;
 //    }
+//
+//    IOEthernetController *dev = static_cast<IOEthernetController *>(priv->trans->dev);
+//    mbuf_t m = dev->allocatePacket(128);
+//
+//    //IONetworkInterface *intf = static_cast<IONetworkInterface *>(priv->trans->intf);
+//    IOCommandGate *gate = static_cast<IOCommandGate *>(priv->trans->gate);
 //
 //    /* In case of HW accelerated crypto and bad decryption, drop */
 //    if (!iwlwifi_mod_params.swcrypto &&
 //        iwlagn_set_decrypted_flag(priv, hdr, ampdu_status, stats))
 //        return;
 //
+//
+//
 //    /* Dont use dev_alloc_skb(), we'll have enough headroom once
 //     * ieee80211_hdr pulled.
 //     */
-//    skb = alloc_skb(128, GFP_ATOMIC);
-//    if (!skb) {
-//        IWL_ERR(priv, "alloc_skb failed\n");
-//        return;
-//    }
+//
+////    skb = alloc_skb(128, GFP_ATOMIC);
+////    if (!skb) {
+////        IWL_ERR(priv, "alloc_skb failed\n");
+////        return;
+////    }
 //    /* If frame is small enough to fit in skb->head, pull it completely.
 //     * If not, only pull ieee80211_hdr so that splice() or TCP coalesce
 //     * are more efficient.
 //     */
-//    hdrlen = (len <= skb_tailroom(skb)) ? len : sizeof(*hdr);
+//    hdrlen = sizeof(*hdr);
+//    mbuf_pkthdr_setlen(m, hdrlen);
+//    mbuf_pkthdr_setheader(m, hdr);
 //
-//    skb_put_data(skb, hdr, hdrlen);
+//
+//    //skb_put_data(skb, hdr, hdrlen);
 //    fraglen = len - hdrlen;
 //
-//    if (fraglen) {
-//        int offset = (void *)hdr + hdrlen -
-//        rxb_addr(rxb) + rxb_offset(rxb);
 //
-//        skb_add_rx_frag(skb, 0, rxb_steal_page(rxb), offset,
-//                        fraglen, rxb->truesize);
+//
+//    if (fraglen) {
+//
+//        mbuf_setdata(m, rxb_addr(rxb), fraglen);
+////        int offset = (u32 *)hdr + hdrlen - (u32 *)rxb_addr(rxb) + rxb_offset(rxb);
+//////
+////        skb_add_rx_frag(skb, 0, rxb_steal_page(rxb), offset,
+////                        fraglen, rxb->truesiz	e);
 //    }
+//
+//
+//    //dev->outputPacket(m, 0);
+//    //intf->inputPacket(m);
+//    gate->runCommand(m, (void *)len);
 //
 //    /*
 //     * Wake any queues that were stopped due to a passive channel tx
@@ -697,19 +727,19 @@ static int iwlagn_set_decrypted_flag(struct iwl_priv *priv,
 //     * sometimes even after already having transmitted frames for the
 //     * association because the new RXON may reset the information.
 //     */
-//    if (unlikely(ieee80211_is_beacon(fc) && priv->passive_no_rx)) {
-//        for_each_context(priv, ctx) {
-//            if (!ether_addr_equal(hdr->addr3,
-//                                  ctx->active.bssid_addr))
-//                continue;
-//            iwlagn_lift_passive_no_rx(priv);
-//        }
-//    }
-//
-//    memcpy(IEEE80211_SKB_RXCB(skb), stats, sizeof(*stats));
-//
-//    ieee80211_rx_napi(priv->hw, NULL, skb, priv->napi);
-//}
+////    if (unlikely(ieee80211_is_beacon(fc) && priv->passive_no_rx)) {
+////        for_each_context(priv, ctx) {
+////            if (!ether_addr_equal(hdr->addr3,
+////                                  ctx->active.bssid_addr))
+////                continue;
+////            iwlagn_lift_passive_no_rx(priv);
+////        }
+////    }
+////
+////    memcpy(IEEE80211_SKB_RXCB(skb), stats, sizeof(*stats));
+////
+////    ieee80211_rx_napi(priv->hw, NULL, skb, priv->napi);
+}
 
 
 // line 692
@@ -832,8 +862,7 @@ static void iwlagn_rx_reply_rx(struct iwl_priv *priv,
     header = (struct ieee80211_hdr *)(pkt->data + sizeof(*amsdu));
     len = le16_to_cpu(amsdu->byte_count);
     rx_pkt_status = *(__le32 *)(pkt->data + sizeof(*amsdu) + len);
-    ampdu_status = iwlagn_translate_rx_status(priv,
-                                              le32_to_cpu(rx_pkt_status));
+    ampdu_status = iwlagn_translate_rx_status(priv, le32_to_cpu(rx_pkt_status));
 
     if ((unlikely(phy_res->cfg_phy_cnt > 20))) {
         IWL_DEBUG_DROP(priv, "dsp size out of range [0,20]: %d\n",
@@ -915,10 +944,11 @@ static void iwlagn_rx_reply_rx(struct iwl_priv *priv,
         rx_status.enc_flags |= RX_ENC_FLAG_HT_GF;
 
     // TODO: Implement
-//    iwlagn_pass_packet_to_mac80211(priv, header, len, ampdu_status,
-//                                   rxb, &rx_status);
+    iwlagn_pass_packet_to_mac80211(priv, header, len, ampdu_status,
+                                   rxb, &rx_status);
 }
 
+// line 904
 static void iwlagn_rx_noa_notification(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
 {
     struct iwl_wipan_noa_data *new_data, *old_data;

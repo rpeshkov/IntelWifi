@@ -1567,9 +1567,9 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
     struct iwl_trans *trans;
     
     if (cfg->gen2)
-        trans = iwl_trans_alloc(sizeof(struct iwl_trans_pcie), NULL, cfg, &trans_ops_pcie_gen2);
+        trans = iwl_trans_alloc(sizeof(struct iwl_trans_pcie), cfg, &trans_ops_pcie_gen2);
     else
-        trans = iwl_trans_alloc(sizeof(struct iwl_trans_pcie), NULL, cfg, &trans_ops_pcie);
+        trans = iwl_trans_alloc(sizeof(struct iwl_trans_pcie), cfg, &trans_ops_pcie);
     
     if (!trans)
         return NULL;
@@ -1733,7 +1733,7 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
     
     // TODO: Implement
     int ret;
-    int source = findMSIInterruptTypeIndex();
+    
     if (trans_pcie->msix_enabled) {
         //        ret = iwl_pcie_init_msix_handler(pdev, trans_pcie);
         //        if (ret)
@@ -1761,36 +1761,9 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
         trans_pcie->inta_mask = CSR_INI_SET_MASK;
     }
     
-    fWorkLoop = getWorkLoop();
-    if (!fWorkLoop) {
-        TraceLog("getWorkLoop failed!");
-        releaseAll();
-        return 0;
-        //return false;
-    }
-    
-    fWorkLoop->retain();
-    
-    
-    fInterruptSource = IOFilterInterruptEventSource::filterInterruptEventSource(this,
-                                                                                (IOInterruptEventAction) &IntelWifi::interruptOccured,
-                                                                                (IOFilterInterruptAction) &IntelWifi::interruptFilter,
-                                                                                pciDevice, source);
-    if (!fInterruptSource) {
-        TraceLog("InterruptSource init failed!");
-        releaseAll();
-        return 0;
-    }
-    
-    if (fWorkLoop->addEventSource(fInterruptSource) != kIOReturnSuccess) {
-        TraceLog("EventSource registration failed");
-        releaseAll();
-        return 0;
-    }
-    
     fInterruptSource->enable();
-    fWorkLoop->enableAllInterrupts();
-    fWorkLoop->enableAllEventSources();
+    
+    
     
     //    trans_pcie->rba.alloc_wq = alloc_workqueue("rb_allocator",
     //                                               WQ_HIGHPRI | WQ_UNBOUND, 1);

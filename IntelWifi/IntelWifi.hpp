@@ -89,7 +89,6 @@ public:
     virtual IOReturn disable(IONetworkInterface* netif) override;
     virtual IOReturn getHardwareAddress(IOEthernetAddress* addrP) override;
     virtual IOReturn setHardwareAddress(const IOEthernetAddress* addrP) override;
-    virtual UInt32 outputPacket(mbuf_t m, void* param) override;
     
     virtual IOReturn setPromiscuousMode(bool active) override
     {
@@ -140,6 +139,7 @@ private:
     
     static void interruptOccured(OSObject* owner, IOInterruptEventSource* sender, int count);
     static bool interruptFilter(OSObject* owner, IOFilterInterruptEventSource * src);
+    static IOReturn gateAction(OSObject *owner, void *arg0, void *arg1, void *arg2, void *arg3);
     
     int findMSIInterruptTypeIndex();
     
@@ -264,5 +264,6 @@ private:
     
     IwlOpModeOps *opmode;
     struct ieee80211_hw *hw;
+    IOCommandGate *gate;
   
 };

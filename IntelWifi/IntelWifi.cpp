@@ -7,6 +7,7 @@ extern "C" {
 }
 
 #include <IOKit/IOInterruptController.h>
+#include <IOKit/IOCommandGate.h>
 #include "IwlDvmOpMode.hpp"
 
 
@@ -90,12 +91,55 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
+    fWorkLoop = getWorkLoop();
+    if (!fWorkLoop) {
+        TraceLog("getWorkLoop failed!");
+        releaseAll();
+        return 0;
+        //return false;
+    }
+    
+    fWorkLoop->retain();
+    
+    int source = findMSIInterruptTypeIndex();
+    fInterruptSource = IOFilterInterruptEventSource::filterInterruptEventSource(this,
+                                                                                (IOInterruptEventAction) &IntelWifi::interruptOccured,
+                                                                                (IOFilterInterruptAction) &IntelWifi::interruptFilter,
+                                                                                pciDevice, source);
+    if (!fInterruptSource) {
+        TraceLog("InterruptSource init failed!");
+        releaseAll();
+        return 0;
+    }
+    
+    if (fWorkLoop->addEventSource(fInterruptSource) != kIOReturnSuccess) {
+        TraceLog("EventSource registration failed");
+        releaseAll();
+        return 0;
+    }
+    
+    gate = IOCommandGate::commandGate(this, (IOCommandGate::Action)&IntelWifi::gateAction);
+    
+    if (fWorkLoop->addEventSource(gate) != kIOReturnSuccess) {
+        TraceLog("EventSource registration failed");
+        releaseAll();
+        return 0;
+    }
+    gate->enable();
+    
+//    fInterruptSource->enable();
+//    fWorkLoop->enableAllInterrupts();
+//    fWorkLoop->enableAllEventSources();
+    
     fTrans = iwl_trans_pcie_alloc(fConfiguration);
     if (!fTrans) {
         TraceLog("iwl_trans_pcie_alloc failed");
         releaseAll();
         return false;
     }
+    fTrans->dev = this;
+    fTrans->gate = gate;
+    
     
 #ifdef CONFIG_IWLMVM
     const struct iwl_cfg *cfg_7265d = NULL;
@@ -171,9 +215,6 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
-    
-    
-    
     if (!createMediumDict()) {
         TraceLog("MediumDict creation failed!");
         releaseAll();
@@ -202,10 +243,6 @@ void IntelWifi::stop(IOService *provider) {
         }
     }
     
-    
-    
-    //iwl_trans_pcie_stop_device(fTrans, true);
-    
     struct iwl_priv *priv = (struct iwl_priv *)hw->priv;
     
     opmode->stop(priv);
@@ -217,8 +254,6 @@ void IntelWifi::stop(IOService *provider) {
         detachInterface(netif);
         netif = NULL;
     }
-    
-    
     
     PMstop();
     
@@ -258,6 +293,7 @@ IOReturn IntelWifi::enable(IONetworkInterface *netif) {
     IOMediumType mediumType = kIOMediumIEEE80211Auto;
     IONetworkMedium *medium = IONetworkMedium::getMediumWithType(mediumDict, mediumType);
     setLinkStatus(kIONetworkLinkActive | kIONetworkLinkValid, medium);
+    fTrans->intf = netif;
     return kIOReturnSuccess;
 }
 
@@ -265,6 +301,7 @@ IOReturn IntelWifi::enable(IONetworkInterface *netif) {
 
 IOReturn IntelWifi::disable(IONetworkInterface *netif) {
     TraceLog("disable");
+    fTrans->intf = NULL;
 //    netif->flushInputQueue();
     return kIOReturnSuccess;
 }
@@ -282,11 +319,6 @@ IOReturn IntelWifi::setHardwareAddress(const IOEthernetAddress *addrP) {
     return kIOReturnSuccess;
 }
 
-
-
-UInt32 IntelWifi::outputPacket(mbuf_t m, void *param) { 
-    return 0;
-}
 
 
 bool IntelWifi::configureInterface(IONetworkInterface *netif) {
@@ -317,6 +349,16 @@ const OSString* IntelWifi::newModelString() const {
     return OSString::withCString(fConfiguration->name);
 }
 
+IOReturn IntelWifi::gateAction(OSObject *owner, void *arg0, void *arg1, void *arg2, void *arg3) {
+    if (!owner) {
+        return kIOReturnSuccess;
+    }
+    
+    IntelWifi *me = static_cast<IntelWifi *>(owner);
+    size_t len = (size_t)arg1;
+    return me->netif->inputPacket((mbuf_t)arg0, len, IONetworkInterface::kInputOptionQueuePacket);
+}
+
 bool IntelWifi::interruptFilter(OSObject* owner, IOFilterInterruptEventSource * src) {
     IntelWifi* me = (IntelWifi*)owner;
     
@@ -342,5 +384,10 @@ void IntelWifi::interruptOccured(OSObject* owner, IOInterruptEventSource* sender
     }
     
     me->iwl_pcie_irq_handler(0, me->fTrans);
-    
 }
+
+//IOReturn IntelWifi::outputStart(IONetworkInterface *interface, IOOptionBits options) {
+//    DebugLog("OUTPUT START");
+//    return kIOReturnSuccess;
+//}
+

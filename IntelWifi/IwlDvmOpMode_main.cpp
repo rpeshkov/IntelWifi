@@ -199,9 +199,9 @@ static void iwl_init_context(struct iwl_priv *priv, u32 ucode_flags)
     priv->contexts[IWL_RXON_CTX_BSS].wep_key_cmd = REPLY_WEPKEY;
     priv->contexts[IWL_RXON_CTX_BSS].bcast_sta_id = IWLAGN_BROADCAST_ID;
     priv->contexts[IWL_RXON_CTX_BSS].exclusive_interface_modes =
-    BIT(NL80211_IFTYPE_ADHOC) | BIT(NL80211_IFTYPE_MONITOR);
+            BIT(NL80211_IFTYPE_ADHOC) | BIT(NL80211_IFTYPE_MONITOR);
     priv->contexts[IWL_RXON_CTX_BSS].interface_modes =
-    BIT(NL80211_IFTYPE_STATION);
+            BIT(NL80211_IFTYPE_STATION);
     priv->contexts[IWL_RXON_CTX_BSS].ap_devtype = RXON_DEV_TYPE_AP;
     priv->contexts[IWL_RXON_CTX_BSS].ibss_devtype = RXON_DEV_TYPE_IBSS;
     priv->contexts[IWL_RXON_CTX_BSS].station_devtype = RXON_DEV_TYPE_ESS;
@@ -213,16 +213,16 @@ static void iwl_init_context(struct iwl_priv *priv, u32 ucode_flags)
     
     priv->contexts[IWL_RXON_CTX_PAN].rxon_cmd = REPLY_WIPAN_RXON;
     priv->contexts[IWL_RXON_CTX_PAN].rxon_timing_cmd =
-    REPLY_WIPAN_RXON_TIMING;
+            REPLY_WIPAN_RXON_TIMING;
     priv->contexts[IWL_RXON_CTX_PAN].rxon_assoc_cmd =
-    REPLY_WIPAN_RXON_ASSOC;
+            REPLY_WIPAN_RXON_ASSOC;
     priv->contexts[IWL_RXON_CTX_PAN].qos_cmd = REPLY_WIPAN_QOS_PARAM;
     priv->contexts[IWL_RXON_CTX_PAN].ap_sta_id = IWL_AP_ID_PAN;
     priv->contexts[IWL_RXON_CTX_PAN].wep_key_cmd = REPLY_WIPAN_WEPKEY;
     priv->contexts[IWL_RXON_CTX_PAN].bcast_sta_id = IWLAGN_PAN_BCAST_ID;
     priv->contexts[IWL_RXON_CTX_PAN].station_flags = STA_FLG_PAN_STATION;
     priv->contexts[IWL_RXON_CTX_PAN].interface_modes =
-    BIT(NL80211_IFTYPE_STATION) | BIT(NL80211_IFTYPE_AP);
+            BIT(NL80211_IFTYPE_STATION) | BIT(NL80211_IFTYPE_AP);
     
     priv->contexts[IWL_RXON_CTX_PAN].ap_devtype = RXON_DEV_TYPE_CP;
     priv->contexts[IWL_RXON_CTX_PAN].station_devtype = RXON_DEV_TYPE_2STA;
@@ -701,7 +701,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
 //    priv = IWL_OP_MODE_GET_DVM(op_mode);
     priv = (struct iwl_priv *)hw->priv; //(struct iwl_priv *)IOMalloc(sizeof(iwl_priv));
     priv->trans = trans;
-    priv->dev = trans->dev;
+    //priv->dev = trans->dev;
     priv->cfg = cfg;
     priv->fw = fw;
     

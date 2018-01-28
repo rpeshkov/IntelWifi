@@ -96,7 +96,7 @@ bsearch (const void *key, const void *base, size_t nmemb, size_t size,
 }
 
 struct iwl_trans *iwl_trans_alloc(unsigned int priv_size,
-				  struct device *dev,
+				  
 				  const struct iwl_cfg *cfg,
 				  const struct iwl_trans_ops *ops)
 {
@@ -119,7 +119,7 @@ struct iwl_trans *iwl_trans_alloc(unsigned int priv_size,
 			 &__key, 0);
 #endif
 
-	trans->dev = dev;
+	//trans->dev = dev;
 	trans->cfg = cfg;
 	trans->ops = ops;
 	trans->num_rx_queues = 1;
