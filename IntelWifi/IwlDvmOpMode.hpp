@@ -35,6 +35,8 @@ public:
     virtual void stop(struct iwl_priv *priv) override;
     virtual void rx(struct iwl_priv *priv, struct napi_struct *napi,
                     struct iwl_rx_cmd_buffer *rxb) override;
+    
+    virtual void scan() override;
 
     
 private:

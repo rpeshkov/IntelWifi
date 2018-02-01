@@ -262,7 +262,8 @@ private:
     UInt16 fDeviceId;
     UInt16 fSubsystemId;
     
-    IwlOpModeOps *opmode;
+public:IwlOpModeOps *opmode;
+private:
     struct ieee80211_hw *hw;
     IOCommandGate *gate;
   

@@ -229,7 +229,7 @@ bool IntelWifi::start(IOService *provider) {
     
     netif->registerService();
 
-    //registerService();
+    registerService();
     
     return true;
 }

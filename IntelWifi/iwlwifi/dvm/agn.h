@@ -131,8 +131,8 @@ static inline void iwl_set_calib_hdr(struct iwl_calib_hdr *hdr, u8 cmd)
 //
 ///* MAC80211 */
 //struct ieee80211_hw *iwl_alloc_all(void);
-//int iwlagn_mac_setup_register(struct iwl_priv *priv,
-//                  const struct iwl_ucode_capabilities *capa);
+int iwlagn_mac_setup_register(struct iwl_priv *priv,
+                  const struct iwl_ucode_capabilities *capa);
 //void iwlagn_mac_unregister(struct iwl_priv *priv);
 //
 ///* commands */

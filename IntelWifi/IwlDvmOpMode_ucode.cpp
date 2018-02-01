@@ -258,8 +258,7 @@ int IwlDvmOpMode::iwl_alive_notify(struct iwl_priv *priv)
     //iwl_trans_fw_alive(priv->trans, 0);
     _ops->fw_alive(priv->trans, 0);
     
-    if (priv->fw->ucode_capa.flags & IWL_UCODE_TLV_FLAGS_PAN &&
-        priv->nvm_data->sku_cap_ipan_enable) {
+    if (priv->fw->ucode_capa.flags & IWL_UCODE_TLV_FLAGS_PAN && priv->nvm_data->sku_cap_ipan_enable) {
         n_queues = ARRAY_SIZE(iwlagn_ipan_queue_to_tx_fifo);
         queue_to_txf = iwlagn_ipan_queue_to_tx_fifo;
     } else {
@@ -269,8 +268,7 @@ int IwlDvmOpMode::iwl_alive_notify(struct iwl_priv *priv)
     
     for (i = 0; i < n_queues; i++)
         if (queue_to_txf[i] != IWL_TX_FIFO_UNUSED)
-            _ops->iwl_trans_ac_txq_enable(priv->trans, i,
-                                    queue_to_txf[i], 0);
+            _ops->iwl_trans_ac_txq_enable(priv->trans, i, queue_to_txf[i], 0);
     
     priv->passive_no_rx = false;
     priv->transport_queue_stop = 0;

@@ -13,6 +13,8 @@
 #include <linux/ieee80211.h>
 #include <linux/nl80211.h>
 
+#include <net/regulatory.h>
+
 /**
  * enum ieee80211_band - supported frequency bands
  *
@@ -410,6 +412,205 @@ enum cfg80211_signal_type {
     CFG80211_SIGNAL_TYPE_MBM,
     CFG80211_SIGNAL_TYPE_UNSPEC,
 };
+
+
+/** line 3211
+ * enum wiphy_flags - wiphy capability flags
+ *
+ * @WIPHY_FLAG_NETNS_OK: if not set, do not allow changing the netns of this
+ *    wiphy at all
+ * @WIPHY_FLAG_PS_ON_BY_DEFAULT: if set to true, powersave will be enabled
+ *    by default -- this flag will be set depending on the kernel's default
+ *    on wiphy_new(), but can be changed by the driver if it has a good
+ *    reason to override the default
+ * @WIPHY_FLAG_4ADDR_AP: supports 4addr mode even on AP (with a single station
+ *    on a VLAN interface)
+ * @WIPHY_FLAG_4ADDR_STATION: supports 4addr mode even as a station
+ * @WIPHY_FLAG_CONTROL_PORT_PROTOCOL: This device supports setting the
+ *    control port protocol ethertype. The device also honours the
+ *    control_port_no_encrypt flag.
+ * @WIPHY_FLAG_IBSS_RSN: The device supports IBSS RSN.
+ * @WIPHY_FLAG_MESH_AUTH: The device supports mesh authentication by routing
+ *    auth frames to userspace. See @NL80211_MESH_SETUP_USERSPACE_AUTH.
+ * @WIPHY_FLAG_SUPPORTS_SCHED_SCAN: The device supports scheduled scans.
+ * @WIPHY_FLAG_SUPPORTS_FW_ROAM: The device supports roaming feature in the
+ *    firmware.
+ * @WIPHY_FLAG_AP_UAPSD: The device supports uapsd on AP.
+ * @WIPHY_FLAG_SUPPORTS_TDLS: The device supports TDLS (802.11z) operation.
+ * @WIPHY_FLAG_TDLS_EXTERNAL_SETUP: The device does not handle TDLS (802.11z)
+ *    link setup/discovery operations internally. Setup, discovery and
+ *    teardown packets should be sent through the @NL80211_CMD_TDLS_MGMT
+ *    command. When this flag is not set, @NL80211_CMD_TDLS_OPER should be
+ *    used for asking the driver/firmware to perform a TDLS operation.
+ * @WIPHY_FLAG_HAVE_AP_SME: device integrates AP SME
+ * @WIPHY_FLAG_REPORTS_OBSS: the device will report beacons from other BSSes
+ *    when there are virtual interfaces in AP mode by calling
+ *    cfg80211_report_obss_beacon().
+ * @WIPHY_FLAG_AP_PROBE_RESP_OFFLOAD: When operating as an AP, the device
+ *    responds to probe-requests in hardware.
+ * @WIPHY_FLAG_OFFCHAN_TX: Device supports direct off-channel TX.
+ * @WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL: Device supports remain-on-channel call.
+ * @WIPHY_FLAG_SUPPORTS_5_10_MHZ: Device supports 5 MHz and 10 MHz channels.
+ * @WIPHY_FLAG_HAS_CHANNEL_SWITCH: Device supports channel switch in
+ *    beaconing mode (AP, IBSS, Mesh, ...).
+ * @WIPHY_FLAG_HAS_STATIC_WEP: The device supports static WEP key installation
+ *    before connection.
+ */
+enum wiphy_flags {
+    /* use hole at 0 */
+    /* use hole at 1 */
+    /* use hole at 2 */
+    WIPHY_FLAG_NETNS_OK            = BIT(3),
+    WIPHY_FLAG_PS_ON_BY_DEFAULT        = BIT(4),
+    WIPHY_FLAG_4ADDR_AP            = BIT(5),
+    WIPHY_FLAG_4ADDR_STATION        = BIT(6),
+    WIPHY_FLAG_CONTROL_PORT_PROTOCOL    = BIT(7),
+    WIPHY_FLAG_IBSS_RSN            = BIT(8),
+    WIPHY_FLAG_MESH_AUTH            = BIT(10),
+    /* use hole at 11 */
+    /* use hole at 12 */
+    WIPHY_FLAG_SUPPORTS_FW_ROAM        = BIT(13),
+    WIPHY_FLAG_AP_UAPSD            = BIT(14),
+    WIPHY_FLAG_SUPPORTS_TDLS        = BIT(15),
+    WIPHY_FLAG_TDLS_EXTERNAL_SETUP        = BIT(16),
+    WIPHY_FLAG_HAVE_AP_SME            = BIT(17),
+    WIPHY_FLAG_REPORTS_OBSS            = BIT(18),
+    WIPHY_FLAG_AP_PROBE_RESP_OFFLOAD    = BIT(19),
+    WIPHY_FLAG_OFFCHAN_TX            = BIT(20),
+    WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL    = BIT(21),
+    WIPHY_FLAG_SUPPORTS_5_10_MHZ        = BIT(22),
+    WIPHY_FLAG_HAS_CHANNEL_SWITCH        = BIT(23),
+    WIPHY_FLAG_HAS_STATIC_WEP        = BIT(24),
+};
+
+
+/** line 3280
+ * struct ieee80211_iface_limit - limit on certain interface types
+ * @max: maximum number of interfaces of these types
+ * @types: interface types (bits)
+ */
+struct ieee80211_iface_limit {
+    u16 max;
+    u16 types;
+};
+
+/**
+ * struct ieee80211_iface_combination - possible interface combination
+ *
+ * With this structure the driver can describe which interface
+ * combinations it supports concurrently.
+ *
+ * Examples:
+ *
+ * 1. Allow #STA <= 1, #AP <= 1, matching BI, channels = 1, 2 total:
+ *
+ *    .. code-block:: c
+ *
+ *    struct ieee80211_iface_limit limits1[] = {
+ *        { .max = 1, .types = BIT(NL80211_IFTYPE_STATION), },
+ *        { .max = 1, .types = BIT(NL80211_IFTYPE_AP}, },
+ *    };
+ *    struct ieee80211_iface_combination combination1 = {
+ *        .limits = limits1,
+ *        .n_limits = ARRAY_SIZE(limits1),
+ *        .max_interfaces = 2,
+ *        .beacon_int_infra_match = true,
+ *    };
+ *
+ *
+ * 2. Allow #{AP, P2P-GO} <= 8, channels = 1, 8 total:
+ *
+ *    .. code-block:: c
+ *
+ *    struct ieee80211_iface_limit limits2[] = {
+ *        { .max = 8, .types = BIT(NL80211_IFTYPE_AP) |
+ *                     BIT(NL80211_IFTYPE_P2P_GO), },
+ *    };
+ *    struct ieee80211_iface_combination combination2 = {
+ *        .limits = limits2,
+ *        .n_limits = ARRAY_SIZE(limits2),
+ *        .max_interfaces = 8,
+ *        .num_different_channels = 1,
+ *    };
+ *
+ *
+ * 3. Allow #STA <= 1, #{P2P-client,P2P-GO} <= 3 on two channels, 4 total.
+ *
+ *    This allows for an infrastructure connection and three P2P connections.
+ *
+ *    .. code-block:: c
+ *
+ *    struct ieee80211_iface_limit limits3[] = {
+ *        { .max = 1, .types = BIT(NL80211_IFTYPE_STATION), },
+ *        { .max = 3, .types = BIT(NL80211_IFTYPE_P2P_GO) |
+ *                     BIT(NL80211_IFTYPE_P2P_CLIENT), },
+ *    };
+ *    struct ieee80211_iface_combination combination3 = {
+ *        .limits = limits3,
+ *        .n_limits = ARRAY_SIZE(limits3),
+ *        .max_interfaces = 4,
+ *        .num_different_channels = 2,
+ *    };
+ *
+ */
+struct ieee80211_iface_combination {
+    /**
+     * @limits:
+     * limits for the given interface types
+     */
+    const struct ieee80211_iface_limit *limits;
+    
+    /**
+     * @num_different_channels:
+     * can use up to this many different channels
+     */
+    u32 num_different_channels;
+    
+    /**
+     * @max_interfaces:
+     * maximum number of interfaces in total allowed in this group
+     */
+    u16 max_interfaces;
+    
+    /**
+     * @n_limits:
+     * number of limitations
+     */
+    u8 n_limits;
+    
+    /**
+     * @beacon_int_infra_match:
+     * In this combination, the beacon intervals between infrastructure
+     * and AP types must match. This is required only in special cases.
+     */
+    bool beacon_int_infra_match;
+    
+    /**
+     * @radar_detect_widths:
+     * bitmap of channel widths supported for radar detection
+     */
+    u8 radar_detect_widths;
+    
+    /**
+     * @radar_detect_regions:
+     * bitmap of regions supported for radar detection
+     */
+    u8 radar_detect_regions;
+    
+    /**
+     * @beacon_int_min_gcd:
+     * This interface combination supports different beacon intervals.
+     *
+     * = 0
+     *   all beacon intervals for different interface must be same.
+     * > 0
+     *   any beacon interval for the interface part of this combination AND
+     *   GCD of all beacon intervals from beaconing interfaces of this
+     *   combination must be greater or equal to this value.
+     */
+    u32 beacon_int_min_gcd;
+};
+
 
 
 /** line 3547

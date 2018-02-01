@@ -375,8 +375,7 @@ u8 iwl_toggle_tx_ant(struct iwl_priv *priv, u8 ant, u8 valid)
     int i;
     u8 ind = ant;
     
-    if (priv->band == NL80211_BAND_2GHZ &&
-        priv->bt_traffic_load >= IWL_BT_COEX_TRAFFIC_LOAD_HIGH)
+    if (priv->band == NL80211_BAND_2GHZ && priv->bt_traffic_load >= IWL_BT_COEX_TRAFFIC_LOAD_HIGH)
         return 0;
     
     for (i = 0; i < RATE_ANT_NUM - 1; i++) {
@@ -393,8 +392,7 @@ u8 iwl_toggle_tx_ant(struct iwl_priv *priv, u8 ant, u8 valid)
 int IwlDvmOpMode::iwl_dvm_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *cmd)
 {
     if (iwl_is_rfkill(priv) || iwl_is_ctkill(priv)) {
-        IWL_WARN(priv, "Not sending command - %s KILL\n",
-                 iwl_is_rfkill(priv) ? "RF" : "CT");
+        IWL_WARN(priv, "Not sending command - %s KILL\n", iwl_is_rfkill(priv) ? "RF" : "CT");
         return -EIO;
     }
     

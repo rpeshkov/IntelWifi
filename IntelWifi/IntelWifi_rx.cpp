@@ -45,6 +45,7 @@
 extern "C" {
 #include "iwl-fh.h"
 #include "iwl-trans.h"
+#include "commands.h"
 }
 
 /******************************************************************************
@@ -1205,12 +1206,14 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans,
             IWL_DEBUG_RX(trans, "frame on invalid queue - is on %d and indicates %d\n", rxq->id, frame_queue);
         }
         
-        IWL_DEBUG_RX(trans,
-                     "Q %d: cmd at offset %d: %s (%.2x.%2x, seq 0x%x)\n",
-                     rxq->id, offset,
-                     iwl_get_cmd_string(trans, iwl_cmd_id(pkt->hdr.cmd, pkt->hdr.group_id, 0)),
-                     pkt->hdr.group_id, pkt->hdr.cmd,
-                     le16_to_cpu(pkt->hdr.sequence));
+        if (pkt->hdr.cmd != REPLY_RX_PHY_CMD && pkt->hdr.cmd != REPLY_RX_MPDU_CMD)
+        
+            IWL_DEBUG_RX(trans,
+                         "Q %d: cmd at offset %d: %s (%.2x.%2x, seq 0x%x)\n",
+                         rxq->id, offset,
+                         iwl_get_cmd_string(trans, iwl_cmd_id(pkt->hdr.cmd, pkt->hdr.group_id, 0)),
+                         pkt->hdr.group_id, pkt->hdr.cmd,
+                         le16_to_cpu(pkt->hdr.sequence));
         
         len = iwl_rx_packet_len(pkt);
         len += sizeof(u32); /* account for status word */
@@ -1328,8 +1331,8 @@ restart:
     r &= (rxq->queue_size - 1);
     
     /* Rx interrupt, but nothing sent from uCode */
-    if (i == r)
-        IWL_DEBUG_RX(trans, "Q %d: HW = SW = %d\n", rxq->id, r);
+//    if (i == r)
+//        IWL_DEBUG_RX(trans, "Q %d: HW = SW = %d\n", rxq->id, r);
     
     while (i != r) {
         struct iwl_rx_mem_buffer *rxb;
@@ -1361,7 +1364,7 @@ restart:
             rxq->queue[i] = NULL;
         }
         
-        IWL_DEBUG_RX(trans, "Q %d: HW = %d, SW = %d\n", rxq->id, r, i);
+        //IWL_DEBUG_RX(trans, "Q %d: HW = %d, SW = %d\n", rxq->id, r, i);
         iwl_pcie_rx_handle_rb(trans, rxq, rxb, emergency);
         
         i = (i + 1) & (rxq->queue_size - 1);
@@ -1616,17 +1619,17 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
     else
         inta = iwl_pcie_int_cause_non_ict(trans);
     
-    if (iwl_have_debug_level(IWL_DL_ISR)) {
-        IWL_DEBUG_ISR(trans,
-                      "ISR inta 0x%08x, enabled 0x%08x(sw), enabled(hw) 0x%08x, fh 0x%08x\n",
-                      inta, trans_pcie->inta_mask,
-                      iwl_read32(trans, CSR_INT_MASK),
-                      iwl_read32(trans, CSR_FH_INT_STATUS));
-        if (inta & (~trans_pcie->inta_mask))
-            IWL_DEBUG_ISR(trans,
-                          "We got a masked interrupt (0x%08x)\n",
-                          inta & (~trans_pcie->inta_mask));
-    }
+//    if (iwl_have_debug_level(IWL_DL_ISR)) {
+//        IWL_DEBUG_ISR(trans,
+//                      "ISR inta 0x%08x, enabled 0x%08x(sw), enabled(hw) 0x%08x, fh 0x%08x\n",
+//                      inta, trans_pcie->inta_mask,
+//                      iwl_read32(trans, CSR_INT_MASK),
+//                      iwl_read32(trans, CSR_FH_INT_STATUS));
+//        if (inta & (~trans_pcie->inta_mask))
+//            IWL_DEBUG_ISR(trans,
+//                          "We got a masked interrupt (0x%08x)\n",
+//                          inta & (~trans_pcie->inta_mask));
+//    }
     
     inta &= trans_pcie->inta_mask;
     
@@ -1672,9 +1675,9 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
      */
     iwl_write32(trans, CSR_INT, inta | ~trans_pcie->inta_mask);
     
-    if (iwl_have_debug_level(IWL_DL_ISR))
-        IWL_DEBUG_ISR(trans, "inta 0x%08x, enabled 0x%08x\n",
-                      inta, iwl_read32(trans, CSR_INT_MASK));
+//    if (iwl_have_debug_level(IWL_DL_ISR))
+//        IWL_DEBUG_ISR(trans, "inta 0x%08x, enabled 0x%08x\n",
+//                      inta, iwl_read32(trans, CSR_INT_MASK));
     
     IOSimpleLockUnlock(trans_pcie->irq_lock);
     

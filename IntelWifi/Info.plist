@@ -30,6 +30,8 @@
 			<string>IntelWifi</string>
 			<key>IOProviderClass</key>
 			<string>IOPCIDevice</string>
+            <key>IOUserClientClass</key>
+            <string>IntelWifiUserClient</string>
 		</dict>
 	</dict>
 	<key>NSHumanReadableCopyright</key>

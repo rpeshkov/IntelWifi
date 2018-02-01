@@ -937,11 +937,11 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
      *
      * 7. Setup and register with mac80211 and debugfs
      **************************************************/
-////    if (iwlagn_mac_setup_register(priv, &fw->ucode_capa))
-////        goto out_destroy_workqueue;
-////
-////    if (iwl_dbgfs_register(priv, dbgfs_dir))
-////        goto out_mac80211_unregister;
+    if (iwlagn_mac_setup_register(priv, &fw->ucode_capa))
+        goto out_destroy_workqueue;
+
+//    if (iwl_dbgfs_register(priv, dbgfs_dir))
+//        goto out_mac80211_unregister;
     
     return priv;
     

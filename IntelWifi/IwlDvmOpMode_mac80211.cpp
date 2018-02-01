@@ -14,6 +14,189 @@ extern "C" {
 }
 
 
+/*****************************************************************************
+ *
+ * mac80211 entry point functions
+ *
+ *****************************************************************************/
+
+static const struct ieee80211_iface_limit iwlagn_sta_ap_limits[] = {
+    {
+        .max = 1,
+        .types = BIT(NL80211_IFTYPE_STATION),
+    },
+    {
+        .max = 1,
+        .types = BIT(NL80211_IFTYPE_AP),
+    },
+};
+
+static const struct ieee80211_iface_limit iwlagn_2sta_limits[] = {
+    {
+        .max = 2,
+        .types = BIT(NL80211_IFTYPE_STATION),
+    },
+};
+
+static const struct ieee80211_iface_combination
+iwlagn_iface_combinations_dualmode[] = {
+    { .num_different_channels = 1,
+        .max_interfaces = 2,
+        .beacon_int_infra_match = true,
+        .limits = iwlagn_sta_ap_limits,
+        .n_limits = ARRAY_SIZE(iwlagn_sta_ap_limits),
+    },
+    { .num_different_channels = 1,
+        .max_interfaces = 2,
+        .limits = iwlagn_2sta_limits,
+        .n_limits = ARRAY_SIZE(iwlagn_2sta_limits),
+    },
+};
+
+/* ieee80211_radiotap.h:117 for IEEE80211_RADIOTAP_MCS "have" flags */
+enum ieee80211_radiotap_mcs_have {
+    IEEE80211_RADIOTAP_MCS_HAVE_BW = 0x01,
+    IEEE80211_RADIOTAP_MCS_HAVE_MCS = 0x02,
+    IEEE80211_RADIOTAP_MCS_HAVE_GI = 0x04,
+    IEEE80211_RADIOTAP_MCS_HAVE_FMT = 0x08,
+    IEEE80211_RADIOTAP_MCS_HAVE_FEC = 0x10,
+    IEEE80211_RADIOTAP_MCS_HAVE_STBC = 0x20,
+};
+
+
+
+/* line 93
+ * Not a mac80211 entry point function, but it fits in with all the
+ * other mac80211 functions grouped here.
+ */
+int iwlagn_mac_setup_register(struct iwl_priv *priv,
+                              const struct iwl_ucode_capabilities *capa)
+{
+    int ret;
+    struct ieee80211_hw *hw = priv->hw;
+    struct iwl_rxon_context *ctx;
+    
+    hw->rate_control_algorithm = "iwl-agn-rs";
+    
+    /* Tell mac80211 our characteristics */
+//    ieee80211_hw_set(hw, SIGNAL_DBM);
+//    ieee80211_hw_set(hw, AMPDU_AGGREGATION);
+//    ieee80211_hw_set(hw, NEED_DTIM_BEFORE_ASSOC);
+//    ieee80211_hw_set(hw, SPECTRUM_MGMT);
+//    ieee80211_hw_set(hw, REPORTS_TX_ACK_STATUS);
+//    ieee80211_hw_set(hw, QUEUE_CONTROL);
+//    ieee80211_hw_set(hw, SUPPORTS_PS);
+//    ieee80211_hw_set(hw, SUPPORTS_DYNAMIC_PS);
+//    ieee80211_hw_set(hw, SUPPORT_FAST_XMIT);
+//    ieee80211_hw_set(hw, WANT_MONITOR_VIF);
+    
+    if (priv->trans->max_skb_frags)
+        hw->netdev_features = NETIF_F_HIGHDMA | NETIF_F_SG;
+    
+    hw->offchannel_tx_hw_queue = IWL_AUX_QUEUE;
+    hw->radiotap_mcs_details |= IEEE80211_RADIOTAP_MCS_HAVE_FMT;
+    
+    /*
+     * Including the following line will crash some AP's.  This
+     * workaround removes the stimulus which causes the crash until
+     * the AP software can be fixed.
+     hw->max_tx_aggregation_subframes = LINK_QUAL_AGG_FRAME_LIMIT_DEF;
+     */
+    
+    if (priv->nvm_data->sku_cap_11n_enable)
+        hw->wiphy->features |= NL80211_FEATURE_DYNAMIC_SMPS |
+        NL80211_FEATURE_STATIC_SMPS;
+    
+    /*
+     * Enable 11w if advertised by firmware and software crypto
+     * is not enabled (as the firmware will interpret some mgmt
+     * packets, so enabling it with software crypto isn't safe)
+     */
+//    if (priv->fw->ucode_capa.flags & IWL_UCODE_TLV_FLAGS_MFP &&
+//        !iwlwifi_mod_params.swcrypto)
+//        ieee80211_hw_set(hw, MFP_CAPABLE);
+    
+    hw->sta_data_size = sizeof(struct iwl_station_priv);
+    hw->vif_data_size = sizeof(struct iwl_vif_priv);
+    
+    for_each_context(priv, ctx) {
+        hw->wiphy->interface_modes |= ctx->interface_modes;
+        hw->wiphy->interface_modes |= ctx->exclusive_interface_modes;
+    }
+    
+    //BUILD_BUG_ON(NUM_IWL_RXON_CTX != 2);
+    
+    if (hw->wiphy->interface_modes & BIT(NL80211_IFTYPE_AP)) {
+        hw->wiphy->iface_combinations = iwlagn_iface_combinations_dualmode;
+        hw->wiphy->n_iface_combinations = ARRAY_SIZE(iwlagn_iface_combinations_dualmode);
+    }
+    
+    hw->wiphy->flags |= WIPHY_FLAG_IBSS_RSN;
+    hw->wiphy->regulatory_flags |= REGULATORY_CUSTOM_REG | REGULATORY_DISABLE_BEACON_HINTS;
+    
+#ifdef CONFIG_PM_SLEEP
+    if (priv->fw->img[IWL_UCODE_WOWLAN].num_sec &&
+        priv->trans->ops->d3_suspend &&
+        priv->trans->ops->d3_resume &&
+        device_can_wakeup(priv->trans->dev)) {
+        priv->wowlan_support.flags = WIPHY_WOWLAN_MAGIC_PKT |
+        WIPHY_WOWLAN_DISCONNECT |
+        WIPHY_WOWLAN_EAP_IDENTITY_REQ |
+        WIPHY_WOWLAN_RFKILL_RELEASE;
+        if (!iwlwifi_mod_params.swcrypto)
+            priv->wowlan_support.flags |=
+            WIPHY_WOWLAN_SUPPORTS_GTK_REKEY |
+            WIPHY_WOWLAN_GTK_REKEY_FAILURE;
+        
+        priv->wowlan_support.n_patterns = IWLAGN_WOWLAN_MAX_PATTERNS;
+        priv->wowlan_support.pattern_min_len =
+        IWLAGN_WOWLAN_MIN_PATTERN_LEN;
+        priv->wowlan_support.pattern_max_len =
+        IWLAGN_WOWLAN_MAX_PATTERN_LEN;
+        hw->wiphy->wowlan = &priv->wowlan_support;
+    }
+#endif
+    
+    if (iwlwifi_mod_params.power_save)
+        hw->wiphy->flags |= WIPHY_FLAG_PS_ON_BY_DEFAULT;
+    else
+        hw->wiphy->flags &= ~WIPHY_FLAG_PS_ON_BY_DEFAULT;
+    
+    hw->wiphy->max_scan_ssids = PROBE_OPTION_MAX;
+    /* we create the 802.11 header and a max-length SSID element */
+    hw->wiphy->max_scan_ie_len = capa->max_probe_length - 24 - 34;
+    
+    /*
+     * We don't use all queues: 4 and 9 are unused and any
+     * aggregation queue gets mapped down to the AC queue.
+     */
+    hw->queues = IWLAGN_FIRST_AMPDU_QUEUE;
+    
+    hw->max_listen_interval = IWL_CONN_MAX_LISTEN_INTERVAL;
+    
+    if (priv->nvm_data->bands[NL80211_BAND_2GHZ].n_channels)
+        priv->hw->wiphy->bands[NL80211_BAND_2GHZ] = &priv->nvm_data->bands[NL80211_BAND_2GHZ];
+    if (priv->nvm_data->bands[NL80211_BAND_5GHZ].n_channels)
+        priv->hw->wiphy->bands[NL80211_BAND_5GHZ] = &priv->nvm_data->bands[NL80211_BAND_5GHZ];
+    
+    hw->wiphy->hw_version = priv->trans->hw_id;
+    
+//    iwl_leds_init(priv);
+//    
+//    wiphy_ext_feature_set(hw->wiphy, NL80211_EXT_FEATURE_CQM_RSSI_LIST);
+//    
+//    ret = ieee80211_register_hw(priv->hw);
+//    if (ret) {
+//        IWL_ERR(priv, "Failed to register hw (error %d)\n", ret);
+//        iwl_leds_exit(priv);
+//        return ret;
+//    }
+    priv->mac80211_registered = 1;
+    
+    return 0;
+}
+
+
 // line 238
 int IwlDvmOpMode::__iwl_up(struct iwl_priv *priv)
 {

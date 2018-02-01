@@ -378,10 +378,10 @@ struct ieee80211_mgmt {
              * FH Params, DS Params, CF Params, IBSS Params, TIM */
             u8 variable[0];
         } __packed beacon;
-        struct {
+        //struct {
             /* only variable items: SSID, Supported rates */
-            u8 variable[0];
-        } __packed probe_req;
+            u8 probe_req_variable[0] __packed;
+        //} __packed probe_req;
         struct {
             __le64 timestamp;
             __le16 beacon_int;
