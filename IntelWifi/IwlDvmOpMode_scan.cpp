@@ -365,8 +365,7 @@ void IwlDvmOpMode::iwl_rx_scan_complete_notif(struct iwl_priv *priv, struct iwl_
     // TODO: Implement
     //queue_work(priv->workqueue, &priv->scan_completed);
     
-    if (priv->iw_mode != NL80211_IFTYPE_ADHOC
-    && iwl_advanced_bt_coexist(priv)
+    if (priv->iw_mode != NL80211_IFTYPE_ADHOC && iwl_advanced_bt_coexist(priv)
     && priv->bt_status != scan_notif->bt_status) {
         if (scan_notif->bt_status) {
             /* BT on */
@@ -689,8 +688,11 @@ int IwlDvmOpMode::iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vi
     const u8 *ssid = NULL;
     u8 ssid_len = 0;
 
-    if (priv->scan_type == IWL_SCAN_NORMAL && (!priv->scan_request || priv->scan_request->n_channels > MAX_SCAN_CHANNEL))
+    if (priv->scan_type == IWL_SCAN_NORMAL && (!priv->scan_request || priv->scan_request->n_channels > MAX_SCAN_CHANNEL)) {
+        IWL_ERR(trans, "N_Channels (%d) > MAX_SCAN_CHANNEL (%d)", priv->scan_request->n_channels, MAX_SCAN_CHANNEL);
         return -EINVAL;
+    }
+    
     
     //lockdep_assert_held(&priv->mutex);
     

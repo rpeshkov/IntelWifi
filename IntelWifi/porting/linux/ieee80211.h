@@ -621,7 +621,7 @@ enum ieee80211_vht_max_ampdu_length_exp {
 
 #define IEEE80211_HT_MAX_AMPDU_FACTOR 13
 
-/* Minimum MPDU start spacing */
+/* line 1372 Minimum MPDU start spacing */
 enum ieee80211_min_mpdu_spacing {
     IEEE80211_HT_MPDU_DENSITY_NONE = 0,    /* No restriction */
     IEEE80211_HT_MPDU_DENSITY_0_25 = 1,    /* 1/4 usec */
@@ -632,6 +632,26 @@ enum ieee80211_min_mpdu_spacing {
     IEEE80211_HT_MPDU_DENSITY_8 = 6,    /* 8 usec */
     IEEE80211_HT_MPDU_DENSITY_16 = 7    /* 16 usec */
 };
+
+
+/* line 1398 for ht_param */
+#define IEEE80211_HT_PARAM_CHA_SEC_OFFSET        0x03
+#define        IEEE80211_HT_PARAM_CHA_SEC_NONE        0x00
+#define        IEEE80211_HT_PARAM_CHA_SEC_ABOVE    0x01
+#define        IEEE80211_HT_PARAM_CHA_SEC_BELOW    0x03
+#define IEEE80211_HT_PARAM_CHAN_WIDTH_ANY        0x04
+#define IEEE80211_HT_PARAM_RIFS_MODE            0x08
+
+/* line 1406 for operation_mode */
+#define IEEE80211_HT_OP_MODE_PROTECTION            0x0003
+#define        IEEE80211_HT_OP_MODE_PROTECTION_NONE        0
+#define        IEEE80211_HT_OP_MODE_PROTECTION_NONMEMBER    1
+#define        IEEE80211_HT_OP_MODE_PROTECTION_20MHZ        2
+#define        IEEE80211_HT_OP_MODE_PROTECTION_NONHT_MIXED    3
+#define IEEE80211_HT_OP_MODE_NON_GF_STA_PRSNT        0x0004
+#define IEEE80211_HT_OP_MODE_NON_HT_STA_PRSNT        0x0010
+#define IEEE80211_HT_OP_MODE_CCFS2_SHIFT        5
+#define IEEE80211_HT_OP_MODE_CCFS2_MASK            0x1fe0
 
 
 /**

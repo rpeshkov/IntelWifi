@@ -63,10 +63,13 @@ void IwlDvmOpMode::scan() {
 //    /* keep last */
 //    struct ieee80211_channel *channels[0];
     
-    this->priv->scan_request = (struct cfg80211_scan_request *)IOMalloc(sizeof(struct cfg80211_scan_request) + sizeof(void*));
+    this->priv->scan_request = (struct cfg80211_scan_request *)IOMalloc(sizeof(struct cfg80211_scan_request) + sizeof(void*) * 7);
     bzero(this->priv->scan_request, sizeof(struct cfg80211_scan_request));
-    this->priv->scan_request->n_channels = 1;
-    this->priv->scan_request->channels[0] = &priv->nvm_data->channels[0];
+    this->priv->scan_request->n_channels = 7;
+    for (int i = 0; i < this->priv->scan_request->n_channels; ++i) {
+        this->priv->scan_request->channels[i] = &priv->nvm_data->channels[i];
+    }
+    
     //memcpy(this->priv->scan_request->channels[0], &priv->nvm_data->channels[0], sizeof(struct ieee80211_channel));
     
 //    bzero(this->priv->scan_request->channels[0], sizeof(struct ieee80211_channel));

@@ -153,7 +153,7 @@ int iwlagn_mac_setup_register(struct iwl_priv *priv,
 //                 u32 changes);
 //void iwlagn_config_ht40(struct ieee80211_conf *conf,
 //            struct iwl_rxon_context *ctx);
-//void iwl_set_rxon_ht(struct iwl_priv *priv, struct iwl_ht_config *ht_conf);
+void iwl_set_rxon_ht(struct iwl_priv *priv, struct iwl_ht_config *ht_conf);
 //void iwl_set_rxon_channel(struct iwl_priv *priv, struct ieee80211_channel *ch,
 //             struct iwl_rxon_context *ctx);
 //void iwl_set_flags_for_band(struct iwl_priv *priv,
@@ -433,6 +433,16 @@ static inline int iwl_is_ready_rf(struct iwl_priv *priv)
 
 	return iwl_is_ready(priv);
 }
+
+static inline void iwl_dvm_set_pmi(struct iwl_priv *priv, bool state)
+{
+    if (state)
+        set_bit(STATUS_POWER_PMI, &priv->status);
+    else
+        clear_bit(STATUS_POWER_PMI, &priv->status);
+    iwl_trans_set_pmi(priv->trans, state);
+}
+
 
 
 #ifdef CONFIG_IWLWIFI_DEBUGFS

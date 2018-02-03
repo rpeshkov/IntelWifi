@@ -13,12 +13,18 @@ extern "C" {
 #include <linux/mac80211.h>
     #include <net/cfg80211.h>
 #include <linux/jiffies.h>
+    
 }
 
 #include <IOKit/IOBufferMemoryDescriptor.h>
 
 #include "IwlOpModeOps.h"
 #include "dev.h"
+
+extern "C" {
+    #include "tt.h"
+}
+
 
 #define MAC_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
 #define MAC_BYTES(x) (x)[0],(x)[1],(x)[2],(x)[3],(x)[4],(x)[5]
@@ -188,9 +194,6 @@ private:
     static void iwl_rx_scan_start_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb);
     static void iwl_rx_scan_results_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb);
     static void iwl_rx_scan_complete_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb);
-    
-    // agn.h
-    void iwl_dvm_set_pmi(struct iwl_priv *priv, bool state);
     
     IwlTransOps *_ops;
     

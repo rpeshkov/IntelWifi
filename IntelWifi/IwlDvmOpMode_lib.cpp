@@ -323,16 +323,14 @@ void IwlDvmOpMode::iwlagn_set_rxon_chain(struct iwl_priv *priv, struct iwl_rxon_
     else
         active_chains = priv->nvm_data->valid_rx_ant;
     
-    if (priv->lib->bt_params &&
-        priv->lib->bt_params->advanced_bt_coexist &&
-        (priv->bt_full_concurrent ||
-         priv->bt_traffic_load >= IWL_BT_COEX_TRAFFIC_LOAD_HIGH)) {
-            /*
-             * only use chain 'A' in bt high traffic load or
-             * full concurrency mode
-             */
-            active_chains = first_antenna(active_chains);
-        }
+    if (priv->lib->bt_params && priv->lib->bt_params->advanced_bt_coexist
+    && (priv->bt_full_concurrent || priv->bt_traffic_load >= IWL_BT_COEX_TRAFFIC_LOAD_HIGH)) {
+        /*
+         * only use chain 'A' in bt high traffic load or
+         * full concurrency mode
+         */
+        active_chains = first_antenna(active_chains);
+    }
     
     rx_chain = active_chains << RXON_RX_CHAIN_VALID_POS;
     
@@ -361,9 +359,7 @@ void IwlDvmOpMode::iwlagn_set_rxon_chain(struct iwl_priv *priv, struct iwl_rxon_
     else
         ctx->staging.rx_chain &= ~RXON_RX_CHAIN_MIMO_FORCE_MSK;
     
-    IWL_DEBUG_ASSOC(priv, "rx_chain=0x%X active=%d idle=%d\n",
-                    ctx->staging.rx_chain,
-                    active_rx_cnt, idle_rx_cnt);
+    IWL_DEBUG_ASSOC(priv, "rx_chain=0x%X active=%d idle=%d\n", ctx->staging.rx_chain, active_rx_cnt, idle_rx_cnt);
     
 //    WARN_ON(active_rx_cnt == 0 || idle_rx_cnt == 0 ||
 //            active_rx_cnt < idle_rx_cnt);

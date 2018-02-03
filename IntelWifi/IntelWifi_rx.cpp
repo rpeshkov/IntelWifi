@@ -1331,8 +1331,8 @@ restart:
     r &= (rxq->queue_size - 1);
     
     /* Rx interrupt, but nothing sent from uCode */
-//    if (i == r)
-//        IWL_DEBUG_RX(trans, "Q %d: HW = SW = %d\n", rxq->id, r);
+    if (i == r)
+        IWL_DEBUG_RX(trans, "Q %d: HW = SW = %d\n", rxq->id, r);
     
     while (i != r) {
         struct iwl_rx_mem_buffer *rxb;
@@ -1348,13 +1348,13 @@ restart:
             u16 vid = le32_to_cpu(rxq->used_bd[i]) & 0x0FFF;
             
             if ((!vid || vid > ARRAY_SIZE(trans_pcie->global_table))) {
-                DebugLog("Invalid rxb index from HW %u\n", (u32)vid);
+                IWL_ERR(trans, "Invalid rxb index from HW %u\n", (u32)vid);
                 iwl_force_nmi(trans);
                 goto out;
             }
             rxb = trans_pcie->global_table[vid - 1];
             if (rxb->invalid) {
-                DebugLog("Invalid rxb from HW %u\n", (u32)vid);
+                IWL_ERR(trans, "Invalid rxb from HW %u\n", (u32)vid);
                 iwl_force_nmi(trans);
                 goto out;
             }
@@ -1364,7 +1364,7 @@ restart:
             rxq->queue[i] = NULL;
         }
         
-        //IWL_DEBUG_RX(trans, "Q %d: HW = %d, SW = %d\n", rxq->id, r, i);
+        IWL_DEBUG_RX(trans, "Q %d: HW = %d, SW = %d\n", rxq->id, r, i);
         iwl_pcie_rx_handle_rb(trans, rxq, rxb, emergency);
         
         i = (i + 1) & (rxq->queue_size - 1);

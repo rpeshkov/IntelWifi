@@ -856,6 +856,8 @@ iwl_parse_eeprom_data(struct device *dev, const struct iwl_cfg *cfg,
 	data = IOMalloc(*nvm_data_size);
 	if (!data)
 		return NULL;
+    
+    data->num_channels = IWL_NUM_CHANNELS;
 
 	/* get MAC address(es) */
 	tmp = iwl_eeprom_query_addr(eeprom, eeprom_size, EEPROM_MAC_ADDRESS);

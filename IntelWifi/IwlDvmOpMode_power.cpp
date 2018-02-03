@@ -26,21 +26,25 @@
  * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
  *****************************************************************************/
 
-#include "IwlDvmOpMode.hpp"
 
 
+extern "C" {
 #include <linux/kernel.h>
 #include <linux/module.h>
-//#include <linux/slab.h>
-//#include <net/mac80211.h>
+    //#include <linux/slab.h>
+    //#include <net/mac80211.h>
 #include "power.h"
-//#include "iwlwifi/iwl-io.h"
+    //#include "iwlwifi/iwl-io.h"
 #include "iwl-debug.h"
 #include "iwl-trans.h"
 #include "iwl-modparams.h"
 #include "dev.h"
 #include "agn.h"
 #include "commands.h"
+
+}
+
+#include "IwlDvmOpMode.hpp"
 
 
 static bool force_cam = true;
@@ -339,8 +343,8 @@ int IwlDvmOpMode::iwl_power_set_mode(struct iwl_priv *priv, struct iwl_powertabl
 	//lockdep_assert_held(&priv->mutex);
 
 	/* Don't update the RX chain when chain noise calibration is running */
-	update_chains = priv->chain_noise_data.state == IWL_CHAIN_NOISE_DONE ||
-			priv->chain_noise_data.state == IWL_CHAIN_NOISE_ALIVE;
+	update_chains = priv->chain_noise_data.state == IWL_CHAIN_NOISE_DONE
+                 || priv->chain_noise_data.state == IWL_CHAIN_NOISE_ALIVE;
 
 	if (!memcmp(&priv->power_data.sleep_cmd, cmd, sizeof(*cmd)) && !force)
 		return 0;
@@ -363,14 +367,11 @@ int IwlDvmOpMode::iwl_power_set_mode(struct iwl_priv *priv, struct iwl_powertabl
 		if (!(cmd->flags & IWL_POWER_DRIVER_ALLOW_SLEEP_MSK))
 			iwl_dvm_set_pmi(priv, false);
 
-        // TODO: Port
         if (update_chains)
             iwl_update_chain_flags(priv);
         else
-            IWL_DEBUG_POWER(priv,
-                    "Cannot update the power, chain noise "
-                    "calibration running: %d\n",
-                    priv->chain_noise_data.state);
+            IWL_DEBUG_POWER(priv, "Cannot update the power, chain noise calibration running: %d\n",
+                            priv->chain_noise_data.state);
 
 		memcpy(&priv->power_data.sleep_cmd, cmd, sizeof(*cmd));
 	} else

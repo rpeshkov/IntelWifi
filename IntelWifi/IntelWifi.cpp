@@ -366,6 +366,8 @@ bool IntelWifi::interruptFilter(OSObject* owner, IOFilterInterruptEventSource * 
         return false;
     }
     
+    ifnet_mtu(<#ifnet_t interface#>)
+    
     /* Disable (but don't clear!) interrupts here to avoid
      * back-to-back ISRs and sporadic interrupts from our NIC.
      * If we have something to service, the tasklet will re-enable ints.

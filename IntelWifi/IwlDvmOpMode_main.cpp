@@ -15,10 +15,12 @@ extern "C" {
 #include "iwlwifi/iwl-io.h"
 #include "iwlwifi/iwl-eeprom-read.h"
 #include "iwlwifi/iwl-eeprom-parse.h"
+#include "tt.h"
 }
 
 
 #include "IwlDvmOpMode.hpp"
+
 
 
 
@@ -134,14 +136,10 @@ int IwlDvmOpMode::iwl_send_statistics_request(struct iwl_priv *priv, u8 flags, b
     };
     
     if (flags & CMD_ASYNC)
-        return iwl_dvm_send_cmd_pdu(priv, REPLY_STATISTICS_CMD,
-                                    CMD_ASYNC,
-                                    sizeof(struct iwl_statistics_cmd),
+        return iwl_dvm_send_cmd_pdu(priv, REPLY_STATISTICS_CMD, CMD_ASYNC, sizeof(struct iwl_statistics_cmd),
                                     &statistics_cmd);
     else
-        return iwl_dvm_send_cmd_pdu(priv, REPLY_STATISTICS_CMD, 0,
-                                    sizeof(struct iwl_statistics_cmd),
-                                    &statistics_cmd);
+        return iwl_dvm_send_cmd_pdu(priv, REPLY_STATISTICS_CMD, 0, sizeof(struct iwl_statistics_cmd), &statistics_cmd);
 }
 
 
@@ -198,39 +196,31 @@ static void iwl_init_context(struct iwl_priv *priv, u32 ucode_flags)
     priv->contexts[IWL_RXON_CTX_BSS].ap_sta_id = IWL_AP_ID;
     priv->contexts[IWL_RXON_CTX_BSS].wep_key_cmd = REPLY_WEPKEY;
     priv->contexts[IWL_RXON_CTX_BSS].bcast_sta_id = IWLAGN_BROADCAST_ID;
-    priv->contexts[IWL_RXON_CTX_BSS].exclusive_interface_modes =
-            BIT(NL80211_IFTYPE_ADHOC) | BIT(NL80211_IFTYPE_MONITOR);
-    priv->contexts[IWL_RXON_CTX_BSS].interface_modes =
-            BIT(NL80211_IFTYPE_STATION);
+    priv->contexts[IWL_RXON_CTX_BSS].exclusive_interface_modes = BIT(NL80211_IFTYPE_ADHOC)
+                                                               | BIT(NL80211_IFTYPE_MONITOR);
+    priv->contexts[IWL_RXON_CTX_BSS].interface_modes = BIT(NL80211_IFTYPE_STATION);
     priv->contexts[IWL_RXON_CTX_BSS].ap_devtype = RXON_DEV_TYPE_AP;
     priv->contexts[IWL_RXON_CTX_BSS].ibss_devtype = RXON_DEV_TYPE_IBSS;
     priv->contexts[IWL_RXON_CTX_BSS].station_devtype = RXON_DEV_TYPE_ESS;
     priv->contexts[IWL_RXON_CTX_BSS].unused_devtype = RXON_DEV_TYPE_ESS;
-    memcpy(priv->contexts[IWL_RXON_CTX_BSS].ac_to_queue,
-           iwlagn_bss_ac_to_queue, sizeof(iwlagn_bss_ac_to_queue));
-    memcpy(priv->contexts[IWL_RXON_CTX_BSS].ac_to_fifo,
-           iwlagn_bss_ac_to_fifo, sizeof(iwlagn_bss_ac_to_fifo));
+    memcpy(priv->contexts[IWL_RXON_CTX_BSS].ac_to_queue, iwlagn_bss_ac_to_queue, sizeof(iwlagn_bss_ac_to_queue));
+    memcpy(priv->contexts[IWL_RXON_CTX_BSS].ac_to_fifo, iwlagn_bss_ac_to_fifo, sizeof(iwlagn_bss_ac_to_fifo));
     
     priv->contexts[IWL_RXON_CTX_PAN].rxon_cmd = REPLY_WIPAN_RXON;
-    priv->contexts[IWL_RXON_CTX_PAN].rxon_timing_cmd =
-            REPLY_WIPAN_RXON_TIMING;
-    priv->contexts[IWL_RXON_CTX_PAN].rxon_assoc_cmd =
-            REPLY_WIPAN_RXON_ASSOC;
+    priv->contexts[IWL_RXON_CTX_PAN].rxon_timing_cmd = REPLY_WIPAN_RXON_TIMING;
+    priv->contexts[IWL_RXON_CTX_PAN].rxon_assoc_cmd = REPLY_WIPAN_RXON_ASSOC;
     priv->contexts[IWL_RXON_CTX_PAN].qos_cmd = REPLY_WIPAN_QOS_PARAM;
     priv->contexts[IWL_RXON_CTX_PAN].ap_sta_id = IWL_AP_ID_PAN;
     priv->contexts[IWL_RXON_CTX_PAN].wep_key_cmd = REPLY_WIPAN_WEPKEY;
     priv->contexts[IWL_RXON_CTX_PAN].bcast_sta_id = IWLAGN_PAN_BCAST_ID;
     priv->contexts[IWL_RXON_CTX_PAN].station_flags = STA_FLG_PAN_STATION;
-    priv->contexts[IWL_RXON_CTX_PAN].interface_modes =
-            BIT(NL80211_IFTYPE_STATION) | BIT(NL80211_IFTYPE_AP);
+    priv->contexts[IWL_RXON_CTX_PAN].interface_modes = BIT(NL80211_IFTYPE_STATION) | BIT(NL80211_IFTYPE_AP);
     
     priv->contexts[IWL_RXON_CTX_PAN].ap_devtype = RXON_DEV_TYPE_CP;
     priv->contexts[IWL_RXON_CTX_PAN].station_devtype = RXON_DEV_TYPE_2STA;
     priv->contexts[IWL_RXON_CTX_PAN].unused_devtype = RXON_DEV_TYPE_P2P;
-    memcpy(priv->contexts[IWL_RXON_CTX_PAN].ac_to_queue,
-           iwlagn_pan_ac_to_queue, sizeof(iwlagn_pan_ac_to_queue));
-    memcpy(priv->contexts[IWL_RXON_CTX_PAN].ac_to_fifo,
-           iwlagn_pan_ac_to_fifo, sizeof(iwlagn_pan_ac_to_fifo));
+    memcpy(priv->contexts[IWL_RXON_CTX_PAN].ac_to_queue, iwlagn_pan_ac_to_queue, sizeof(iwlagn_pan_ac_to_queue));
+    memcpy(priv->contexts[IWL_RXON_CTX_PAN].ac_to_fifo, iwlagn_pan_ac_to_fifo, sizeof(iwlagn_pan_ac_to_fifo));
     priv->contexts[IWL_RXON_CTX_PAN].mcast_queue = IWL_IPAN_MCAST_QUEUE;
     
     //BUILD_BUG_ON(NUM_IWL_RXON_CTX != 2);
@@ -370,8 +360,7 @@ int IwlDvmOpMode::iwl_alive_start(struct iwl_priv *priv)
     }
     
     /* download priority table before any calibration request */
-    if (priv->lib->bt_params &&
-        priv->lib->bt_params->advanced_bt_coexist) {
+    if (priv->lib->bt_params && priv->lib->bt_params->advanced_bt_coexist) {
         /* Configure Bluetooth device coexistence support */
         if (priv->lib->bt_params->bt_sco_disable)
             priv->bt_enable_pspoll = false;
@@ -388,12 +377,10 @@ int IwlDvmOpMode::iwl_alive_start(struct iwl_priv *priv)
         iwl_send_prio_tbl(priv);
         
         /* FIXME: w/a to force change uCode BT state machine */
-        ret = iwl_send_bt_env(priv, IWL_BT_COEX_ENV_OPEN,
-                              BT_COEX_PRIO_TBL_EVT_INIT_CALIB2);
+        ret = iwl_send_bt_env(priv, IWL_BT_COEX_ENV_OPEN, BT_COEX_PRIO_TBL_EVT_INIT_CALIB2);
         if (ret)
             return ret;
-        ret = iwl_send_bt_env(priv, IWL_BT_COEX_ENV_CLOSE,
-                              BT_COEX_PRIO_TBL_EVT_INIT_CALIB2);
+        ret = iwl_send_bt_env(priv, IWL_BT_COEX_ENV_CLOSE, BT_COEX_PRIO_TBL_EVT_INIT_CALIB2);
         if (ret)
             return ret;
     } else if (priv->lib->bt_params) {
@@ -571,8 +558,7 @@ int IwlDvmOpMode::iwl_init_drv(struct iwl_priv *priv)
     iwl_init_scan_params(priv);
     
     /* init bt coex */
-    if (priv->lib->bt_params &&
-        priv->lib->bt_params->advanced_bt_coexist) {
+    if (priv->lib->bt_params && priv->lib->bt_params->advanced_bt_coexist) {
         priv->kill_ack_mask = IWLAGN_BT_KILL_ACK_MASK_DEFAULT;
         priv->kill_cts_mask = IWLAGN_BT_KILL_CTS_MASK_DEFAULT;
         priv->bt_valid = IWLAGN_BT_ALL_VALID_MSK;
@@ -699,7 +685,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
 //    op_mode = hw->priv;
 //    op_mode->ops = &iwl_dvm_ops;
 //    priv = IWL_OP_MODE_GET_DVM(op_mode);
-    priv = (struct iwl_priv *)hw->priv; //(struct iwl_priv *)IOMalloc(sizeof(iwl_priv));
+    priv = (struct iwl_priv *)hw->priv;
     priv->trans = trans;
     //priv->dev = trans->dev;
     priv->cfg = cfg;
@@ -766,8 +752,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
         case IWL_AMSDU_12K:
         default:
             trans_cfg.rx_buf_size = IWL_AMSDU_4K;
-            TraceLog("Unsupported amsdu_size: %d\n",
-                   iwlwifi_mod_params.amsdu_size);
+            TraceLog("Unsupported amsdu_size: %d\n", iwlwifi_mod_params.amsdu_size);
     }
     
     trans_cfg.cmd_q_wdg_timeout = IWL_WATCHDOG_DISABLED;
@@ -809,15 +794,11 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     IWL_DEBUG_INFO(priv, "*** LOAD DRIVER ***\n");
     
     /* is antenna coupling more than 35dB ? */
-    priv->bt_ant_couple_ok =
-            (iwlwifi_mod_params.antenna_coupling >
-                    IWL_BT_ANTENNA_COUPLING_THRESHOLD) ?
-                    true : false;
+    priv->bt_ant_couple_ok = (iwlwifi_mod_params.antenna_coupling > IWL_BT_ANTENNA_COUPLING_THRESHOLD) ? true : false;
     
     /* bt channel inhibition enabled*/
     priv->bt_ch_announce = true;
-    IWL_DEBUG_INFO(priv, "BT channel inhibition is %s\n",
-                   (priv->bt_ch_announce) ? "On" : "Off");
+    IWL_DEBUG_INFO(priv, "BT channel inhibition is %s\n", (priv->bt_ch_announce) ? "On" : "Off");
     
     /* these spin locks will be used in apm_ops.init and EEPROM access
      * we should init now
@@ -827,8 +808,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     /***********************
      * 2. Read REV register
      ***********************/
-    IWL_INFO(priv, "Detected %s, REV=0x%X\n",
-             priv->cfg->name, priv->trans->hw_rev);
+    IWL_INFO(priv, "Detected %s, REV=0x%X\n", priv->cfg->name, priv->trans->hw_rev);
     
     if (_ops->start_hw(priv->trans, true))
         goto out_free_hw;
@@ -842,7 +822,8 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     /* Reset chip to save power until we load uCode during "up". */
     _ops->stop_device(priv->trans, true);
     
-    priv->nvm_data = iwl_parse_eeprom_data(NULL, priv->cfg, priv->eeprom_blob, priv->eeprom_blob_size, &priv->nvm_data_size);
+    priv->nvm_data = iwl_parse_eeprom_data(NULL, priv->cfg, priv->eeprom_blob, priv->eeprom_blob_size,
+                                           &priv->nvm_data_size);
     
     if (!priv->nvm_data)
         goto out_free_eeprom_blob;
@@ -860,8 +841,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     priv->hw->wiphy->n_addresses = 1;
     num_mac = priv->nvm_data->n_hw_addrs;
     if (num_mac > 1) {
-        memcpy(priv->addresses[1].addr, priv->addresses[0].addr,
-               ETH_ALEN);
+        memcpy(priv->addresses[1].addr, priv->addresses[0].addr, ETH_ALEN);
         priv->addresses[1].addr[5]++;
         priv->hw->wiphy->n_addresses++;
     }
@@ -893,10 +873,8 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
      *******************/
     for (i = 0; i < IWL_MAX_HW_QUEUES; i++) {
         priv->queue_to_mac80211[i] = IWL_INVALID_MAC80211_QUEUE;
-        if (i < IWLAGN_FIRST_AMPDU_QUEUE &&
-            i != IWL_DEFAULT_CMD_QUEUE_NUM &&
-            i != IWL_IPAN_CMD_QUEUE_NUM)
-                priv->queue_to_mac80211[i] = i;
+        if (i < IWLAGN_FIRST_AMPDU_QUEUE && i != IWL_DEFAULT_CMD_QUEUE_NUM && i != IWL_IPAN_CMD_QUEUE_NUM)
+            priv->queue_to_mac80211[i] = i;
         
         priv->queue_stop_count[i] = 0;
     }
@@ -914,20 +892,14 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
 
     iwl_power_initialize(priv);
     
-    // TODO: Implement Thermal Throttling
-    // iwl_tt_initialize(priv);
+    iwl_tt_initialize(priv);
 
-    snprintf(priv->hw->wiphy->fw_version,
-             sizeof(priv->hw->wiphy->fw_version),
-             "%s", fw->fw_version);
+    snprintf(priv->hw->wiphy->fw_version, sizeof(priv->hw->wiphy->fw_version), "%s", fw->fw_version);
 
-    priv->new_scan_threshold_behaviour =
-            !!(ucode_flags & IWL_UCODE_TLV_FLAGS_NEWSCAN);
+    priv->new_scan_threshold_behaviour = !!(ucode_flags & IWL_UCODE_TLV_FLAGS_NEWSCAN);
 
-    priv->phy_calib_chain_noise_reset_cmd =
-            fw->ucode_capa.standard_phy_calibration_size;
-    priv->phy_calib_chain_noise_gain_cmd =
-            fw->ucode_capa.standard_phy_calibration_size + 1;
+    priv->phy_calib_chain_noise_reset_cmd = fw->ucode_capa.standard_phy_calibration_size;
+    priv->phy_calib_chain_noise_gain_cmd = fw->ucode_capa.standard_phy_calibration_size + 1;
 
     /* initialize all valid contexts */
     iwl_init_context(priv, ucode_flags);
@@ -1047,16 +1019,6 @@ void IwlDvmOpMode::iwl_nic_config(struct iwl_priv *priv)
     
     if (priv->lib->nic_config)
         priv->lib->nic_config(priv);
-}
-
-void IwlDvmOpMode::iwl_dvm_set_pmi(struct iwl_priv *priv, bool state)
-{
-    if (state)
-        set_bit(STATUS_POWER_PMI, &priv->status);
-    else
-        clear_bit(STATUS_POWER_PMI, &priv->status);
-    
-    iwl_trans_set_pmi(priv->trans, state);
 }
 
 

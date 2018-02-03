@@ -117,40 +117,6 @@ static inline __u16 __le16_to_cpup(const __le16 *p)
 
 
 
-static inline int
-test_bit(int nr, const volatile unsigned long *addr)
-{
-    return (OSAddAtomic(0, addr) & (1 << nr)) != 0;
-}
-
-static inline void
-clear_bit(unsigned int nr, volatile unsigned long *addr)
-{
-    OSTestAndClear(7 - nr, (volatile UInt8 *)addr);
-}
-
-static inline int
-test_and_clear_bit(unsigned int nr, volatile unsigned long *addr)
-{
-    return !OSTestAndClear(7 - nr, (volatile UInt8 *)addr);
-}
-
-static inline int
-test_and_set_bit(unsigned int nr, volatile unsigned long *addr)
-{
-    return OSTestAndSet(7 - nr, (volatile UInt8 *)addr);
-}
-
-static inline void
-set_bit(unsigned int nr, volatile unsigned long *addr)
-{
-    OSTestAndSet(7 - nr, (volatile UInt8 *)addr);
-}
-
-#define __set_bit set_bit
-#define __clear_bit clear_bit
-
-
 #define ETHTOOL_FWVERS_LEN    32
 #define ETHTOOL_BUSINFO_LEN    32
 #define ETHTOOL_EROMVERS_LEN    32

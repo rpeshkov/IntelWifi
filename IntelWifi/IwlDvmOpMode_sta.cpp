@@ -1230,8 +1230,7 @@ int IwlDvmOpMode::iwl_set_dynamic_key(struct iwl_priv *priv, struct iwl_rxon_con
  * and marks it driver active, so that it will be restored to the
  * device at the next best time.
  */
-int IwlDvmOpMode::iwlagn_alloc_bcast_station(struct iwl_priv *priv,
-                               struct iwl_rxon_context *ctx)
+int IwlDvmOpMode::iwlagn_alloc_bcast_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     struct iwl_link_quality_cmd *link_cmd;
     u8 sta_id;
@@ -1251,8 +1250,7 @@ int IwlDvmOpMode::iwlagn_alloc_bcast_station(struct iwl_priv *priv,
     
     link_cmd = iwl_sta_alloc_lq(priv, ctx, sta_id);
     if (!link_cmd) {
-        IWL_ERR(priv,
-                "Unable to initialize rate scaling for bcast station.\n");
+        IWL_ERR(priv, "Unable to initialize rate scaling for bcast station.\n");
         return -ENOMEM;
     }
 

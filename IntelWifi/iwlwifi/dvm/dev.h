@@ -929,9 +929,8 @@ iwl_rxon_ctx_from_vif(struct ieee80211_vif *vif)
 }
 
 
-#define for_each_context(priv, ctx)				\
-	for (ctx = &priv->contexts[IWL_RXON_CTX_BSS];		\
-	     ctx < &priv->contexts[NUM_IWL_RXON_CTX]; ctx++)	\
+#define for_each_context(priv, ctx)				                                                    \
+	for (ctx = &priv->contexts[IWL_RXON_CTX_BSS]; ctx < &priv->contexts[NUM_IWL_RXON_CTX]; ctx++)	\
 		if (priv->valid_contexts & BIT(ctx->ctxid))
 
 static inline int iwl_is_associated_ctx(struct iwl_rxon_context *ctx)
@@ -939,8 +938,7 @@ static inline int iwl_is_associated_ctx(struct iwl_rxon_context *ctx)
 	return (ctx->active.filter_flags & RXON_FILTER_ASSOC_MSK) ? 1 : 0;
 }
 
-static inline int iwl_is_associated(struct iwl_priv *priv,
-				    enum iwl_rxon_context_id ctxid)
+static inline int iwl_is_associated(struct iwl_priv *priv, enum iwl_rxon_context_id ctxid)
 {
 	return iwl_is_associated_ctx(&priv->contexts[ctxid]);
 }
