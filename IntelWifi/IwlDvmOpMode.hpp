@@ -12,6 +12,7 @@
 extern "C" {
 #include <linux/mac80211.h>
     #include <net/cfg80211.h>
+#include <linux/jiffies.h>
 }
 
 #include <IOKit/IOBufferMemoryDescriptor.h>
@@ -81,12 +82,17 @@ private:
     
     // sta.c
     int iwl_send_add_sta(struct iwl_priv *priv, struct iwl_addsta_cmd *sta, u8 flags); // line 102
-    u8 iwl_prep_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
-                                      const u8 *addr, bool is_ap, struct ieee80211_sta *sta); // line 252
+    int iwl_sta_update_ht(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct ieee80211_sta *sta); // line 213
+//    u8 iwl_prep_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
+//                                      const u8 *addr, bool is_ap, struct ieee80211_sta *sta); // line 252
+    int iwl_add_station_common(struct iwl_priv *priv, struct iwl_rxon_context *ctx, const u8 *addr, bool is_ap, struct ieee80211_sta *sta, u8 *sta_id_r); // line 341
+    int iwl_send_remove_station(struct iwl_priv *priv, const u8 *addr, int sta_id, bool temporary); // line 420
+    int iwl_remove_station(struct iwl_priv *priv, const u8 sta_id, const u8 *addr); // line 469
     void iwl_clear_ucode_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 619
     void iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 654
     int iwl_send_lq_cmd(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
                                       struct iwl_link_quality_cmd *lq, u8 flags, bool init); // line 825
+    int iwlagn_add_bssid_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx, const u8 *addr, u8 *sta_id_r); // line 898
     
     int iwl_send_static_wepkey_cmd(struct iwl_priv *priv,
                                           struct iwl_rxon_context *ctx,
@@ -105,7 +111,12 @@ private:
     int iwl_set_default_wep_key(struct iwl_priv *priv,
                                 struct iwl_rxon_context *ctx,
                                 struct ieee80211_key_conf *keyconf); // line 1034
-    
+    int iwlagn_send_sta_key(struct iwl_priv *priv, struct ieee80211_key_conf *keyconf, u8 sta_id, u32 tkip_iv32, u16 *tkip_p1k, u32 cmd_flags); // line 1097
+    void iwl_update_tkip_key(struct iwl_priv *priv, struct ieee80211_vif *vif, struct ieee80211_key_conf *keyconf, struct ieee80211_sta *sta, u32 iv32, u16 *phase1key); // line 1150
+    int iwl_remove_dynamic_key(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
+                               struct ieee80211_key_conf *keyconf,
+                               struct ieee80211_sta *sta); // line 1170
+    int iwl_set_dynamic_key(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct ieee80211_key_conf *keyconf, struct ieee80211_sta *sta); // line 1218
     int iwlagn_alloc_bcast_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 1276
     int iwl_update_bcast_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 1316
     

@@ -43,7 +43,7 @@
 #include "commands.h"
 
 
-//static bool force_cam = true;
+static bool force_cam = true;
 //module_param(force_cam, bool, 0644);
 //MODULE_PARM_DESC(force_cam, "force continuously aware mode (no power saving at all)");
 
@@ -293,42 +293,41 @@ static void iwl_power_build_cmd(struct iwl_priv *priv,
 				struct iwl_powertable_cmd *cmd)
 {
     // TODO: Implement
-//    bool enabled = priv->hw->conf.flags & IEEE80211_CONF_PS;
-//    int dtimper;
-//
-//    if (force_cam) {
-//        iwl_power_sleep_cam_cmd(priv, cmd);
-//        return;
-//    }
-//
-//    dtimper = priv->hw->conf.ps_dtim_period ?: 1;
-//
-//    if (priv->wowlan)
-//        iwl_static_sleep_cmd(priv, cmd, IWL_POWER_INDEX_5, dtimper);
-//    else if (!priv->lib->no_idle_support &&
-//         priv->hw->conf.flags & IEEE80211_CONF_IDLE)
-//        iwl_static_sleep_cmd(priv, cmd, IWL_POWER_INDEX_5, 20);
-//    else if (iwl_tt_is_low_power_state(priv)) {
-//        /* in thermal throttling low power state */
-//        iwl_static_sleep_cmd(priv, cmd,
-//            iwl_tt_current_power_mode(priv), dtimper);
-//    } else if (!enabled)
-//        iwl_power_sleep_cam_cmd(priv, cmd);
-//    else if (priv->power_data.debug_sleep_level_override >= 0)
-//        iwl_static_sleep_cmd(priv, cmd,
-//                     priv->power_data.debug_sleep_level_override,
-//                     dtimper);
-//    else {
-//        /* Note that the user parameter is 1-5 (according to spec),
-//        but we pass 0-4 because it acts as an array index. */
-//        if (iwlwifi_mod_params.power_level > IWL_POWER_INDEX_1 &&
-//            iwlwifi_mod_params.power_level <= IWL_POWER_NUM)
-//            iwl_static_sleep_cmd(priv, cmd,
-//                iwlwifi_mod_params.power_level - 1, dtimper);
-//        else
-//            iwl_static_sleep_cmd(priv, cmd,
-//                IWL_POWER_INDEX_1, dtimper);
-//    }
+    bool enabled = priv->hw->conf.flags & IEEE80211_CONF_PS;
+    int dtimper;
+
+    if (force_cam) {
+        iwl_power_sleep_cam_cmd(priv, cmd);
+        return;
+    }
+
+    dtimper = priv->hw->conf.ps_dtim_period ?: 1;
+
+    if (priv->wowlan) {
+        iwl_static_sleep_cmd(priv, cmd, IWL_POWER_INDEX_5, dtimper);
+    } else if (!priv->lib->no_idle_support && priv->hw->conf.flags & IEEE80211_CONF_IDLE) {
+        iwl_static_sleep_cmd(priv, cmd, IWL_POWER_INDEX_5, 20);
+    } else if (iwl_tt_is_low_power_state(priv)) {
+        /* in thermal throttling low power state */
+        // TODO: Implement
+        // iwl_static_sleep_cmd(priv, cmd, iwl_tt_current_power_mode(priv), dtimper);
+    } else if (!enabled) {
+        iwl_power_sleep_cam_cmd(priv, cmd);
+    }
+    else if (priv->power_data.debug_sleep_level_override >= 0) {
+        // TODO: Implement
+        // iwl_static_sleep_cmd(priv, cmd, priv->power_data.debug_sleep_level_override, dtimper);
+    } else {
+        /* Note that the user parameter is 1-5 (according to spec),
+        but we pass 0-4 because it acts as an array index. */
+        if (iwlwifi_mod_params.power_level > IWL_POWER_INDEX_1 && iwlwifi_mod_params.power_level <= IWL_POWER_NUM) {
+            // TODO: Implement
+            // iwl_static_sleep_cmd(priv, cmd, iwlwifi_mod_params.power_level - 1, dtimper);
+        } else {
+            iwl_static_sleep_cmd(priv, cmd, IWL_POWER_INDEX_1, dtimper);
+        }
+        
+    }
 }
 
 int IwlDvmOpMode::iwl_power_set_mode(struct iwl_priv *priv, struct iwl_powertable_cmd *cmd,

@@ -321,9 +321,9 @@ void iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx);
 //               const u8 *addr);
 //void iwl_deactivate_station(struct iwl_priv *priv, const u8 sta_id,
 //                const u8 *addr);
-//u8 iwl_prep_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
-//            const u8 *addr, bool is_ap, struct ieee80211_sta *sta);
-//
+u8 iwl_prep_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
+            const u8 *addr, bool is_ap, struct ieee80211_sta *sta);
+
 //int iwl_send_lq_cmd(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
 //            struct iwl_link_quality_cmd *lq, u8 flags, bool init);
 void iwl_add_sta_callback(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb);
@@ -333,15 +333,15 @@ void iwl_add_sta_callback(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb);
 bool iwl_is_ht40_tx_allowed(struct iwl_priv *priv,
                 struct iwl_rxon_context *ctx,
                 struct ieee80211_sta *sta);
-//
-//static inline int iwl_sta_id(struct ieee80211_sta *sta)
-//{
-//    if (WARN_ON(!sta))
-//        return IWL_INVALID_STATION;
-//
-//    return ((struct iwl_station_priv *)sta->drv_priv)->sta_id;
-//}
-//
+
+static inline int iwl_sta_id(struct ieee80211_sta *sta)
+{
+    if (!sta)
+        return IWL_INVALID_STATION;
+
+    return ((struct iwl_station_priv *)sta->drv_priv)->sta_id;
+}
+
 //int iwlagn_alloc_bcast_station(struct iwl_priv *priv,
 //                   struct iwl_rxon_context *ctx);
 //int iwlagn_add_bssid_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx,

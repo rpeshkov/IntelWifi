@@ -72,7 +72,7 @@ enum ieee80211_radiotap_mcs_have {
 int iwlagn_mac_setup_register(struct iwl_priv *priv,
                               const struct iwl_ucode_capabilities *capa)
 {
-    int ret;
+    //int ret;
     struct ieee80211_hw *hw = priv->hw;
     struct iwl_rxon_context *ctx;
     

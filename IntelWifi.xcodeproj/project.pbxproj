@@ -187,6 +187,7 @@
 		A6E59FE31FF34BA600E86DC0 /* iwl-agn-hw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-agn-hw.h"; sourceTree = "<group>"; };
 		A6F3F8931FF783A100F1582E /* cfg80211.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cfg80211.h; sourceTree = "<group>"; };
 		A6F3F8961FF78DA400F1582E /* util.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = util.c; sourceTree = "<group>"; };
+		A6FEB8302023E364001FE12D /* jiffies.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = jiffies.h; sourceTree = "<group>"; };
 		A6FFAF85201CC1580097ED10 /* IwlDvmOpMode_rs.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IwlDvmOpMode_rs.cpp; sourceTree = "<group>"; };
 		A6FFAF88201CF32C0097ED10 /* find_next_bit.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = find_next_bit.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -300,6 +301,7 @@
 				A61436821FFC193C00852FEC /* irqreturn.h */,
 				A63CB75A2010EE2A0097DA79 /* etherdevice.h */,
 				A63CB76120110D360097DA79 /* mac80211.h */,
+				A6FEB8302023E364001FE12D /* jiffies.h */,
 			);
 			path = linux;
 			sourceTree = "<group>";

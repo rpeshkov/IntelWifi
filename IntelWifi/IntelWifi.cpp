@@ -95,8 +95,7 @@ bool IntelWifi::start(IOService *provider) {
     if (!fWorkLoop) {
         TraceLog("getWorkLoop failed!");
         releaseAll();
-        return 0;
-        //return false;
+        return false;
     }
     
     fWorkLoop->retain();
@@ -354,9 +353,10 @@ IOReturn IntelWifi::gateAction(OSObject *owner, void *arg0, void *arg1, void *ar
         return kIOReturnSuccess;
     }
     
-    IntelWifi *me = static_cast<IntelWifi *>(owner);
-    size_t len = (size_t)arg1;
-    return me->netif->inputPacket((mbuf_t)arg0, len, IONetworkInterface::kInputOptionQueuePacket);
+    //IntelWifi *me = static_cast<IntelWifi *>(owner);
+//    u32 len = (u32)arg1;
+//    return me->netif->inputPacket((mbuf_t)arg0, len, IONetworkInterface::kInputOptionQueuePacket);
+    return kIOReturnSuccess;
 }
 
 bool IntelWifi::interruptFilter(OSObject* owner, IOFilterInterruptEventSource * src) {

@@ -71,6 +71,11 @@
 
 #define ETH_ALEN 6
 
+// Stub to shut the compiler up
+struct device {
+    int something;
+};
+
 struct iwl_nvm_data {
 	int n_hw_addrs;
 	u8 hw_addr[ETH_ALEN];

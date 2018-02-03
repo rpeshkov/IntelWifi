@@ -39,6 +39,8 @@
 extern "C" {
 #include "dev.h"
 #include "agn.h"
+#include <linux/etherdevice.h>
+#include <linux/jiffies.h>
 }
 
 /* For active scan, listen ACTIVE_DWELL_TIME (msec) on each channel after
@@ -75,9 +77,9 @@ int IwlDvmOpMode::iwl_send_scan_abort(struct iwl_priv *priv)
     /* Exit instantly with error when device is not ready
      * to receive scan abort command or it does not perform
      * hardware scan currently */
-    if (!test_bit(STATUS_READY, &priv->status) ||
-        !test_bit(STATUS_SCAN_HW, &priv->status) ||
-        test_bit(STATUS_FW_ERROR, &priv->status))
+    if (!test_bit(STATUS_READY,    &priv->status)
+    ||  !test_bit(STATUS_SCAN_HW,  &priv->status)
+    ||   test_bit(STATUS_FW_ERROR, &priv->status))
         return -EIO;
     
     ret = iwl_dvm_send_cmd(priv, &cmd);
@@ -92,8 +94,7 @@ int IwlDvmOpMode::iwl_send_scan_abort(struct iwl_priv *priv)
          * can occur if we send the scan abort before we
          * the microcode has notified us that a scan is
          * completed. */
-        IWL_DEBUG_SCAN(priv, "SCAN_ABORT ret %d.\n",
-                       le32_to_cpu(*status));
+        IWL_DEBUG_SCAN(priv, "SCAN_ABORT ret %d.\n", le32_to_cpu(*status));
         ret = -EIO;
     }
     
@@ -104,9 +105,9 @@ int IwlDvmOpMode::iwl_send_scan_abort(struct iwl_priv *priv)
 // line 95
 static void iwl_complete_scan(struct iwl_priv *priv, bool aborted)
 {
-    struct cfg80211_scan_info info = {
-        .aborted = aborted,
-    };
+//    struct cfg80211_scan_info info = {
+//        .aborted = aborted,
+//    };
 
     /* check if scan was requested from mac80211 */
     if (priv->scan_request) {
@@ -216,8 +217,9 @@ void IwlDvmOpMode::iwl_do_scan_abort(struct iwl_priv *priv)
     if (ret) {
         IWL_DEBUG_SCAN(priv, "Send scan abort failed %d\n", ret);
         iwl_force_scan_end(priv);
-    } else
+    } else {
         IWL_DEBUG_SCAN(priv, "Successfully send scan abort\n");
+    }
 }
 
 /**
@@ -240,9 +242,7 @@ int iwl_scan_cancel(struct iwl_priv *priv)
  */
 void IwlDvmOpMode::iwl_scan_cancel_timeout(struct iwl_priv *priv, unsigned long ms)
 {
-    uint64_t uptime;
-    clock_get_uptime(&uptime);
-    unsigned long timeout = uptime + ms;
+    unsigned long timeout = jiffies + msecs_to_jiffies(ms);
     
     //lockdep_assert_held(&priv->mutex);
     
@@ -250,11 +250,10 @@ void IwlDvmOpMode::iwl_scan_cancel_timeout(struct iwl_priv *priv, unsigned long 
     
     iwl_do_scan_abort(priv);
     
-    while (timeout <= uptime) {
+    while (time_before_eq(jiffies, timeout)) {
         if (!test_bit(STATUS_SCAN_HW, &priv->status))
             goto finished;
         IODelay(20);
-        clock_get_uptime(&uptime);
     }
     
     return;
@@ -295,14 +294,13 @@ void IwlDvmOpMode::iwl_rx_scan_start_notif(struct iwl_priv *priv, struct iwl_rx_
     struct iwl_scanstart_notification *notif = (struct iwl_scanstart_notification *)pkt->data;
     
     priv->scan_start_tsf = le32_to_cpu(notif->tsf_low);
-    IWL_DEBUG_SCAN(priv, "Scan start: "
-                   "%d [802.11%s] "
-                   "(TSF: 0x%08X:%08X) - %d (beacon timer %u)\n",
+    IWL_DEBUG_SCAN(priv, "Scan start: %d [802.11%s] (TSF: 0x%08X:%08X) - %d (beacon timer %u)\n",
                    notif->channel,
                    notif->band ? "bg" : "a",
                    le32_to_cpu(notif->tsf_high),
                    le32_to_cpu(notif->tsf_low),
-                   notif->status, notif->beacon_timer);
+                   notif->status,
+                   notif->beacon_timer);
 }
 
 // line 283
@@ -345,9 +343,14 @@ void IwlDvmOpMode::iwl_rx_scan_complete_notif(struct iwl_priv *priv, struct iwl_
     clock_usec_t micros;
     clock_get_system_microtime(&secs, &micros);
     
-    IWL_DEBUG_SCAN(priv, "Scan on %sGHz took %lums\n",
+    IWL_DEBUG_SCAN(priv, "Scan on %sGHz took %lums; Stations: %d\n",
                    (priv->scan_band == NL80211_BAND_2GHZ) ? "2.4" : "5.2",
-                   (micros - priv->scan_start) * 1000);
+                   jiffies_to_msecs(jiffies - priv->scan_start),
+                   priv->num_stations);
+    
+    for (int i = 0; i < priv->num_stations; ++i) {
+        IWL_DEBUG_SCAN(priv, "Station: " MAC_FMT "\n", MAC_BYTES(priv->stations[i].sta.sta.addr));
+    }
     
     /*
      * When aborting, we run the scan completed background work inline
@@ -362,7 +365,9 @@ void IwlDvmOpMode::iwl_rx_scan_complete_notif(struct iwl_priv *priv, struct iwl_
     // TODO: Implement
     //queue_work(priv->workqueue, &priv->scan_completed);
     
-    if (priv->iw_mode != NL80211_IFTYPE_ADHOC && iwl_advanced_bt_coexist(priv) && priv->bt_status != scan_notif->bt_status) {
+    if (priv->iw_mode != NL80211_IFTYPE_ADHOC
+    && iwl_advanced_bt_coexist(priv)
+    && priv->bt_status != scan_notif->bt_status) {
         if (scan_notif->bt_status) {
             /* BT on */
             if (!priv->bt_ch_announce)
@@ -393,15 +398,12 @@ void IwlDvmOpMode::iwl_setup_rx_scan_handlers(struct iwl_priv *priv)
 }
 
 // line 368
-static u16 iwl_get_active_dwell_time(struct iwl_priv *priv,
-                                     enum nl80211_band band, u8 n_probes)
+static u16 iwl_get_active_dwell_time(struct iwl_priv *priv, enum nl80211_band band, u8 n_probes)
 {
     if (band == NL80211_BAND_5GHZ)
-        return IWL_ACTIVE_DWELL_TIME_52 +
-        IWL_ACTIVE_DWELL_FACTOR_52GHZ * (n_probes + 1);
+        return IWL_ACTIVE_DWELL_TIME_52 + IWL_ACTIVE_DWELL_FACTOR_52GHZ * (n_probes + 1);
     else
-        return IWL_ACTIVE_DWELL_TIME_24 +
-        IWL_ACTIVE_DWELL_FACTOR_24GHZ * (n_probes + 1);
+        return IWL_ACTIVE_DWELL_TIME_24 + IWL_ACTIVE_DWELL_FACTOR_24GHZ * (n_probes + 1);
 }
 
 // line 379
@@ -478,8 +480,7 @@ static u16 iwl_get_passive_dwell_time(struct iwl_priv *priv,
 /* line 447
  * Return valid, unused, channel for a passive scan to reset the RF
  */
-static u8 iwl_get_single_channel_number(struct iwl_priv *priv,
-                                        enum nl80211_band band)
+static u8 iwl_get_single_channel_number(struct iwl_priv *priv, enum nl80211_band band)
 {
     struct ieee80211_supported_band *sband = priv->hw->wiphy->bands[band];
     struct iwl_rxon_context *ctx;
@@ -506,9 +507,7 @@ static u8 iwl_get_single_channel_number(struct iwl_priv *priv,
 
 
 // line 475
-static int iwl_get_channel_for_reset_scan(struct iwl_priv *priv,
-                                          struct ieee80211_vif *vif,
-                                          enum nl80211_band band,
+static int iwl_get_channel_for_reset_scan(struct iwl_priv *priv, struct ieee80211_vif *vif, enum nl80211_band band,
                                           struct iwl_scan_channel *scan_ch)
 {
     const struct ieee80211_supported_band *sband;
@@ -524,10 +523,8 @@ static int iwl_get_channel_for_reset_scan(struct iwl_priv *priv,
     if (channel) {
         scan_ch->channel = cpu_to_le16(channel);
         scan_ch->type = SCAN_CHANNEL_TYPE_PASSIVE;
-        scan_ch->active_dwell =
-                cpu_to_le16(IWL_RADIO_RESET_DWELL_TIME);
-        scan_ch->passive_dwell =
-                cpu_to_le16(IWL_RADIO_RESET_DWELL_TIME);
+        scan_ch->active_dwell = cpu_to_le16(IWL_RADIO_RESET_DWELL_TIME);
+        scan_ch->passive_dwell = cpu_to_le16(IWL_RADIO_RESET_DWELL_TIME);
         /* Set txpower levels to defaults */
         scan_ch->dsp_atten = 110;
         if (band == NL80211_BAND_5GHZ)
@@ -599,10 +596,8 @@ static int iwl_get_channels_for_scan(struct iwl_priv *priv,
         
         IWL_DEBUG_SCAN(priv, "Scanning ch=%d prob=0x%X [%s %d]\n",
                        channel, le32_to_cpu(scan_ch->type),
-                       (scan_ch->type & SCAN_CHANNEL_TYPE_ACTIVE) ?
-                       "ACTIVE" : "PASSIVE",
-                       (scan_ch->type & SCAN_CHANNEL_TYPE_ACTIVE) ?
-                       active_dwell : passive_dwell);
+                       (scan_ch->type & SCAN_CHANNEL_TYPE_ACTIVE) ? "ACTIVE" : "PASSIVE",
+                       (scan_ch->type & SCAN_CHANNEL_TYPE_ACTIVE) ? active_dwell : passive_dwell);
         
         scan_ch++;
         added++;
@@ -632,11 +627,9 @@ static u16 iwl_fill_probe_req(struct ieee80211_mgmt *frame, const u8 *ta,
         return 0;
     
     frame->frame_control = cpu_to_le16(IEEE80211_STYPE_PROBE_REQ);
-    //eth_broadcast_addr(frame->da);
-    memset(frame->da, 0xff, ETH_ALEN);
+    eth_broadcast_addr(frame->da);
     memcpy(frame->sa, ta, ETH_ALEN);
-    //eth_broadcast_addr(frame->bssid);
-    memset(frame->bssid, 0xff, ETH_ALEN);
+    eth_broadcast_addr(frame->bssid);
     frame->seq_ctrl = 0;
     
     len += 24;
@@ -772,8 +765,7 @@ int IwlDvmOpMode::iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vi
                  */
                 for (i = priv->scan_request->n_ssids - 1; i >= 1; i--) {
                     scan->direct_scan[p].id = WLAN_EID_SSID;
-                    scan->direct_scan[p].len =
-                    priv->scan_request->ssids[i].ssid_len;
+                    scan->direct_scan[p].len = priv->scan_request->ssids[i].ssid_len;
                     memcpy(scan->direct_scan[p].ssid,
                            priv->scan_request->ssids[i].ssid,
                            priv->scan_request->ssids[i].ssid_len);
@@ -861,16 +853,13 @@ int IwlDvmOpMode::iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vi
      * In power save mode while associated use one chain,
      * otherwise use all chains
      */
-    if (test_bit(STATUS_POWER_PMI, &priv->status) &&
-        !(priv->hw->conf.flags & IEEE80211_CONF_IDLE)) {
+    if (test_bit(STATUS_POWER_PMI, &priv->status) && !(priv->hw->conf.flags & IEEE80211_CONF_IDLE)) {
         /* rx_ant has been set to all valid chains previously */
-        active_chains = rx_ant &
-                ((u8)(priv->chain_noise_data.active_chains));
+        active_chains = rx_ant & ((u8)(priv->chain_noise_data.active_chains));
         if (!active_chains)
             active_chains = rx_ant;
 
-        IWL_DEBUG_SCAN(priv, "chain_noise_data.active_chains: %u\n",
-                       priv->chain_noise_data.active_chains);
+        IWL_DEBUG_SCAN(priv, "chain_noise_data.active_chains: %u\n", priv->chain_noise_data.active_chains);
 
         rx_ant = first_antenna(active_chains);
     }
@@ -973,10 +962,8 @@ void IwlDvmOpMode::iwl_init_scan_params(struct iwl_priv *priv)
 }
 
 // line 938
-int IwlDvmOpMode::iwl_scan_initiate(struct iwl_priv *priv,
-                                   struct ieee80211_vif *vif,
-                                   enum iwl_scan_type scan_type,
-                                   enum nl80211_band band)
+int IwlDvmOpMode::iwl_scan_initiate(struct iwl_priv *priv, struct ieee80211_vif *vif, enum iwl_scan_type scan_type,
+                                    enum nl80211_band band)
 {
     int ret;
     
@@ -1003,7 +990,7 @@ int IwlDvmOpMode::iwl_scan_initiate(struct iwl_priv *priv,
     
     set_bit(STATUS_SCANNING, &priv->status);
     priv->scan_type = scan_type;
-    //priv->scan_start = jiffies;
+    priv->scan_start = jiffies;
     priv->scan_band = band;
     
     ret = iwlagn_request_scan(priv, vif);

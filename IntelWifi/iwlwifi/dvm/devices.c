@@ -96,8 +96,7 @@ static inline u32 iwl_beacon_time_mask_high(struct iwl_priv *priv,
  * the extended part is the beacon counts
  * the internal part is the time in usec within one beacon interval
  */
-static u32 iwl_usecs_to_beacons(struct iwl_priv *priv, u32 usec,
-				u32 beacon_interval)
+static u32 iwl_usecs_to_beacons(struct iwl_priv *priv, u32 usec, u32 beacon_interval)
 {
 	u32 quot;
 	u32 rem;
@@ -106,11 +105,8 @@ static u32 iwl_usecs_to_beacons(struct iwl_priv *priv, u32 usec,
 	if (!interval || !usec)
 		return 0;
 
-	quot = (usec / interval) &
-		(iwl_beacon_time_mask_high(priv, IWLAGN_EXT_BEACON_TIME_POS) >>
-		IWLAGN_EXT_BEACON_TIME_POS);
-	rem = (usec % interval) & iwl_beacon_time_mask_low(priv,
-				   IWLAGN_EXT_BEACON_TIME_POS);
+	quot = (usec / interval) & (iwl_beacon_time_mask_high(priv, IWLAGN_EXT_BEACON_TIME_POS) >> IWLAGN_EXT_BEACON_TIME_POS);
+	rem = (usec % interval) & iwl_beacon_time_mask_low(priv, IWLAGN_EXT_BEACON_TIME_POS);
 
 	return (quot << IWLAGN_EXT_BEACON_TIME_POS) + rem;
 }
@@ -118,13 +114,10 @@ static u32 iwl_usecs_to_beacons(struct iwl_priv *priv, u32 usec,
 /* base is usually what we get from ucode with each received frame,
  * the same as HW timer counter counting down
  */
-static __le32 iwl_add_beacon_time(struct iwl_priv *priv, u32 base,
-			   u32 addon, u32 beacon_interval)
+static __le32 iwl_add_beacon_time(struct iwl_priv *priv, u32 base, u32 addon, u32 beacon_interval)
 {
-	u32 base_low = base & iwl_beacon_time_mask_low(priv,
-				IWLAGN_EXT_BEACON_TIME_POS);
-	u32 addon_low = addon & iwl_beacon_time_mask_low(priv,
-				IWLAGN_EXT_BEACON_TIME_POS);
+	u32 base_low = base & iwl_beacon_time_mask_low(priv, IWLAGN_EXT_BEACON_TIME_POS);
+	u32 addon_low = addon & iwl_beacon_time_mask_low(priv, IWLAGN_EXT_BEACON_TIME_POS);
 	u32 interval = beacon_interval * TIME_UNIT;
 	u32 res = (base & iwl_beacon_time_mask_high(priv,
 				IWLAGN_EXT_BEACON_TIME_POS)) +

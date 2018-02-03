@@ -1,3 +1,25 @@
+/*
+ * INET        An implementation of the TCP/IP protocol suite for the LINUX
+ *        operating system.  NET  is implemented using the  BSD Socket
+ *        interface as the means of communication with the user level.
+ *
+ *        Definitions for the Ethernet handlers.
+ *
+ * Version:    @(#)eth.h    1.0.4    05/13/93
+ *
+ * Authors:    Ross Biro
+ *        Fred N. van Kempen, <waltje@uWalt.NL.Mugnet.ORG>
+ *
+ *        Relocated to include/linux where it belongs by Alan Cox
+ *                            <gw4pts@gw4pts.ampr.org>
+ *
+ *        This program is free software; you can redistribute it and/or
+ *        modify it under the terms of the GNU General Public License
+ *        as published by the Free Software Foundation; either version
+ *        2 of the License, or (at your option) any later version.
+ *
+ */
+
 //
 //  etherdevice.h
 //  IntelWifi
@@ -11,7 +33,7 @@
 
 #include <linux/types.h>
 
-/**
+/** line 157
  * is_broadcast_ether_addr - Determine if the Ethernet address is broadcast
  * @addr: Pointer to a six-byte array containing the Ethernet address
  *
@@ -26,8 +48,19 @@ static inline bool is_broadcast_ether_addr(const u8 *addr)
             *(const u16 *)(addr + 4)) == 0xffff;
 }
 
+/** line 235
+ * eth_broadcast_addr - Assign broadcast address
+ * @addr: Pointer to a six-byte array containing the Ethernet address
+ *
+ * Assign the broadcast address to the given address array.
+ */
+static inline void eth_broadcast_addr(u8 *addr)
+{
+    memset(addr, 0xff, ETH_ALEN);
+}
 
-/**
+
+/** line 309
  * ether_addr_equal - Compare two Ethernet addresses
  * @addr1: Pointer to a six-byte array containing the Ethernet address
  * @addr2: Pointer other six-byte array containing the Ethernet address
