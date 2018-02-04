@@ -306,7 +306,7 @@ static u8 iwl_count_chain_bitmap(u32 chain_bitmap)
  * Selects how many and which Rx receivers/antennas/chains to use.
  * This should not be used for scan command ... it puts data in wrong place.
  */
-void IwlDvmOpMode::iwlagn_set_rxon_chain(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+void iwlagn_set_rxon_chain(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     bool is_single = is_single_rx_stream(priv);
     bool is_cam = !test_bit(STATUS_POWER_PMI, &priv->status);
@@ -385,7 +385,7 @@ u8 iwl_toggle_tx_ant(struct iwl_priv *priv, u8 ant, u8 valid)
 
 
 // line 1237
-int IwlDvmOpMode::iwl_dvm_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *cmd)
+int iwl_dvm_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *cmd)
 {
     if (iwl_is_rfkill(priv) || iwl_is_ctkill(priv)) {
         IWL_WARN(priv, "Not sending command - %s KILL\n", iwl_is_rfkill(priv) ? "RF" : "CT");
@@ -416,11 +416,11 @@ int IwlDvmOpMode::iwl_dvm_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *c
 //    if (!(cmd->flags & CMD_ASYNC))
 //        lockdep_assert_held(&priv->mutex);
     
-    return _ops->iwl_trans_send_cmd(priv->trans, cmd);
+    return iwl_trans_send_cmd(priv->trans, cmd);
 }
 
 // line 1271
-int IwlDvmOpMode::iwl_dvm_send_cmd_pdu(struct iwl_priv *priv, u8 id, u32 flags, u16 len, const void *data)
+int iwl_dvm_send_cmd_pdu(struct iwl_priv *priv, u8 id, u32 flags, u16 len, const void *data)
 {
     struct iwl_host_cmd cmd = {
         .id = id,

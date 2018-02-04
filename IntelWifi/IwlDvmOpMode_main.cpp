@@ -233,20 +233,15 @@ void IwlDvmOpMode::iwl_rf_kill_ct_config(struct iwl_priv *priv)
     struct iwl_ct_kill_throttling_config adv_cmd;
     int ret = 0;
     
-    iwl_write32(priv->trans, CSR_UCODE_DRV_GP1_CLR,
-                CSR_UCODE_DRV_GP1_REG_BIT_CT_KILL_EXIT);
+    iwl_write32(priv->trans, CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_DRV_GP1_REG_BIT_CT_KILL_EXIT);
     
     priv->thermal_throttle.ct_kill_toggle = false;
     
     if (priv->lib->support_ct_kill_exit) {
-        adv_cmd.critical_temperature_enter =
-                cpu_to_le32(priv->hw_params.ct_kill_threshold);
-        adv_cmd.critical_temperature_exit =
-                cpu_to_le32(priv->hw_params.ct_kill_exit_threshold);
+        adv_cmd.critical_temperature_enter = cpu_to_le32(priv->hw_params.ct_kill_threshold);
+        adv_cmd.critical_temperature_exit = cpu_to_le32(priv->hw_params.ct_kill_exit_threshold);
         
-        ret = iwl_dvm_send_cmd_pdu(priv,
-                                   REPLY_CT_KILL_CONFIG_CMD,
-                                   0, sizeof(adv_cmd), &adv_cmd);
+        ret = iwl_dvm_send_cmd_pdu(priv, REPLY_CT_KILL_CONFIG_CMD, 0, sizeof(adv_cmd), &adv_cmd);
         if (ret)
             IWL_ERR(priv, "REPLY_CT_KILL_CONFIG_CMD failed\n");
         else
@@ -661,6 +656,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     struct iwl_priv *priv;
     struct ieee80211_hw *hw;
     struct iwl_op_mode *op_mode;
+    struct cfg80211_chan_def *def;
     u16 num_mac;
     u32 ucode_flags;
     struct iwl_trans_config trans_cfg = {};
@@ -847,7 +843,12 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     }
     
     // TODO: This was added by me. Without it, channel is not initialized and rxon commit fails
-    priv->hw->conf.chandef.chan = &priv->nvm_data->channels[0];
+    def = (struct cfg80211_chan_def *)IOMalloc(sizeof(struct cfg80211_chan_def));
+    def->chan = &priv->nvm_data->channels[4];
+    def->width =  NL80211_CHAN_WIDTH_40;
+    def->center_freq1 = def->chan->center_freq;
+    
+    priv->hw->conf.chandef = *def;
 
     /************************
      * 4. Setup HW constants

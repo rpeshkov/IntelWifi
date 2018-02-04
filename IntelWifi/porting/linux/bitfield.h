@@ -27,11 +27,11 @@
 
 
 
-static inline UInt64 OSBitwiseAtomic64(UInt64 and_mask, UInt64 or_mask, UInt64 xor_mask, UInt64 * value)
+static inline UInt64 OSBitwiseAtomic64(unsigned long and_mask, unsigned long or_mask, unsigned long xor_mask, unsigned long * value)
 {
-    UInt64    oldValue;
-    UInt64    newValue;
-    
+    unsigned long    oldValue;
+    unsigned long    newValue;
+
     do {
         oldValue = *value;
         newValue = ((oldValue & and_mask) | or_mask) ^ xor_mask;
@@ -40,14 +40,14 @@ static inline UInt64 OSBitwiseAtomic64(UInt64 and_mask, UInt64 or_mask, UInt64 x
     return oldValue;
 }
 
-static inline UInt64 OSBitAndAtomic64(UInt64 mask, UInt64 * value)
+static inline unsigned long OSBitAndAtomic64(unsigned long mask, unsigned long * value)
 {
     return OSBitwiseAtomic64(mask, 0, 0, value);
 }
 
-static inline UInt64 OSBitOrAtomic64(UInt64 mask, UInt64 * value)
+static inline unsigned long OSBitOrAtomic64(unsigned long mask, unsigned long * value)
 {
-    return OSBitwiseAtomic64((UInt64) -1, mask, 0, value);
+    return OSBitwiseAtomic64(-1, mask, 0, value);
 }
 
 //static Boolean OSTestAndSetClear(UInt32 bit, Boolean wantSet, UInt8 * startAddress)
@@ -89,7 +89,7 @@ static inline void set_bit(int nr, volatile unsigned long *addr)
 {
     unsigned long mask = BIT_MASK(nr);
     unsigned long *p = ((unsigned long *)addr) + BIT_WORD(nr);
-    OSBitOrAtomic64(mask, (UInt64 *)p);
+    OSBitOrAtomic64(mask, p);
 }
 
 /**
@@ -106,7 +106,7 @@ static inline void clear_bit(int nr, volatile unsigned long *addr)
 {
     unsigned long mask = BIT_MASK(nr);
     unsigned long *p = ((unsigned long *)addr) + BIT_WORD(nr);
-    OSBitAndAtomic64(~mask, (UInt64 *)p);
+    OSBitAndAtomic64(~mask, p);
 }
 
 /**

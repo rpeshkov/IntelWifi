@@ -131,21 +131,19 @@ static inline void iwl_set_calib_hdr(struct iwl_calib_hdr *hdr, u8 cmd)
 //
 ///* MAC80211 */
 //struct ieee80211_hw *iwl_alloc_all(void);
-int iwlagn_mac_setup_register(struct iwl_priv *priv,
-                  const struct iwl_ucode_capabilities *capa);
+int iwlagn_mac_setup_register(struct iwl_priv *priv, const struct iwl_ucode_capabilities *capa);
 //void iwlagn_mac_unregister(struct iwl_priv *priv);
 //
 ///* commands */
-//int iwl_dvm_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *cmd);
-//int iwl_dvm_send_cmd_pdu(struct iwl_priv *priv, u8 id,
-//             u32 flags, u16 len, const void *data);
+int iwl_dvm_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *cmd);
+int iwl_dvm_send_cmd_pdu(struct iwl_priv *priv, u8 id, u32 flags, u16 len, const void *data);
 //
 ///* RXON */
 //void iwl_connection_init_rx_config(struct iwl_priv *priv,
 //                   struct iwl_rxon_context *ctx);
 //int iwlagn_set_pan_params(struct iwl_priv *priv);
 //int iwlagn_commit_rxon(struct iwl_priv *priv, struct iwl_rxon_context *ctx);
-//void iwlagn_set_rxon_chain(struct iwl_priv *priv, struct iwl_rxon_context *ctx);
+void iwlagn_set_rxon_chain(struct iwl_priv *priv, struct iwl_rxon_context *ctx);
 //int iwlagn_mac_config(struct ieee80211_hw *hw, u32 changed);
 //void iwlagn_bss_info_changed(struct ieee80211_hw *hw,
 //                 struct ieee80211_vif *vif,
@@ -154,12 +152,11 @@ int iwlagn_mac_setup_register(struct iwl_priv *priv,
 //void iwlagn_config_ht40(struct ieee80211_conf *conf,
 //            struct iwl_rxon_context *ctx);
 void iwl_set_rxon_ht(struct iwl_priv *priv, struct iwl_ht_config *ht_conf);
-//void iwl_set_rxon_channel(struct iwl_priv *priv, struct ieee80211_channel *ch,
-//             struct iwl_rxon_context *ctx);
-//void iwl_set_flags_for_band(struct iwl_priv *priv,
-//                struct iwl_rxon_context *ctx,
-//                enum nl80211_band band,
-//                struct ieee80211_vif *vif);
+void iwl_set_rxon_channel(struct iwl_priv *priv, struct ieee80211_channel *ch, struct iwl_rxon_context *ctx);
+void iwl_set_flags_for_band(struct iwl_priv *priv,
+                struct iwl_rxon_context *ctx,
+                enum nl80211_band band,
+                struct ieee80211_vif *vif);
 //
 ///* uCode */
 //int iwl_send_bt_env(struct iwl_priv *priv, u8 action, u8 type);
@@ -428,8 +425,10 @@ static inline int iwl_is_ctkill(struct iwl_priv *priv)
 
 static inline int iwl_is_ready_rf(struct iwl_priv *priv)
 {
-	if (iwl_is_rfkill(priv))
+    if (iwl_is_rfkill(priv)) {
+        DebugLog("Is rfkill");
 		return 0;
+    }
 
 	return iwl_is_ready(priv);
 }

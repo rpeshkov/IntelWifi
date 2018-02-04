@@ -1185,8 +1185,6 @@ iwl_trans_set_bits_mask(struct iwl_trans *trans, u32 reg, u32 mask, u32 value)
 	trans->ops->set_bits_mask(trans, reg, mask, value);
 }
 
-//#define iwl_trans_grab_nic_access(trans, flags)	((trans)->ops->grab_nic_access(trans, flags))
-
 static inline bool
 iwl_trans_grab_nic_access(struct iwl_trans *trans, IOInterruptState *state)
 {
@@ -1213,10 +1211,7 @@ static inline void iwl_trans_fw_error(struct iwl_trans *trans)
 /*****************************************************
  * transport helper functions
  *****************************************************/
-struct iwl_trans *iwl_trans_alloc(unsigned int priv_size,
-				  
-				  const struct iwl_cfg *cfg,
-				  const struct iwl_trans_ops *ops);
+struct iwl_trans *iwl_trans_alloc(unsigned int priv_size, const struct iwl_cfg *cfg, const struct iwl_trans_ops *ops);
 void iwl_trans_free(struct iwl_trans *trans);
 
 /*****************************************************

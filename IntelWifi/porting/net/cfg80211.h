@@ -265,6 +265,32 @@ struct cfg80211_chan_def {
     u32 center_freq2;
 };
 
+/** line 424
+ * cfg80211_get_chandef_type - return old channel type from chandef
+ * @chandef: the channel definition
+ *
+ * Return: The old channel type (NOHT, HT20, HT40+/-) from a given
+ * chandef, which must have a bandwidth allowing this conversion.
+ */
+static inline enum nl80211_channel_type
+cfg80211_get_chandef_type(const struct cfg80211_chan_def *chandef)
+{
+    switch (chandef->width) {
+        case NL80211_CHAN_WIDTH_20_NOHT:
+            return NL80211_CHAN_NO_HT;
+        case NL80211_CHAN_WIDTH_20:
+            return NL80211_CHAN_HT20;
+        case NL80211_CHAN_WIDTH_40:
+            if (chandef->center_freq1 > chandef->chan->center_freq)
+                return NL80211_CHAN_HT40PLUS;
+            return NL80211_CHAN_HT40MINUS;
+        default:
+            WARN_ON(1);
+            return NL80211_CHAN_NO_HT;
+    }
+}
+
+
 /**
  * enum rate_info_bw - rate bandwidth information
  *

@@ -212,16 +212,13 @@ private:
                                    const struct iwl_trans_txq_scd_cfg *cfg,
                                    unsigned int wdg_timeout); // line 1283
     void iwl_trans_pcie_txq_disable(struct iwl_trans *trans, int txq_id, bool configure_scd); // line 1404
-    int iwl_pcie_enqueue_hcmd(struct iwl_trans *trans,
-                                         struct iwl_host_cmd *cmd); // line 1440
+    //int iwl_pcie_enqueue_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd); // line 1440
     void iwl_pcie_hcmd_complete(struct iwl_trans *trans,
                                            struct iwl_rx_cmd_buffer *rxb); // line 1723
-    int iwl_pcie_send_hcmd_async(struct iwl_trans *trans,
-                                 struct iwl_host_cmd *cmd);
+//    int iwl_pcie_send_hcmd_async(struct iwl_trans *trans, struct iwl_host_cmd *cmd);
     
-    int iwl_pcie_send_hcmd_sync(struct iwl_trans *trans,
-                                struct iwl_host_cmd *cmd); // line 1829
-    int iwl_trans_pcie_send_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd); // line 1935
+    //int iwl_pcie_send_hcmd_sync(struct iwl_trans *trans, struct iwl_host_cmd *cmd); // line 1829
+    //int iwl_trans_pcie_send_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd); // line 1935
     int iwl_trans_pcie_tx(struct iwl_trans *trans, struct sk_buff *skb,
                           struct iwl_device_cmd *dev_cmd, int txq_id); // line 2256
     

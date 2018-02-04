@@ -279,12 +279,13 @@ static void iwl_trans_pcie_set_pmi(struct iwl_trans *trans, bool state)
 const struct iwl_trans_ops trans_ops_pcie = {
     IWL_TRANS_COMMON_OPS,
     IWL_TRANS_PM_OPS
+    .send_cmd = iwl_trans_pcie_send_hcmd,
 //    .start_hw = iwl_trans_pcie_start_hw,
 //    .fw_alive = iwl_trans_pcie_fw_alive,
 //    .start_fw = iwl_trans_pcie_start_fw,
 //    .stop_device = iwl_trans_pcie_stop_device,
 //
-//    .send_cmd = iwl_trans_pcie_send_hcmd,
+
 //
 //    .tx = iwl_trans_pcie_tx,
 //    .reclaim = iwl_trans_pcie_reclaim,

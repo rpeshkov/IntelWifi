@@ -63,9 +63,8 @@ static void iwl1000_nic_config(struct iwl_priv *priv)
 {
 	/* Setting digital SVR for 1000 card to 1.32V */
 	/* locking is acquired in iwl_set_bits_mask_prph() function */
-    iwl_set_bits_mask_prph(priv->trans, APMG_DIGITAL_SVR_REG,
-                APMG_SVR_DIGITAL_VOLTAGE_1_32,
-                ~APMG_SVR_VOLTAGE_CONFIG_BIT_MSK);
+    iwl_set_bits_mask_prph(priv->trans, APMG_DIGITAL_SVR_REG, APMG_SVR_DIGITAL_VOLTAGE_1_32,
+                           ~APMG_SVR_VOLTAGE_CONFIG_BIT_MSK);
 }
 
 /**
@@ -73,8 +72,7 @@ static void iwl1000_nic_config(struct iwl_priv *priv)
  * @priv -- pointer to iwl_priv data structure
  * @tsf_bits -- number of bits need to shift for masking)
  */
-static inline u32 iwl_beacon_time_mask_low(struct iwl_priv *priv,
-					   u16 tsf_bits)
+static inline u32 iwl_beacon_time_mask_low(struct iwl_priv *priv, u16 tsf_bits)
 {
 	return (1 << tsf_bits) - 1;
 }
@@ -84,8 +82,7 @@ static inline u32 iwl_beacon_time_mask_low(struct iwl_priv *priv,
  * @priv -- pointer to iwl_priv data structure
  * @tsf_bits -- number of bits need to shift for masking)
  */
-static inline u32 iwl_beacon_time_mask_high(struct iwl_priv *priv,
-					    u16 tsf_bits)
+static inline u32 iwl_beacon_time_mask_high(struct iwl_priv *priv, u16 tsf_bits)
 {
 	return ((1 << (32 - tsf_bits)) - 1) << tsf_bits;
 }
@@ -119,10 +116,8 @@ static __le32 iwl_add_beacon_time(struct iwl_priv *priv, u32 base, u32 addon, u3
 	u32 base_low = base & iwl_beacon_time_mask_low(priv, IWLAGN_EXT_BEACON_TIME_POS);
 	u32 addon_low = addon & iwl_beacon_time_mask_low(priv, IWLAGN_EXT_BEACON_TIME_POS);
 	u32 interval = beacon_interval * TIME_UNIT;
-	u32 res = (base & iwl_beacon_time_mask_high(priv,
-				IWLAGN_EXT_BEACON_TIME_POS)) +
-				(addon & iwl_beacon_time_mask_high(priv,
-				IWLAGN_EXT_BEACON_TIME_POS));
+	u32 res = (base & iwl_beacon_time_mask_high(priv, IWLAGN_EXT_BEACON_TIME_POS))
+            + (addon & iwl_beacon_time_mask_high(priv, IWLAGN_EXT_BEACON_TIME_POS));
 
 	if (base_low > addon_low)
 		res += base_low - addon_low;
@@ -345,15 +340,13 @@ static s32 iwl_temp_calib_to_offset(struct iwl_priv *priv)
 	voltage = le16_to_cpu(priv->nvm_data->kelvin_voltage);
 
 	/* offset = temp - volt / coeff */
-	return (s32)(temperature -
-			voltage / IWL_5150_VOLTAGE_TO_TEMPERATURE_COEFF);
+	return (s32)(temperature - voltage / IWL_5150_VOLTAGE_TO_TEMPERATURE_COEFF);
 }
 
 static void iwl5150_set_ct_threshold(struct iwl_priv *priv)
 {
 	const s32 volt2temp_coef = IWL_5150_VOLTAGE_TO_TEMPERATURE_COEFF;
-	s32 threshold = (s32)CELSIUS_TO_KELVIN(CT_KILL_THRESHOLD_LEGACY) -
-			iwl_temp_calib_to_offset(priv);
+	s32 threshold = (s32)CELSIUS_TO_KELVIN(CT_KILL_THRESHOLD_LEGACY) - iwl_temp_calib_to_offset(priv);
 
 	priv->hw_params.ct_kill_threshold = threshold * volt2temp_coef;
 }
@@ -389,74 +382,59 @@ static void iwl5150_temperature(struct iwl_priv *priv)
 	vt = vt / IWL_5150_VOLTAGE_TO_TEMPERATURE_COEFF + offset;
 	/* now vt hold the temperature in Kelvin */
 	priv->temperature = KELVIN_TO_CELSIUS(vt);
-    // TODO: Implement
-	//iwl_tt_handler(priv);
+	iwl_tt_handler(priv);
 }
 
 static int iwl5000_hw_channel_switch(struct iwl_priv *priv,
 				     struct ieee80211_channel_switch *ch_switch)
 {
-    // TODO: Implement
-    
-    return 0;
 	/*
 	 * MULTI-FIXME
 	 * See iwlagn_mac_channel_switch.
 	 */
-//    struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
-//    struct iwl5000_channel_switch_cmd cmd;
-//    u32 switch_time_in_usec, ucode_switch_time;
-//    u16 ch;
-//    u32 tsf_low;
-//    u8 switch_count;
-//    u16 beacon_interval = le16_to_cpu(ctx->timing.beacon_interval);
-//    struct ieee80211_vif *vif = ctx->vif;
-//    struct iwl_host_cmd hcmd = {
-//        .id = REPLY_CHANNEL_SWITCH,
-//        .len = { sizeof(cmd), },
-//        .data = { &cmd, },
-//    };
-//
-//    cmd.band = priv->band == NL80211_BAND_2GHZ;
-//    ch = ch_switch->chandef.chan->hw_value;
-//    IWL_DEBUG_11H(priv, "channel switch from %d to %d\n",
-//              ctx->active.channel, ch);
-//    cmd.channel = cpu_to_le16(ch);
-//    cmd.rxon_flags = ctx->staging.flags;
-//    cmd.rxon_filter_flags = ctx->staging.filter_flags;
-//    switch_count = ch_switch->count;
-//    tsf_low = ch_switch->timestamp & 0x0ffffffff;
-//    /*
-//     * calculate the ucode channel switch time
-//     * adding TSF as one of the factor for when to switch
-//     */
-//    if ((priv->ucode_beacon_time > tsf_low) && beacon_interval) {
-//        if (switch_count > ((priv->ucode_beacon_time - tsf_low) /
-//            beacon_interval)) {
-//            switch_count -= (priv->ucode_beacon_time -
-//                tsf_low) / beacon_interval;
-//        } else
-//            switch_count = 0;
-//    }
-//    if (switch_count <= 1)
-//        cmd.switch_time = cpu_to_le32(priv->ucode_beacon_time);
-//    else {
-//        switch_time_in_usec =
-//            vif->bss_conf.beacon_int * switch_count * TIME_UNIT;
-//        ucode_switch_time = iwl_usecs_to_beacons(priv,
-//                             switch_time_in_usec,
-//                             beacon_interval);
-//        cmd.switch_time = iwl_add_beacon_time(priv,
-//                              priv->ucode_beacon_time,
-//                              ucode_switch_time,
-//                              beacon_interval);
-//    }
-//    IWL_DEBUG_11H(priv, "uCode time for the switch is 0x%x\n",
-//              cmd.switch_time);
-//    cmd.expect_beacon =
-//        ch_switch->chandef.chan->flags & IEEE80211_CHAN_RADAR;
-//
-//    return iwl_dvm_send_cmd(priv, &hcmd);
+    struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
+    struct iwl5000_channel_switch_cmd cmd;
+    u32 switch_time_in_usec, ucode_switch_time;
+    u16 ch;
+    u32 tsf_low;
+    u8 switch_count;
+    u16 beacon_interval = le16_to_cpu(ctx->timing.beacon_interval);
+    struct ieee80211_vif *vif = ctx->vif;
+    struct iwl_host_cmd hcmd = {
+        .id = REPLY_CHANNEL_SWITCH,
+        .len = { sizeof(cmd), },
+        .data = { &cmd, },
+    };
+
+    cmd.band = priv->band == NL80211_BAND_2GHZ;
+    ch = ch_switch->chandef.chan->hw_value;
+    IWL_DEBUG_11H(priv, "channel switch from %d to %d\n", ctx->active.channel, ch);
+    cmd.channel = cpu_to_le16(ch);
+    cmd.rxon_flags = ctx->staging.flags;
+    cmd.rxon_filter_flags = ctx->staging.filter_flags;
+    switch_count = ch_switch->count;
+    tsf_low = ch_switch->timestamp & 0x0ffffffff;
+    /*
+     * calculate the ucode channel switch time
+     * adding TSF as one of the factor for when to switch
+     */
+    if ((priv->ucode_beacon_time > tsf_low) && beacon_interval) {
+        if (switch_count > ((priv->ucode_beacon_time - tsf_low) / beacon_interval)) {
+            switch_count -= (priv->ucode_beacon_time - tsf_low) / beacon_interval;
+        } else
+            switch_count = 0;
+    }
+    if (switch_count <= 1)
+        cmd.switch_time = cpu_to_le32(priv->ucode_beacon_time);
+    else {
+        switch_time_in_usec = vif->bss_conf.beacon_int * switch_count * TIME_UNIT;
+        ucode_switch_time = iwl_usecs_to_beacons(priv, switch_time_in_usec, beacon_interval);
+        cmd.switch_time = iwl_add_beacon_time(priv, priv->ucode_beacon_time, ucode_switch_time, beacon_interval);
+    }
+    IWL_DEBUG_11H(priv, "uCode time for the switch is 0x%x\n", cmd.switch_time);
+    cmd.expect_beacon = ch_switch->chandef.chan->flags & IEEE80211_CHAN_RADAR;
+
+    return iwl_dvm_send_cmd(priv, &hcmd);
 }
 
 const struct iwl_dvm_cfg iwl_dvm_5000_cfg = {
@@ -502,22 +480,18 @@ static void iwl6000_nic_config(struct iwl_priv *priv)
             break;
         case IWL_DEVICE_FAMILY_6000i:
             /* 2x2 IPA phy type */
-            iwl_write32(priv->trans, CSR_GP_DRIVER_REG,
-                     CSR_GP_DRIVER_REG_BIT_RADIO_SKU_2x2_IPA);
+            iwl_write32(priv->trans, CSR_GP_DRIVER_REG, CSR_GP_DRIVER_REG_BIT_RADIO_SKU_2x2_IPA);
             break;
         case IWL_DEVICE_FAMILY_6050:
             /* Indicate calibration version to uCode. */
             if (priv->nvm_data->calib_version >= 6)
-                iwl_set_bit(priv->trans, CSR_GP_DRIVER_REG,
-                        CSR_GP_DRIVER_REG_BIT_CALIB_VERSION6);
+                iwl_set_bit(priv->trans, CSR_GP_DRIVER_REG, CSR_GP_DRIVER_REG_BIT_CALIB_VERSION6);
             break;
         case IWL_DEVICE_FAMILY_6150:
             /* Indicate calibration version to uCode. */
             if (priv->nvm_data->calib_version >= 6)
-                iwl_set_bit(priv->trans, CSR_GP_DRIVER_REG,
-                        CSR_GP_DRIVER_REG_BIT_CALIB_VERSION6);
-            iwl_set_bit(priv->trans, CSR_GP_DRIVER_REG,
-                    CSR_GP_DRIVER_REG_BIT_6050_1x2);
+                iwl_set_bit(priv->trans, CSR_GP_DRIVER_REG, CSR_GP_DRIVER_REG_BIT_CALIB_VERSION6);
+            iwl_set_bit(priv->trans, CSR_GP_DRIVER_REG, CSR_GP_DRIVER_REG_BIT_6050_1x2);
             break;
         default:
             DebugLog("Default");
@@ -557,78 +531,65 @@ static void iwl6000_hw_set_hw_params(struct iwl_priv *priv)
 
 }
 
-static int iwl6000_hw_channel_switch(struct iwl_priv *priv,
-				     struct ieee80211_channel_switch *ch_switch)
+static int iwl6000_hw_channel_switch(struct iwl_priv *priv, struct ieee80211_channel_switch *ch_switch)
 {
-    return 0;
-//    /*
-//     * MULTI-FIXME
-//     * See iwlagn_mac_channel_switch.
-//     */
-//    struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
-//    struct iwl6000_channel_switch_cmd *cmd;
-//    u32 switch_time_in_usec, ucode_switch_time;
-//    u16 ch;
-//    u32 tsf_low;
-//    u8 switch_count;
-//    u16 beacon_interval = le16_to_cpu(ctx->timing.beacon_interval);
-//    struct ieee80211_vif *vif = ctx->vif;
-//    struct iwl_host_cmd hcmd = {
-//        .id = REPLY_CHANNEL_SWITCH,
-//        .len = { sizeof(*cmd), },
-//        .dataflags[0] = IWL_HCMD_DFL_NOCOPY,
-//    };
-//    int err;
-//
-//    cmd = IOMalloc(sizeof(*cmd));
-//    if (!cmd)
-//        return -ENOMEM;
-//    bzero(cmd, sizeof(*cmd));
-//
-//    hcmd.data[0] = cmd;
-//
-//    cmd->band = priv->band == NL80211_BAND_2GHZ;
-//    ch = ch_switch->chandef.chan->hw_value;
-//    IWL_DEBUG_11H(priv, "channel switch from %u to %u\n",
-//              ctx->active.channel, ch);
-//    cmd->channel = cpu_to_le16(ch);
-//    cmd->rxon_flags = ctx->staging.flags;
-//    cmd->rxon_filter_flags = ctx->staging.filter_flags;
-//    switch_count = ch_switch->count;
-//    tsf_low = ch_switch->timestamp & 0x0ffffffff;
-//    /*
-//     * calculate the ucode channel switch time
-//     * adding TSF as one of the factor for when to switch
-//     */
-//    if ((priv->ucode_beacon_time > tsf_low) && beacon_interval) {
-//        if (switch_count > ((priv->ucode_beacon_time - tsf_low) /
-//            beacon_interval)) {
-//            switch_count -= (priv->ucode_beacon_time -
-//                tsf_low) / beacon_interval;
-//        } else
-//            switch_count = 0;
-//    }
-//    if (switch_count <= 1)
-//        cmd->switch_time = cpu_to_le32(priv->ucode_beacon_time);
-//    else {
-//        switch_time_in_usec =
-//            vif->bss_conf.beacon_int * switch_count * TIME_UNIT;
-//        ucode_switch_time = iwl_usecs_to_beacons(priv,
-//                             switch_time_in_usec,
-//                             beacon_interval);
-//        cmd->switch_time = iwl_add_beacon_time(priv,
-//                               priv->ucode_beacon_time,
-//                               ucode_switch_time,
-//                               beacon_interval);
-//    }
-//    IWL_DEBUG_11H(priv, "uCode time for the switch is 0x%x\n",
-//              cmd->switch_time);
-//    cmd->expect_beacon =
-//        ch_switch->chandef.chan->flags & IEEE80211_CHAN_RADAR;
-//
-//    err = iwl_dvm_send_cmd(priv, &hcmd);
-//    IOFree(cmd, sizeof(*cmd));
-//    return err;
+    /*
+     * MULTI-FIXME
+     * See iwlagn_mac_channel_switch.
+     */
+    struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
+    struct iwl6000_channel_switch_cmd *cmd;
+    u32 switch_time_in_usec, ucode_switch_time;
+    u16 ch;
+    u32 tsf_low;
+    u8 switch_count;
+    u16 beacon_interval = le16_to_cpu(ctx->timing.beacon_interval);
+    struct ieee80211_vif *vif = ctx->vif;
+    struct iwl_host_cmd hcmd = {
+        .id = REPLY_CHANNEL_SWITCH,
+        .len = { sizeof(*cmd), },
+        .dataflags[0] = IWL_HCMD_DFL_NOCOPY,
+    };
+    int err;
+
+    cmd = IOMalloc(sizeof(*cmd));
+    if (!cmd)
+        return -ENOMEM;
+    bzero(cmd, sizeof(*cmd));
+
+    hcmd.data[0] = cmd;
+
+    cmd->band = priv->band == NL80211_BAND_2GHZ;
+    ch = ch_switch->chandef.chan->hw_value;
+    IWL_DEBUG_11H(priv, "channel switch from %u to %u\n", ctx->active.channel, ch);
+    cmd->channel = cpu_to_le16(ch);
+    cmd->rxon_flags = ctx->staging.flags;
+    cmd->rxon_filter_flags = ctx->staging.filter_flags;
+    switch_count = ch_switch->count;
+    tsf_low = ch_switch->timestamp & 0x0ffffffff;
+    /*
+     * calculate the ucode channel switch time
+     * adding TSF as one of the factor for when to switch
+     */
+    if ((priv->ucode_beacon_time > tsf_low) && beacon_interval) {
+        if (switch_count > ((priv->ucode_beacon_time - tsf_low) / beacon_interval)) {
+            switch_count -= (priv->ucode_beacon_time - tsf_low) / beacon_interval;
+        } else
+            switch_count = 0;
+    }
+    if (switch_count <= 1)
+        cmd->switch_time = cpu_to_le32(priv->ucode_beacon_time);
+    else {
+        switch_time_in_usec = vif->bss_conf.beacon_int * switch_count * TIME_UNIT;
+        ucode_switch_time = iwl_usecs_to_beacons(priv, switch_time_in_usec, beacon_interval);
+        cmd->switch_time = iwl_add_beacon_time(priv, priv->ucode_beacon_time, ucode_switch_time, beacon_interval);
+    }
+    IWL_DEBUG_11H(priv, "uCode time for the switch is 0x%x\n", cmd->switch_time);
+    cmd->expect_beacon = ch_switch->chandef.chan->flags & IEEE80211_CHAN_RADAR;
+
+    err = iwl_dvm_send_cmd(priv, &hcmd);
+    IOFree(cmd, sizeof(*cmd));
+    return err;
 }
 
 const struct iwl_dvm_cfg iwl_dvm_6000_cfg = {

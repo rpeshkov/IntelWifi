@@ -21,8 +21,7 @@ extern "C" {
 /* line 35
  * initialize rxon structure with default values from eeprom
  */
-void IwlDvmOpMode::iwl_connection_init_rx_config(struct iwl_priv *priv,
-                                   struct iwl_rxon_context *ctx)
+void IwlDvmOpMode::iwl_connection_init_rx_config(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     memset(&ctx->staging, 0, sizeof(ctx->staging));
     
@@ -91,8 +90,7 @@ int IwlDvmOpMode::iwlagn_disable_bss(struct iwl_priv *priv, struct iwl_rxon_cont
     send->filter_flags = old_filter;
     
     if (ret)
-        IWL_DEBUG_QUIET_RFKILL(priv,
-                               "Error clearing ASSOC_MSK on BSS (%d)\n", ret);
+        IWL_DEBUG_QUIET_RFKILL(priv, "Error clearing ASSOC_MSK on BSS (%d)\n", ret);
     
     return ret;
 }
@@ -114,8 +112,7 @@ int IwlDvmOpMode::iwlagn_disable_pan(struct iwl_priv *priv, struct iwl_rxon_cont
     
     send->filter_flags &= ~RXON_FILTER_ASSOC_MSK;
     send->dev_type = RXON_DEV_TYPE_P2P;
-    ret = iwl_dvm_send_cmd_pdu(priv, ctx->rxon_cmd,
-                               0, sizeof(*send), send);
+    ret = iwl_dvm_send_cmd_pdu(priv, ctx->rxon_cmd, 0, sizeof(*send), send);
     
     send->filter_flags = old_filter;
     send->dev_type = old_dev_type;
@@ -139,8 +136,7 @@ int IwlDvmOpMode::iwlagn_disconn_pan(struct iwl_priv *priv, struct iwl_rxon_cont
     int ret;
     
     send->filter_flags &= ~RXON_FILTER_ASSOC_MSK;
-    ret = iwl_dvm_send_cmd_pdu(priv, ctx->rxon_cmd, 0,
-                               sizeof(*send), send);
+    ret = iwl_dvm_send_cmd_pdu(priv, ctx->rxon_cmd, 0, sizeof(*send), send);
     
     send->filter_flags = old_filter;
     
@@ -158,8 +154,7 @@ void IwlDvmOpMode::iwlagn_update_qos(struct iwl_priv *priv, struct iwl_rxon_cont
     ctx->qos_data.def_qos_parm.qos_flags = 0;
     
     if (ctx->qos_data.qos_active)
-        ctx->qos_data.def_qos_parm.qos_flags |=
-        QOS_PARAM_FLG_UPDATE_EDCA_MSK;
+        ctx->qos_data.def_qos_parm.qos_flags |= QOS_PARAM_FLG_UPDATE_EDCA_MSK;
     
     if (ctx->ht.enabled)
         ctx->qos_data.def_qos_parm.qos_flags |= QOS_PARAM_FLG_TGN_MSK;
@@ -168,9 +163,7 @@ void IwlDvmOpMode::iwlagn_update_qos(struct iwl_priv *priv, struct iwl_rxon_cont
                    ctx->qos_data.qos_active,
                    ctx->qos_data.def_qos_parm.qos_flags);
     
-    ret = iwl_dvm_send_cmd_pdu(priv, ctx->qos_cmd, 0,
-                               sizeof(struct iwl_qosparam_cmd),
-                               &ctx->qos_data.def_qos_parm);
+    ret = iwl_dvm_send_cmd_pdu(priv, ctx->qos_cmd, 0, sizeof(struct iwl_qosparam_cmd), &ctx->qos_data.def_qos_parm);
     if (ret)
         IWL_DEBUG_QUIET_RFKILL(priv, "Failed to update QoS\n");
 }
@@ -179,26 +172,22 @@ void IwlDvmOpMode::iwlagn_update_qos(struct iwl_priv *priv, struct iwl_rxon_cont
 
 
 // line 212
-int IwlDvmOpMode::iwlagn_send_rxon_assoc(struct iwl_priv *priv,
-                                  struct iwl_rxon_context *ctx)
+int IwlDvmOpMode::iwlagn_send_rxon_assoc(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     int ret = 0;
     struct iwl_rxon_assoc_cmd rxon_assoc;
     const struct iwl_rxon_cmd *rxon1 = &ctx->staging;
     const struct iwl_rxon_cmd *rxon2 = &ctx->active;
     
-    if ((rxon1->flags == rxon2->flags) &&
-        (rxon1->filter_flags == rxon2->filter_flags) &&
-        (rxon1->cck_basic_rates == rxon2->cck_basic_rates) &&
-        (rxon1->ofdm_ht_single_stream_basic_rates ==
-         rxon2->ofdm_ht_single_stream_basic_rates) &&
-        (rxon1->ofdm_ht_dual_stream_basic_rates ==
-         rxon2->ofdm_ht_dual_stream_basic_rates) &&
-        (rxon1->ofdm_ht_triple_stream_basic_rates ==
-         rxon2->ofdm_ht_triple_stream_basic_rates) &&
-        (rxon1->acquisition_data == rxon2->acquisition_data) &&
-        (rxon1->rx_chain == rxon2->rx_chain) &&
-        (rxon1->ofdm_basic_rates == rxon2->ofdm_basic_rates)) {
+    if ((rxon1->flags == rxon2->flags)
+    &&  (rxon1->filter_flags == rxon2->filter_flags)
+    &&  (rxon1->cck_basic_rates == rxon2->cck_basic_rates)
+    &&  (rxon1->ofdm_ht_single_stream_basic_rates == rxon2->ofdm_ht_single_stream_basic_rates)
+    &&  (rxon1->ofdm_ht_dual_stream_basic_rates == rxon2->ofdm_ht_dual_stream_basic_rates)
+    &&  (rxon1->ofdm_ht_triple_stream_basic_rates == rxon2->ofdm_ht_triple_stream_basic_rates)
+    &&  (rxon1->acquisition_data == rxon2->acquisition_data)
+    &&  (rxon1->rx_chain == rxon2->rx_chain)
+    &&  (rxon1->ofdm_basic_rates == rxon2->ofdm_basic_rates)) {
         IWL_DEBUG_INFO(priv, "Using current RXON_ASSOC.  Not resending.\n");
         return 0;
     }
@@ -210,17 +199,13 @@ int IwlDvmOpMode::iwlagn_send_rxon_assoc(struct iwl_priv *priv,
     rxon_assoc.reserved1 = 0;
     rxon_assoc.reserved2 = 0;
     rxon_assoc.reserved3 = 0;
-    rxon_assoc.ofdm_ht_single_stream_basic_rates =
-            ctx->staging.ofdm_ht_single_stream_basic_rates;
-    rxon_assoc.ofdm_ht_dual_stream_basic_rates =
-            ctx->staging.ofdm_ht_dual_stream_basic_rates;
+    rxon_assoc.ofdm_ht_single_stream_basic_rates = ctx->staging.ofdm_ht_single_stream_basic_rates;
+    rxon_assoc.ofdm_ht_dual_stream_basic_rates = ctx->staging.ofdm_ht_dual_stream_basic_rates;
     rxon_assoc.rx_chain_select_flags = ctx->staging.rx_chain;
-    rxon_assoc.ofdm_ht_triple_stream_basic_rates =
-            ctx->staging.ofdm_ht_triple_stream_basic_rates;
+    rxon_assoc.ofdm_ht_triple_stream_basic_rates = ctx->staging.ofdm_ht_triple_stream_basic_rates;
     rxon_assoc.acquisition_data = ctx->staging.acquisition_data;
     
-    ret = iwl_dvm_send_cmd_pdu(priv, ctx->rxon_assoc_cmd,
-                               CMD_ASYNC, sizeof(rxon_assoc), &rxon_assoc);
+    ret = iwl_dvm_send_cmd_pdu(priv, ctx->rxon_assoc_cmd, CMD_ASYNC, sizeof(rxon_assoc), &rxon_assoc);
     return ret;
 }
 
@@ -413,8 +398,7 @@ int IwlDvmOpMode::iwl_set_tx_power(struct iwl_priv *priv, s8 tx_power, bool forc
     priv->tx_power_next = tx_power;
     
     /* do not set tx power when scanning or channel changing */
-    defer = test_bit(STATUS_SCANNING, &priv->status) ||
-    memcmp(&ctx->active, &ctx->staging, sizeof(ctx->staging));
+    defer = test_bit(STATUS_SCANNING, &priv->status) || memcmp(&ctx->active, &ctx->staging, sizeof(ctx->staging));
     if (defer && !force) {
         IWL_DEBUG_INFO(priv, "Deferring tx power set\n");
         return 0;
@@ -473,8 +457,7 @@ int IwlDvmOpMode::iwlagn_rxon_connect(struct iwl_priv *priv, struct iwl_rxon_con
      * Associated RXON doesn't clear the station table in uCode,
      * so we don't need to restore stations etc. after this.
      */
-    ret = iwl_dvm_send_cmd_pdu(priv, ctx->rxon_cmd, 0,
-                               sizeof(struct iwl_rxon_cmd), &ctx->staging);
+    ret = iwl_dvm_send_cmd_pdu(priv, ctx->rxon_cmd, 0, sizeof(struct iwl_rxon_cmd), &ctx->staging);
     if (ret) {
         IWL_ERR(priv, "Error setting new RXON (%d)\n", ret);
         return ret;
@@ -661,7 +644,7 @@ static void _iwl_set_rxon_ht(struct iwl_priv *priv,
         rxon->flags |= RXON_FLG_CHANNEL_MODE_LEGACY;
     }
     
-    // iwlagn_set_rxon_chain(priv, ctx);
+    iwlagn_set_rxon_chain(priv, ctx);
     
     IWL_DEBUG_ASSOC(priv, "rxon flags 0x%X operation mode :0x%X extension channel offset 0x%x\n",
                     le32_to_cpu(rxon->flags), ctx->ht.protection, ctx->ht.extension_chan_offset);
@@ -677,18 +660,45 @@ void iwl_set_rxon_ht(struct iwl_priv *priv, struct iwl_ht_config *ht_conf)
         _iwl_set_rxon_ht(priv, ht_conf, ctx);
 }
 
+/** line 707
+ * iwl_set_rxon_channel - Set the band and channel values in staging RXON
+ * @ch: requested channel as a pointer to struct ieee80211_channel
+ 
+ * NOTE:  Does not commit to the hardware; it sets appropriate bit fields
+ * in the staging RXON flag structure based on the ch->band
+ */
+void iwl_set_rxon_channel(struct iwl_priv *priv, struct ieee80211_channel *ch, struct iwl_rxon_context *ctx)
+{
+    enum nl80211_band band = ch->band;
+    u16 channel = ch->hw_value;
+    
+    if ((le16_to_cpu(ctx->staging.channel) == channel) &&
+        (priv->band == band))
+        return;
+    
+    ctx->staging.channel = cpu_to_le16(channel);
+    if (band == NL80211_BAND_5GHZ)
+        ctx->staging.flags &= ~RXON_FLG_BAND_24G_MSK;
+    else
+        ctx->staging.flags |= RXON_FLG_BAND_24G_MSK;
+    
+    priv->band = band;
+    
+    IWL_DEBUG_INFO(priv, "Staging channel set to %d [%d]\n", channel, band);
+    
+}
+
+
 
 
 // line 736
-void IwlDvmOpMode::iwl_set_flags_for_band(struct iwl_priv *priv,
+void iwl_set_flags_for_band(struct iwl_priv *priv,
                             struct iwl_rxon_context *ctx,
                             enum nl80211_band band,
                             struct ieee80211_vif *vif)
 {
     if (band == NL80211_BAND_5GHZ) {
-        ctx->staging.flags &=
-        ~(RXON_FLG_BAND_24G_MSK | RXON_FLG_AUTO_DETECT_MSK
-          | RXON_FLG_CCK_MSK);
+        ctx->staging.flags &= ~(RXON_FLG_BAND_24G_MSK | RXON_FLG_AUTO_DETECT_MSK | RXON_FLG_CCK_MSK);
         ctx->staging.flags |= RXON_FLG_SHORT_SLOT_MSK;
     } else {
         /* Copied from iwl_post_associate() */
@@ -704,8 +714,7 @@ void IwlDvmOpMode::iwl_set_flags_for_band(struct iwl_priv *priv,
 }
 
 // line 759
-static void iwl_set_rxon_hwcrypto(struct iwl_priv *priv,
-                                  struct iwl_rxon_context *ctx, int hw_decrypt)
+static void iwl_set_rxon_hwcrypto(struct iwl_priv *priv, struct iwl_rxon_context *ctx, int hw_decrypt)
 {
     struct iwl_rxon_cmd *rxon = &ctx->staging;
     
@@ -854,29 +863,22 @@ static int iwl_full_rxon_required(struct iwl_priv *priv,
 
 // line 907
 #ifdef CONFIG_IWLWIFI_DEBUG
-void iwl_print_rx_config_cmd(struct iwl_priv *priv,
-                             enum iwl_rxon_context_id ctxid)
+void iwl_print_rx_config_cmd(struct iwl_priv *priv, enum iwl_rxon_context_id ctxid)
 {
     struct iwl_rxon_context *ctx = &priv->contexts[ctxid];
     struct iwl_rxon_cmd *rxon = &ctx->staging;
     
-//    IWL_DEBUG_RADIO(priv, "RX CONFIG:\n");
+    IWL_DEBUG_RADIO(priv, "RX CONFIG:\n");
 //    iwl_print_hex_dump(priv, IWL_DL_RADIO, (u8 *) rxon, sizeof(*rxon));
-    IWL_DEBUG_RADIO(priv, "u16 channel: 0x%x\n",
-                    le16_to_cpu(rxon->channel));
-    IWL_DEBUG_RADIO(priv, "u32 flags: 0x%08X\n",
-                    le32_to_cpu(rxon->flags));
-    IWL_DEBUG_RADIO(priv, "u32 filter_flags: 0x%08x\n",
-                    le32_to_cpu(rxon->filter_flags));
+    IWL_DEBUG_RADIO(priv, "u16 channel: 0x%x\n", le16_to_cpu(rxon->channel));
+    IWL_DEBUG_RADIO(priv, "u32 flags: 0x%08X\n", le32_to_cpu(rxon->flags));
+    IWL_DEBUG_RADIO(priv, "u32 filter_flags: 0x%08x\n", le32_to_cpu(rxon->filter_flags));
     IWL_DEBUG_RADIO(priv, "u8 dev_type: 0x%x\n", rxon->dev_type);
-    IWL_DEBUG_RADIO(priv, "u8 ofdm_basic_rates: 0x%02x\n",
-                    rxon->ofdm_basic_rates);
-    IWL_DEBUG_RADIO(priv, "u8 cck_basic_rates: 0x%02x\n",
-                    rxon->cck_basic_rates);
-    IWL_DEBUG_RADIO(priv, "u8[6] node_addr: %pM\n", rxon->node_addr);
-    IWL_DEBUG_RADIO(priv, "u8[6] bssid_addr: %pM\n", rxon->bssid_addr);
-    IWL_DEBUG_RADIO(priv, "u16 assoc_id: 0x%x\n",
-                    le16_to_cpu(rxon->assoc_id));
+    IWL_DEBUG_RADIO(priv, "u8 ofdm_basic_rates: 0x%02x\n", rxon->ofdm_basic_rates);
+    IWL_DEBUG_RADIO(priv, "u8 cck_basic_rates: 0x%02x\n", rxon->cck_basic_rates);
+    IWL_DEBUG_RADIO(priv, "u8[6] node_addr: " MAC_FMT "\n", MAC_BYTES(rxon->node_addr));
+    IWL_DEBUG_RADIO(priv, "u8[6] bssid_addr: " MAC_FMT "\n", MAC_BYTES(rxon->bssid_addr));
+    IWL_DEBUG_RADIO(priv, "u16 assoc_id: 0x%x\n", le16_to_cpu(rxon->assoc_id));
 }
 #endif
 
@@ -1022,8 +1024,7 @@ int IwlDvmOpMode::iwlagn_commit_rxon(struct iwl_priv *priv, struct iwl_rxon_cont
     if (!priv->hw_params.use_rts_for_aggregation)
         ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
     
-    if ((ctx->vif && ctx->vif->bss_conf.use_short_slot) ||
-        !(ctx->staging.flags & RXON_FLG_BAND_24G_MSK))
+    if ((ctx->vif && ctx->vif->bss_conf.use_short_slot) || !(ctx->staging.flags & RXON_FLG_BAND_24G_MSK))
         ctx->staging.flags |= RXON_FLG_SHORT_SLOT_MSK;
     else
         ctx->staging.flags &= ~RXON_FLG_SHORT_SLOT_MSK;

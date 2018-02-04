@@ -19,10 +19,12 @@ extern "C" {
 #include <IOKit/IOBufferMemoryDescriptor.h>
 
 #include "IwlOpModeOps.h"
-#include "dev.h"
+
 
 extern "C" {
     #include "tt.h"
+#include "dev.h"
+#include "agn.h"
 }
 
 
@@ -44,6 +46,9 @@ public:
                     struct iwl_rx_cmd_buffer *rxb) override;
     
     virtual void scan() override;
+    
+    virtual void add_interface(struct ieee80211_vif *vif) override;
+    virtual void channel_switch(struct iwl_priv *priv, struct ieee80211_vif *vif, struct ieee80211_channel_switch *chsw) override;
 
     
 private:
@@ -66,7 +71,13 @@ private:
     // mac80211.c
     int __iwl_up(struct iwl_priv *priv); // line 238
     int iwlagn_mac_start(struct iwl_priv *priv); // line 296
+    void iwlagn_mac_channel_switch(struct iwl_priv *priv,
+                                                 struct ieee80211_vif *vif,
+                                                 struct ieee80211_channel_switch *ch_switch); // line 964
     void iwl_chswitch_done(struct iwl_priv *priv, bool is_success); // line 1048
+    int iwl_set_mode(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 1242
+    int iwl_setup_interface(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 1251
+    int iwlagn_mac_add_interface(struct iwl_priv *priv, struct ieee80211_vif *vif); // line 1297
     struct ieee80211_hw *iwl_alloc_all(void); // line 1637
     
     // ucode.c
@@ -127,9 +138,9 @@ private:
     int iwl_update_bcast_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 1316
     
     // lib.c
-    void iwlagn_set_rxon_chain(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 790
-    int iwl_dvm_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *cmd); // line 1237
-    int iwl_dvm_send_cmd_pdu(struct iwl_priv *priv, u8 id, u32 flags, u16 len, const void *data); // line 1271
+    //void iwlagn_set_rxon_chain(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 790
+    //int iwl_dvm_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *cmd); // line 1237
+    //int iwl_dvm_send_cmd_pdu(struct iwl_priv *priv, u8 id, u32 flags, u16 len, const void *data); // line 1271
     
     // rxon.c
     void iwl_connection_init_rx_config(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 35
@@ -144,10 +155,10 @@ private:
     int iwl_set_tx_power(struct iwl_priv *priv, s8 tx_power, bool force); // line 402
     int iwlagn_set_pan_params(struct iwl_priv *priv); // line 529
     int iwlagn_rxon_connect(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 560
-    void iwl_set_flags_for_band(struct iwl_priv *priv,
-                                struct iwl_rxon_context *ctx,
-                                enum nl80211_band band,
-                                struct ieee80211_vif *vif); // line 736
+//    void iwl_set_flags_for_band(struct iwl_priv *priv,
+//                                struct iwl_rxon_context *ctx,
+//                                enum nl80211_band band,
+//                                struct ieee80211_vif *vif); // line 736
     int iwlagn_commit_rxon(struct iwl_priv *priv, struct iwl_rxon_context *ctx); // line 1025
     void iwlagn_post_scan(struct iwl_priv *priv); // line 1547
     
@@ -198,6 +209,8 @@ private:
     IwlTransOps *_ops;
     
     struct iwl_priv *priv;
+    
+    IOLock *mutex;
 };
 
 

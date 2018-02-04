@@ -6,13 +6,12 @@
 //  Copyright © 2018 Roman Peshkov. All rights reserved.
 //
 
-#include "IwlDvmOpMode.hpp"
-
 extern "C" {
 #include "iwlwifi/dvm/agn.h"
 #include "iwlwifi/dvm/dev.h"
 }
 
+#include "IwlDvmOpMode.hpp"
 
 /*****************************************************************************
  *
@@ -69,8 +68,7 @@ enum ieee80211_radiotap_mcs_have {
  * Not a mac80211 entry point function, but it fits in with all the
  * other mac80211 functions grouped here.
  */
-int iwlagn_mac_setup_register(struct iwl_priv *priv,
-                              const struct iwl_ucode_capabilities *capa)
+int iwlagn_mac_setup_register(struct iwl_priv *priv, const struct iwl_ucode_capabilities *capa)
 {
     //int ret;
     struct ieee80211_hw *hw = priv->hw;
@@ -267,9 +265,9 @@ int IwlDvmOpMode::iwlagn_mac_start(struct iwl_priv *priv)
     IWL_DEBUG_MAC80211(priv, "enter\n");
     
     /* we should be verifying the device is ready to be opened */
-    IOLockLock(priv->mutex);
+//    IOLockLock(priv->mutex);
     ret = __iwl_up(priv);
-    IOLockUnlock(priv->mutex);
+//    IOLockUnlock(priv->mutex);
     if (ret)
         return ret;
     
@@ -286,6 +284,95 @@ int IwlDvmOpMode::iwlagn_mac_start(struct iwl_priv *priv)
     IWL_DEBUG_MAC80211(priv, "leave\n");
     return 0;
 }
+
+// line 964
+void IwlDvmOpMode::iwlagn_mac_channel_switch(struct iwl_priv *priv,
+                                      struct ieee80211_vif *vif,
+                                      struct ieee80211_channel_switch *ch_switch)
+{
+    //struct iwl_priv *priv = IWL_MAC80211_GET_DVM(hw);
+    //struct ieee80211_conf *conf = &hw->conf;
+    struct ieee80211_channel *channel = ch_switch->chandef.chan;
+    struct iwl_ht_config *ht_conf = &priv->current_ht_config;
+    /*
+     * MULTI-FIXME
+     * When we add support for multiple interfaces, we need to
+     * revisit this. The channel switch command in the device
+     * only affects the BSS context, but what does that really
+     * mean? And what if we get a CSA on the second interface?
+     * This needs a lot of work.
+     */
+    struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
+    u16 ch;
+    
+    IWL_DEBUG_MAC80211(priv, "enter\n");
+    
+    //mutex_lock(&priv->mutex);
+    IOLockLock(priv->mutex);
+    
+    if (iwl_is_rfkill(priv))
+        goto out;
+    
+    if (test_bit(STATUS_EXIT_PENDING, &priv->status) ||
+        test_bit(STATUS_SCANNING, &priv->status) ||
+        test_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status))
+        goto out;
+    
+    if (!iwl_is_associated_ctx(ctx))
+        goto out;
+    
+    if (!priv->lib->set_channel_switch)
+        goto out;
+    
+    ch = channel->hw_value;
+    if (le16_to_cpu(ctx->active.channel) == ch)
+        goto out;
+    
+    //priv->current_ht_config.smps = conf->smps_mode;
+    
+    /* Configure HT40 channels */
+    switch (cfg80211_get_chandef_type(&ch_switch->chandef)) {
+        case NL80211_CHAN_NO_HT:
+        case NL80211_CHAN_HT20:
+            ctx->ht.is_40mhz = false;
+            ctx->ht.extension_chan_offset = IEEE80211_HT_PARAM_CHA_SEC_NONE;
+            break;
+        case NL80211_CHAN_HT40MINUS:
+            ctx->ht.extension_chan_offset = IEEE80211_HT_PARAM_CHA_SEC_BELOW;
+            ctx->ht.is_40mhz = true;
+            break;
+        case NL80211_CHAN_HT40PLUS:
+            ctx->ht.extension_chan_offset = IEEE80211_HT_PARAM_CHA_SEC_ABOVE;
+            ctx->ht.is_40mhz = true;
+            break;
+    }
+    
+    if ((le16_to_cpu(ctx->staging.channel) != ch))
+        ctx->staging.flags = 0;
+    
+    iwl_set_rxon_channel(priv, channel, ctx);
+    iwl_set_rxon_ht(priv, ht_conf);
+    iwl_set_flags_for_band(priv, ctx, channel->band, ctx->vif);
+    
+    /*
+     * at this point, staging_rxon has the
+     * configuration for channel switch
+     */
+    set_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status);
+    priv->switch_channel = cpu_to_le16(ch);
+    if (priv->lib->set_channel_switch(priv, ch_switch)) {
+        clear_bit(STATUS_CHANNEL_SWITCH_PENDING, &priv->status);
+        priv->switch_channel = 0;
+        //ieee80211_chswitch_done(ctx->vif, false);
+    }
+    priv->hw->conf.chandef = ch_switch->chandef;
+    
+out:
+    //mutex_unlock(&priv->mutex);
+    IOLockUnlock(priv->mutex);
+    IWL_DEBUG_MAC80211(priv, "leave\n");
+}
+
 
 // line 1048
 void IwlDvmOpMode::iwl_chswitch_done(struct iwl_priv *priv, bool is_success)
@@ -306,6 +393,150 @@ void IwlDvmOpMode::iwl_chswitch_done(struct iwl_priv *priv, bool is_success)
 //    if (ctx->vif)
 //        ieee80211_chswitch_done(ctx->vif, is_success);
 }
+
+// line 1242
+int IwlDvmOpMode::iwl_set_mode(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+{
+    iwl_connection_init_rx_config(priv, ctx);
+    
+    iwlagn_set_rxon_chain(priv, ctx);
+    
+    return iwlagn_commit_rxon(priv, ctx);
+}
+
+
+// line 1251
+int IwlDvmOpMode::iwl_setup_interface(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+{
+    struct ieee80211_vif *vif = ctx->vif;
+    int err, ac;
+    
+    //lockdep_assert_held(&priv->mutex);
+    
+    /*
+     * This variable will be correct only when there's just
+     * a single context, but all code using it is for hardware
+     * that supports only one context.
+     */
+    priv->iw_mode = vif->type;
+    
+    ctx->is_active = true;
+    
+    err = iwl_set_mode(priv, ctx);
+    if (err) {
+        if (!ctx->always_active)
+            ctx->is_active = false;
+        return err;
+    }
+    
+    if (priv->lib->bt_params && priv->lib->bt_params->advanced_bt_coexist && vif->type == NL80211_IFTYPE_ADHOC) {
+        /*
+         * pretend to have high BT traffic as long as we
+         * are operating in IBSS mode, as this will cause
+         * the rate scaling etc. to behave as intended.
+         */
+        priv->bt_traffic_load = IWL_BT_COEX_TRAFFIC_LOAD_HIGH;
+    }
+    
+    /* set up queue mappings */
+    for (ac = 0; ac < IEEE80211_NUM_ACS; ac++)
+        vif->hw_queue[ac] = ctx->ac_to_queue[ac];
+    
+    if (vif->type == NL80211_IFTYPE_AP)
+        vif->cab_queue = ctx->mcast_queue;
+    else
+        vif->cab_queue = IEEE80211_INVAL_HW_QUEUE;
+    
+    return 0;
+}
+
+
+// line 1297
+int IwlDvmOpMode::iwlagn_mac_add_interface(struct iwl_priv *priv, struct ieee80211_vif *vif)
+{
+//    struct iwl_priv *priv = IWL_MAC80211_GET_DVM(hw);
+    struct iwl_vif_priv *vif_priv = (struct iwl_vif_priv *)vif->drv_priv;
+    struct iwl_rxon_context *tmp, *ctx = NULL;
+    int err;
+    enum nl80211_iftype viftype = ieee80211_vif_type_p2p(vif);
+    bool reset = false;
+    
+    IWL_DEBUG_MAC80211(priv, "enter: type %d, addr " MAC_FMT , viftype, MAC_BYTES(vif->addr));
+    
+    //mutex_lock(&priv->mutex);
+    //IOLockLock(priv->mutex);
+    
+    if (!iwl_is_ready_rf(priv)) {
+        IWL_WARN(priv, "Try to add interface when device not ready\n");
+        err = -EINVAL;
+        goto out;
+    }
+    
+    for_each_context(priv, tmp) {
+        u32 possible_modes = tmp->interface_modes | tmp->exclusive_interface_modes;
+        
+        IWL_DEBUG_INFO(priv, "POSSIBLE MODES: %d; BIT(viftype): %lu", (unsigned int)possible_modes, BIT(viftype));
+        
+        if (tmp->vif) {
+            /* On reset we need to add the same interface again */
+            if (tmp->vif == vif) {
+                reset = true;
+                ctx = tmp;
+                break;
+            }
+            
+            /* check if this busy context is exclusive */
+            if (tmp->exclusive_interface_modes & BIT(tmp->vif->type)) {
+                err = -EINVAL;
+                goto out;
+            }
+            continue;
+        }
+        
+        if (!(possible_modes & BIT(viftype)))
+            continue;
+        
+        /* have maybe usable context w/o interface */
+        ctx = tmp;
+        break;
+    }
+    
+    if (!ctx) {
+        err = -EOPNOTSUPP;
+        goto out;
+    }
+    
+    vif_priv->ctx = ctx;
+    ctx->vif = vif;
+    
+    /*
+     * In SNIFFER device type, the firmware reports the FCS to
+     * the host, rather than snipping it off. Unfortunately,
+     * mac80211 doesn't (yet) provide a per-packet flag for
+     * this, so that we have to set the hardware flag based
+     * on the interfaces added. As the monitor interface can
+     * only be present by itself, and will be removed before
+     * other interfaces are added, this is safe.
+     */
+//    if (vif->type == NL80211_IFTYPE_MONITOR)
+//        ieee80211_hw_set(priv->hw, RX_INCLUDES_FCS);
+//    else
+//        __clear_bit(IEEE80211_HW_RX_INCLUDES_FCS, priv->hw->flags);
+    
+    err = iwl_setup_interface(priv, ctx);
+    if (!err || reset)
+        goto out;
+    
+    ctx->vif = NULL;
+    priv->iw_mode = NL80211_IFTYPE_STATION;
+out:
+    //mutex_unlock(&priv->mutex);
+    //IOLockUnlock(priv->mutex);
+    
+    IWL_DEBUG_MAC80211(priv, "leave\n");
+    return err;
+}
+
 
 // line 1637
 /* This function both allocates and initializes hw and priv. */

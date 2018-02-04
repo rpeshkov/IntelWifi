@@ -243,7 +243,7 @@ void IntelWifi::stop(IOService *provider) {
     }
     
     struct iwl_priv *priv = (struct iwl_priv *)hw->priv;
-    
+
     opmode->stop(priv);
     iwl_drv_stop(fTrans->drv);
     iwl_trans_pcie_free(fTrans);
@@ -293,6 +293,13 @@ IOReturn IntelWifi::enable(IONetworkInterface *netif) {
     IONetworkMedium *medium = IONetworkMedium::getMediumWithType(mediumDict, mediumType);
     setLinkStatus(kIONetworkLinkActive | kIONetworkLinkValid, medium);
     fTrans->intf = netif;
+    
+    struct ieee80211_vif *vif = (struct ieee80211_vif *)IOMalloc(sizeof(struct ieee80211_vif) + sizeof(struct iwl_vif_priv));
+    memcpy(vif->addr, &hw->wiphy->addresses[0], ETH_ALEN);
+    vif->type = NL80211_IFTYPE_STATION;
+    //vif->bss_conf.bssid = hw->wiphy->addresses[0].addr;
+    
+    opmode->add_interface(vif);
     return kIOReturnSuccess;
 }
 
@@ -365,8 +372,6 @@ bool IntelWifi::interruptFilter(OSObject* owner, IOFilterInterruptEventSource * 
     if (me == 0) {
         return false;
     }
-    
-    ifnet_mtu(<#ifnet_t interface#>)
     
     /* Disable (but don't clear!) interrupts here to avoid
      * back-to-back ISRs and sporadic interrupts from our NIC.

@@ -96,8 +96,7 @@ static void iwlagn_rx_csa(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
 }
 
 // line 91
-static void iwlagn_rx_spectrum_measure_notif(struct iwl_priv *priv,
-                                             struct iwl_rx_cmd_buffer *rxb)
+static void iwlagn_rx_spectrum_measure_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
 {
     struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
     struct iwl_spectrum_notification *report = (struct iwl_spectrum_notification *)pkt->data;
@@ -972,7 +971,7 @@ void IwlDvmOpMode::iwl_setup_rx_handlers(struct iwl_priv *priv)
     /* block ack */
     ///handlers[REPLY_COMPRESSED_BA] = iwlagn_rx_reply_compressed_ba;
 
-    //priv->rx_handlers[REPLY_TX] = iwlagn_rx_reply_tx;
+//    priv->rx_handlers[REPLY_TX] = iwlagn_rx_reply_tx;
 
     /* set up notification wait support */
     iwl_notification_wait_init(&priv->notif_wait);

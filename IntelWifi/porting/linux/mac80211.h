@@ -12,6 +12,10 @@
 #include <linux/kernel.h>
 #include <net/cfg80211.h>
 
+// line 135
+#define IEEE80211_INVAL_HW_QUEUE    0xff
+
+
 /* line 335
  * The maximum number of IPv4 addresses listed for ARP filtering. If the number
  * of addresses for an interface increase beyond this value, hardware ARP
@@ -1200,6 +1204,31 @@ struct ieee80211_hw {
     const struct ieee80211_cipher_scheme *cipher_schemes;
     u8 max_nan_de_entries;
 };
+
+// line 5683
+static inline enum nl80211_iftype
+ieee80211_iftype_p2p(enum nl80211_iftype type, bool p2p)
+{
+    if (p2p) {
+        switch (type) {
+            case NL80211_IFTYPE_STATION:
+                return NL80211_IFTYPE_P2P_CLIENT;
+            case NL80211_IFTYPE_AP:
+                return NL80211_IFTYPE_P2P_GO;
+            default:
+                break;
+        }
+    }
+    return type;
+}
+
+// line 5699
+static inline enum nl80211_iftype
+ieee80211_vif_type_p2p(struct ieee80211_vif *vif)
+{
+    return ieee80211_iftype_p2p(vif->type, vif->p2p);
+}
+
 
 
 

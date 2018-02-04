@@ -324,11 +324,10 @@ u8 iwl_prep_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx, const u
     station->ctxid = ctx->ctxid;
     
     if (sta) {
-//        struct iwl_station_priv *sta_priv;
-
-        // TODO: Implement
-//        sta_priv = (struct iwl_station_priv *)sta->drv_priv;
-//        sta_priv->ctx = ctx;
+        struct iwl_station_priv *sta_priv;
+        
+        sta_priv = (struct iwl_station_priv *)sta->drv_priv;
+        sta_priv->ctx = ctx;
     }
     
     /*
@@ -1240,7 +1239,6 @@ int IwlDvmOpMode::iwlagn_alloc_bcast_station(struct iwl_priv *priv, struct iwl_r
     if (sta_id == IWL_INVALID_STATION) {
         IWL_ERR(priv, "Unable to prepare broadcast station\n");
         IOSimpleLockUnlock(priv->sta_lock);
-        
         return -EINVAL;
     }
     

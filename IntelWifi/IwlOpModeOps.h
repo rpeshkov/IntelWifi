@@ -29,6 +29,10 @@ public:
     virtual void rx(struct iwl_priv *priv, struct napi_struct *napi, struct iwl_rx_cmd_buffer *rxb) = 0;
     
     virtual void scan() = 0;
+    
+    
+    virtual void add_interface(struct ieee80211_vif *vif) = 0;
+    virtual void channel_switch(struct iwl_priv *priv, struct ieee80211_vif *vif, struct ieee80211_channel_switch *chsw) = 0;
 
 //    void (*rx_rss)(struct iwl_op_mode *op_mode, struct napi_struct *napi,
 //                   struct iwl_rx_cmd_buffer *rxb, unsigned int queue);

@@ -1438,12 +1438,9 @@ void IntelWifi::iwl_pcie_irq_handle_error(struct iwl_trans *trans)
     int i;
     
     /* W/A for WiFi/WiMAX coex and WiMAX own the RF */
-    if (trans->cfg->internal_wimax_coex &&
-        !trans->cfg->apmg_not_supported &&
-        (!(iwl_read_prph(trans, APMG_CLK_CTRL_REG) &
-                         APMS_CLK_VAL_MRB_FUNC_MODE) ||
-         (iwl_read_prph(trans, APMG_PS_CTRL_REG) &
-                        APMG_PS_CTRL_VAL_RESET_REQ))) {
+    if (trans->cfg->internal_wimax_coex && !trans->cfg->apmg_not_supported &&
+        (!(iwl_read_prph(trans, APMG_CLK_CTRL_REG) & APMS_CLK_VAL_MRB_FUNC_MODE) ||
+          (iwl_read_prph(trans, APMG_PS_CTRL_REG) & APMG_PS_CTRL_VAL_RESET_REQ))) {
              clear_bit(STATUS_SYNC_HCMD_ACTIVE, &trans->status);
              // TODO: Implement
              //iwl_op_mode_wimax_active(trans->op_mode);

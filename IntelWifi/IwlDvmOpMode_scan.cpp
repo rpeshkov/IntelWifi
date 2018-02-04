@@ -339,10 +339,6 @@ void IwlDvmOpMode::iwl_rx_scan_complete_notif(struct iwl_priv *priv, struct iwl_
                    scan_notif->tsf_low,
                    scan_notif->tsf_high, scan_notif->status);
     
-    clock_sec_t secs;
-    clock_usec_t micros;
-    clock_get_system_microtime(&secs, &micros);
-    
     IWL_DEBUG_SCAN(priv, "Scan on %sGHz took %lums; Stations: %d\n",
                    (priv->scan_band == NL80211_BAND_2GHZ) ? "2.4" : "5.2",
                    jiffies_to_msecs(jiffies - priv->scan_start),
