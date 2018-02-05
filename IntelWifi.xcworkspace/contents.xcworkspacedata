@@ -9,7 +9,10 @@
    </FileRef>
    <Group
       location = "container:"
-      name = "New Group">
+      name = "Other">
+      <FileRef
+         location = "group:makefile">
+      </FileRef>
       <FileRef
          location = "group:README.md">
       </FileRef>
