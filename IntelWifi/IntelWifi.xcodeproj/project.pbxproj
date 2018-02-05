@@ -65,7 +65,6 @@
 		A642B2CE20004F5000264363 /* compiler.h in Headers */ = {isa = PBXBuildFile; fileRef = A642B2CB20004F5000264363 /* compiler.h */; };
 		A65083781FEFB2DC001300AC /* IntelWifi.hpp in Headers */ = {isa = PBXBuildFile; fileRef = A65083771FEFB2DC001300AC /* IntelWifi.hpp */; };
 		A650837A1FEFB2DC001300AC /* IntelWifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A65083791FEFB2DC001300AC /* IntelWifi.cpp */; };
-		A65CD61D1FF1D201004AA810 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = A65CD61C1FF1D201004AA810 /* README.md */; };
 		A6B62E18201A8ED300426B95 /* trans.c in Sources */ = {isa = PBXBuildFile; fileRef = A6B62E17201A8ED300426B95 /* trans.c */; };
 		A6B62E1B201A951B00426B95 /* iwl-io.h in Headers */ = {isa = PBXBuildFile; fileRef = A6B62E19201A951A00426B95 /* iwl-io.h */; };
 		A6B62E1C201A951B00426B95 /* iwl-io.c in Sources */ = {isa = PBXBuildFile; fileRef = A6B62E1A201A951B00426B95 /* iwl-io.c */; };
@@ -171,7 +170,6 @@
 		A65083771FEFB2DC001300AC /* IntelWifi.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IntelWifi.hpp; sourceTree = "<group>"; };
 		A65083791FEFB2DC001300AC /* IntelWifi.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IntelWifi.cpp; sourceTree = "<group>"; };
 		A650837B1FEFB2DC001300AC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A65CD61C1FF1D201004AA810 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		A65CD61E1FF1D2BB004AA810 /* Logging.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Logging.h; sourceTree = "<group>"; };
 		A6B62E17201A8ED300426B95 /* trans.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = trans.c; sourceTree = "<group>"; };
 		A6B62E19201A951A00426B95 /* iwl-io.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-io.h"; sourceTree = "<group>"; };
@@ -336,7 +334,6 @@
 			children = (
 				A65083761FEFB2DC001300AC /* IntelWifi */,
 				A65083751FEFB2DC001300AC /* Products */,
-				A65CD61C1FF1D201004AA810 /* README.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -524,7 +521,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A65CD61D1FF1D201004AA810 /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
