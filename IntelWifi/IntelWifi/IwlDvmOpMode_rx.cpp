@@ -957,7 +957,7 @@ void iwl_setup_rx_handlers(struct iwl_priv *priv)
 }
 
 // line 1001
-void IwlDvmOpMode::iwl_rx_dispatch(struct iwl_priv *priv, struct napi_struct *napi, struct iwl_rx_cmd_buffer *rxb)
+void iwl_rx_dispatch(struct iwl_priv *priv, struct napi_struct *napi, struct iwl_rx_cmd_buffer *rxb)
 {
     struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
     

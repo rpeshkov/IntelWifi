@@ -9,6 +9,7 @@
 #include "IwlDvmOpMode.hpp"
 
 #include "dev.h"
+#include "agn.h"
 
 IwlDvmOpMode::IwlDvmOpMode(IwlTransOps *ops) {
     _ops = ops;

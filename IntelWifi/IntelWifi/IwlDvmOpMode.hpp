@@ -79,10 +79,6 @@ private:
     static bool iwlagn_wait_calib(struct iwl_notif_wait_data *notif_wait,
                            struct iwl_rx_packet *pkt, void *data);
     
-    
-    // rx.c
-    void iwl_rx_dispatch(struct iwl_priv *priv, struct napi_struct *napi,
-                                       struct iwl_rx_cmd_buffer *rxb); // line 1001
 
     
     IwlTransOps *_ops;

@@ -144,10 +144,6 @@ private:
     void iwl_pcie_apm_stop(struct iwl_trans *trans, bool op_mode_leave); // line 460
     int iwl_pcie_nic_init(struct iwl_trans *trans); // line 505
     
-//    int iwl_pcie_load_given_ucode(struct iwl_trans *trans, const struct fw_img *image); // line 900
-//    int iwl_pcie_load_given_ucode_8000(struct iwl_trans *trans, const struct fw_img *image); // line 952
-    //bool iwl_pcie_check_hw_rf_kill(struct iwl_trans *trans); // line 989
-
     void iwl_pcie_init_msix(struct iwl_trans_pcie *trans_pcie); // line 1115
     
     void _iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power); // line 1130
@@ -156,7 +152,6 @@ private:
     
     void iwl_trans_pcie_handle_stop_rfkill(struct iwl_trans *trans, bool was_in_rfkill); // line 1318
     void iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power); // line 1347
-    //void iwl_trans_pcie_rf_kill(struct iwl_trans *trans, bool state); // line 1360
     void iwl_pcie_set_interrupt_capa(struct iwl_trans *trans); // line 1489
     int _iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power); // line 1636
     int iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power); // line 1675
