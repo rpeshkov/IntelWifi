@@ -6,59 +6,40 @@
 //  Copyright © 2018 Roman Peshkov. All rights reserved.
 //
 
-#include <IOKit/IOKitLib.h>
-
 #include <stdio.h>
 
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
+
+#include "logging.h"
+#include "constants.h"
+#include "client.h"
 
 
 int main(int argc, const char * argv[]) {
-    mach_port_t master_port;
-    io_iterator_t iterator;
-    io_service_t service;
-    kern_return_t kern_result;
     
-    kern_result = IOMasterPort(MACH_PORT_NULL, &master_port);
-    
-    if (kern_result != KERN_SUCCESS) {
-        printf("Failed to init master port\n");
-        return -1;
+    if (argc < 2) {
+        error("Provide command. Available commands: scan\n");
+        return 1;
     }
     
-    CFMutableDictionaryRef matchingDict = IOServiceNameMatching("IntelWifi");
-    
-    if (matchingDict == NULL) {
-        printf("Matching Dict is NULL\n");
-        return -1;
+    struct iwmc_client *client = iwmc_alloc(IWMC_SERVICE_NAME);
+    if (!client) {
+        error("Failed to initialize client. Check that service is available.\n");
+        return 1;
     }
     
-    service = IOServiceGetMatchingService(master_port, matchingDict);
+    const char *cmd_name = argv[1];
     
-    
-    if (!service) {
-        printf("Service is null\n");
-        return -1;
+    if (strcmp(cmd_name, IWMC_CMD_SCAN) == 0) {
+        iwmc_scan(client);
+        log("Scan command sent to client");
     }
     
-    io_connect_t data_port;
-    
-    kern_result = IOServiceOpen(service, mach_task_self(), 0, &data_port);
-    if (kern_result != KERN_SUCCESS) {
-        printf("IOServiceOpen failed\n");
-        return -1;
-    }
-    
-    kern_result = IOConnectCallScalarMethod(data_port, 0, 0, 0, 0, 0);
-    if (kern_result != KERN_SUCCESS)
-    {
-        IOServiceClose(data_port);
-        return kern_result;
-    }
-    
-    printf("Finished\n");
+    iwmc_free(client);
+    client = NULL;
     
     return 0;
 }
