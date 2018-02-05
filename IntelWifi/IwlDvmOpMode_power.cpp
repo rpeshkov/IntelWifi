@@ -276,7 +276,7 @@ static void iwl_power_sleep_cam_cmd(struct iwl_priv *priv,
 	IWL_DEBUG_POWER(priv, "Sleep command for CAM\n");
 }
 
-int IwlDvmOpMode::iwl_set_power(struct iwl_priv *priv, struct iwl_powertable_cmd *cmd)
+static int iwl_set_power(struct iwl_priv *priv, struct iwl_powertable_cmd *cmd)
 {
 	IWL_DEBUG_POWER(priv, "Sending power/sleep command\n");
 	IWL_DEBUG_POWER(priv, "Flags value = 0x%08X\n", cmd->flags);
@@ -289,14 +289,12 @@ int IwlDvmOpMode::iwl_set_power(struct iwl_priv *priv, struct iwl_powertable_cmd
 			le32_to_cpu(cmd->sleep_interval[3]),
 			le32_to_cpu(cmd->sleep_interval[4]));
 
-    return iwl_dvm_send_cmd_pdu(priv, POWER_TABLE_CMD, 0,
-                sizeof(struct iwl_powertable_cmd), cmd);
+    return iwl_dvm_send_cmd_pdu(priv, POWER_TABLE_CMD, 0, sizeof(struct iwl_powertable_cmd), cmd);
 }
 
 static void iwl_power_build_cmd(struct iwl_priv *priv,
 				struct iwl_powertable_cmd *cmd)
 {
-    // TODO: Implement
     bool enabled = priv->hw->conf.flags & IEEE80211_CONF_PS;
     int dtimper;
 
@@ -313,20 +311,18 @@ static void iwl_power_build_cmd(struct iwl_priv *priv,
         iwl_static_sleep_cmd(priv, cmd, IWL_POWER_INDEX_5, 20);
     } else if (iwl_tt_is_low_power_state(priv)) {
         /* in thermal throttling low power state */
-        // TODO: Implement
-        // iwl_static_sleep_cmd(priv, cmd, iwl_tt_current_power_mode(priv), dtimper);
+        iwl_static_sleep_cmd(priv, cmd, (enum iwl_power_level)iwl_tt_current_power_mode(priv), dtimper);
     } else if (!enabled) {
         iwl_power_sleep_cam_cmd(priv, cmd);
     }
     else if (priv->power_data.debug_sleep_level_override >= 0) {
-        // TODO: Implement
-        // iwl_static_sleep_cmd(priv, cmd, priv->power_data.debug_sleep_level_override, dtimper);
+        iwl_static_sleep_cmd(priv, cmd, (enum iwl_power_level)priv->power_data.debug_sleep_level_override, dtimper);
     } else {
         /* Note that the user parameter is 1-5 (according to spec),
         but we pass 0-4 because it acts as an array index. */
         if (iwlwifi_mod_params.power_level > IWL_POWER_INDEX_1 && iwlwifi_mod_params.power_level <= IWL_POWER_NUM) {
-            // TODO: Implement
-            // iwl_static_sleep_cmd(priv, cmd, iwlwifi_mod_params.power_level - 1, dtimper);
+            
+            iwl_static_sleep_cmd(priv, cmd, (enum iwl_power_level)(iwlwifi_mod_params.power_level - 1), dtimper);
         } else {
             iwl_static_sleep_cmd(priv, cmd, IWL_POWER_INDEX_1, dtimper);
         }
@@ -334,8 +330,7 @@ static void iwl_power_build_cmd(struct iwl_priv *priv,
     }
 }
 
-int IwlDvmOpMode::iwl_power_set_mode(struct iwl_priv *priv, struct iwl_powertable_cmd *cmd,
-		       bool force)
+int iwl_power_set_mode(struct iwl_priv *priv, struct iwl_powertable_cmd *cmd, bool force)
 {
 	int ret;
 	bool update_chains;
@@ -380,7 +375,7 @@ int IwlDvmOpMode::iwl_power_set_mode(struct iwl_priv *priv, struct iwl_powertabl
 	return ret;
 }
 
-int IwlDvmOpMode::iwl_power_update_mode(struct iwl_priv *priv, bool force)
+int iwl_power_update_mode(struct iwl_priv *priv, bool force)
 {
 	struct iwl_powertable_cmd cmd;
 
@@ -389,12 +384,11 @@ int IwlDvmOpMode::iwl_power_update_mode(struct iwl_priv *priv, bool force)
 }
 
 /* initialize to default */
-void IwlDvmOpMode::iwl_power_initialize(struct iwl_priv *priv)
+void iwl_power_initialize(struct iwl_priv *priv)
 {
 	priv->power_data.bus_pm = priv->trans->pm_support;
 
 	priv->power_data.debug_sleep_level_override = -1;
 
-	memset(&priv->power_data.sleep_cmd, 0,
-		sizeof(priv->power_data.sleep_cmd));
+	memset(&priv->power_data.sleep_cmd, 0, sizeof(priv->power_data.sleep_cmd));
 }

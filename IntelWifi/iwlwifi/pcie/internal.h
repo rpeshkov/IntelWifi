@@ -403,7 +403,7 @@ iwl_trans_pcie_get_trans(struct iwl_trans_pcie *trans_pcie)
 /*****************************************************
  * RX
  ******************************************************/
-//int iwl_pcie_rx_init(struct iwl_trans *trans);
+int iwl_pcie_rx_init(struct iwl_trans *trans);
 int iwl_pcie_gen2_rx_init(struct iwl_trans *trans);
 //irqreturn_t iwl_pcie_msix_isr(int irq, void *data);
 //irqreturn_t iwl_pcie_irq_handler(int irq, void *dev_id);
@@ -426,14 +426,14 @@ void iwl_pcie_disable_ict(struct iwl_trans *trans);
  ******************************************************/
 //int iwl_pcie_tx_init(struct iwl_trans *trans);
 //int iwl_pcie_gen2_tx_init(struct iwl_trans *trans);
-//void iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr);
+void iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr);
 int iwl_pcie_tx_stop(struct iwl_trans *trans);
 void iwl_pcie_tx_free(struct iwl_trans *trans);
-//bool iwl_trans_pcie_txq_enable(struct iwl_trans *trans, int queue, u16 ssn,
-//                               const struct iwl_trans_txq_scd_cfg *cfg,
-//                               unsigned int wdg_timeout);
-//void iwl_trans_pcie_txq_disable(struct iwl_trans *trans, int queue,
-//                                bool configure_scd);
+bool iwl_trans_pcie_txq_enable(struct iwl_trans *trans, int queue, u16 ssn,
+                               const struct iwl_trans_txq_scd_cfg *cfg,
+                               unsigned int wdg_timeout);
+void iwl_trans_pcie_txq_disable(struct iwl_trans *trans, int queue,
+                                bool configure_scd);
 void iwl_trans_pcie_txq_set_shared_mode(struct iwl_trans *trans, u32 txq_id,
                                         bool shared_mode);
 //void iwl_trans_pcie_log_scd_error(struct iwl_trans *trans,
@@ -480,9 +480,9 @@ static inline void iwl_disable_interrupts(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
-    IOSimpleLockLock(trans_pcie->irq_lock);
+    //IOSimpleLockLock(trans_pcie->irq_lock);
     _iwl_disable_interrupts(trans);
-    IOSimpleLockUnlock(trans_pcie->irq_lock);
+    //IOSimpleLockUnlock(trans_pcie->irq_lock);
 }
 
 // line 594
@@ -515,9 +515,9 @@ static inline void iwl_enable_interrupts(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
-    IOSimpleLockLock(trans_pcie->irq_lock);
+    //IOSimpleLockLock(trans_pcie->irq_lock);
     _iwl_enable_interrupts(trans);
-    IOSimpleLockUnlock(trans_pcie->irq_lock);
+    //IOSimpleLockUnlock(trans_pcie->irq_lock);
 }
 
 
@@ -654,6 +654,8 @@ static inline void __iwl_trans_pcie_set_bit(struct iwl_trans *trans,
 {
     __iwl_trans_pcie_set_bits_mask(trans, reg, mask, mask);
 }
+void iwl_trans_pcie_rf_kill(struct iwl_trans *trans, bool state);
+
 
 //int iwl_pci_fw_exit_d0i3(struct iwl_trans *trans);
 //int iwl_pci_fw_enter_d0i3(struct iwl_trans *trans);
@@ -667,7 +669,7 @@ void iwl_pcie_enable_rx_wake(struct iwl_trans *trans, bool enable);
 //void iwl_pcie_apm_config(struct iwl_trans *trans);
 int iwl_pcie_prepare_card_hw(struct iwl_trans *trans);
 //void iwl_pcie_synchronize_irqs(struct iwl_trans *trans);
-//bool iwl_pcie_check_hw_rf_kill(struct iwl_trans *trans);
+bool iwl_pcie_check_hw_rf_kill(struct iwl_trans *trans);
 //void iwl_trans_pcie_handle_stop_rfkill(struct iwl_trans *trans,
 //                                       bool was_in_rfkill);
 //void iwl_pcie_txq_free_tfd(struct iwl_trans *trans, struct iwl_txq *txq);
@@ -681,7 +683,7 @@ void iwl_pcie_conf_msix_hw(struct iwl_trans_pcie *trans_pcie);
 int iwl_pcie_alloc_dma_ptr(struct iwl_trans *trans,
                            struct iwl_dma_ptr *ptr, size_t size);
 void iwl_pcie_free_dma_ptr(struct iwl_trans *trans, struct iwl_dma_ptr *ptr);
-//void iwl_pcie_apply_destination(struct iwl_trans *trans);
+void iwl_pcie_apply_destination(struct iwl_trans *trans);
 //void iwl_pcie_free_tso_page(struct iwl_trans_pcie *trans_pcie,
 //                            struct sk_buff *skb);
 //#ifdef CONFIG_INET
@@ -714,6 +716,8 @@ extern const struct iwl_trans_ops trans_ops_pcie;
 extern const struct iwl_trans_ops trans_ops_pcie_gen2;
 
 void iwl_trans_pcie_configure(struct iwl_trans *trans, const struct iwl_trans_config *trans_cfg);
+void iwl_trans_pcie_fw_alive(struct iwl_trans *trans, u32 scd_addr);
+//int iwl_trans_pcie_start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill);
 
 
 #endif /* iwl_trans_pcie_h */

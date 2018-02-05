@@ -211,8 +211,7 @@ int IwlDvmOpMode::__iwl_up(struct iwl_priv *priv)
     for_each_context(priv, ctx) {
         ret = iwlagn_alloc_bcast_station(priv, ctx);
         if (ret) {
-            // TODO: Implement
-            //iwl_dealloc_bcast_stations(priv);
+            iwl_dealloc_bcast_stations(priv);
             return ret;
         }
     }
@@ -265,9 +264,9 @@ int IwlDvmOpMode::iwlagn_mac_start(struct iwl_priv *priv)
     IWL_DEBUG_MAC80211(priv, "enter\n");
     
     /* we should be verifying the device is ready to be opened */
-//    IOLockLock(priv->mutex);
+    IOLockLock(priv->mutex);
     ret = __iwl_up(priv);
-//    IOLockUnlock(priv->mutex);
+    IOLockUnlock(priv->mutex);
     if (ret)
         return ret;
     
@@ -307,7 +306,6 @@ void IwlDvmOpMode::iwlagn_mac_channel_switch(struct iwl_priv *priv,
     
     IWL_DEBUG_MAC80211(priv, "enter\n");
     
-    //mutex_lock(&priv->mutex);
     IOLockLock(priv->mutex);
     
     if (iwl_is_rfkill(priv))
@@ -328,7 +326,7 @@ void IwlDvmOpMode::iwlagn_mac_channel_switch(struct iwl_priv *priv,
     if (le16_to_cpu(ctx->active.channel) == ch)
         goto out;
     
-    //priv->current_ht_config.smps = conf->smps_mode;
+    priv->current_ht_config.smps = priv->hw->conf.smps_mode;
     
     /* Configure HT40 channels */
     switch (cfg80211_get_chandef_type(&ch_switch->chandef)) {
@@ -368,14 +366,13 @@ void IwlDvmOpMode::iwlagn_mac_channel_switch(struct iwl_priv *priv,
     priv->hw->conf.chandef = ch_switch->chandef;
     
 out:
-    //mutex_unlock(&priv->mutex);
     IOLockUnlock(priv->mutex);
     IWL_DEBUG_MAC80211(priv, "leave\n");
 }
 
 
 // line 1048
-void IwlDvmOpMode::iwl_chswitch_done(struct iwl_priv *priv, bool is_success)
+void iwl_chswitch_done(struct iwl_priv *priv, bool is_success)
 {
     /*
      * MULTI-FIXME
@@ -395,7 +392,7 @@ void IwlDvmOpMode::iwl_chswitch_done(struct iwl_priv *priv, bool is_success)
 }
 
 // line 1242
-int IwlDvmOpMode::iwl_set_mode(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+static int iwl_set_mode(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     iwl_connection_init_rx_config(priv, ctx);
     
@@ -461,10 +458,10 @@ int IwlDvmOpMode::iwlagn_mac_add_interface(struct iwl_priv *priv, struct ieee802
     enum nl80211_iftype viftype = ieee80211_vif_type_p2p(vif);
     bool reset = false;
     
-    IWL_DEBUG_MAC80211(priv, "enter: type %d, addr " MAC_FMT , viftype, MAC_BYTES(vif->addr));
+    IWL_DEBUG_MAC80211(priv, "iwlagn_mac_add_interface enter: type %d, addr", viftype);
     
     //mutex_lock(&priv->mutex);
-    //IOLockLock(priv->mutex);
+    IOLockLock(priv->mutex);
     
     if (!iwl_is_ready_rf(priv)) {
         IWL_WARN(priv, "Try to add interface when device not ready\n");
@@ -531,16 +528,16 @@ int IwlDvmOpMode::iwlagn_mac_add_interface(struct iwl_priv *priv, struct ieee802
     priv->iw_mode = NL80211_IFTYPE_STATION;
 out:
     //mutex_unlock(&priv->mutex);
-    //IOLockUnlock(priv->mutex);
+    IOLockUnlock(priv->mutex);
     
-    IWL_DEBUG_MAC80211(priv, "leave\n");
+    IWL_DEBUG_MAC80211(priv, "iwlagn_mac_add_interface leave\n");
     return err;
 }
 
 
 // line 1637
 /* This function both allocates and initializes hw and priv. */
-struct ieee80211_hw *IwlDvmOpMode::iwl_alloc_all(void)
+struct ieee80211_hw *iwl_alloc_all(void)
 {
     struct iwl_priv *priv;
     //struct iwl_op_mode *op_mode;

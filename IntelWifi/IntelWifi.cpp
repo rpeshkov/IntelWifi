@@ -294,12 +294,7 @@ IOReturn IntelWifi::enable(IONetworkInterface *netif) {
     setLinkStatus(kIONetworkLinkActive | kIONetworkLinkValid, medium);
     fTrans->intf = netif;
     
-    struct ieee80211_vif *vif = (struct ieee80211_vif *)IOMalloc(sizeof(struct ieee80211_vif) + sizeof(struct iwl_vif_priv));
-    memcpy(vif->addr, &hw->wiphy->addresses[0], ETH_ALEN);
-    vif->type = NL80211_IFTYPE_STATION;
-    //vif->bss_conf.bssid = hw->wiphy->addresses[0].addr;
     
-    opmode->add_interface(vif);
     return kIOReturnSuccess;
 }
 

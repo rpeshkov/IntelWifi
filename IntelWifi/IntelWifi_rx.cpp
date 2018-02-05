@@ -234,10 +234,10 @@ static void iwl_pcie_rxq_check_wrptr(struct iwl_trans *trans)
         
         if (!rxq->need_update)
             continue;
-        IOSimpleLockLock(rxq->lock);
+        //IOSimpleLockLock(rxq->lock);
         iwl_pcie_rxq_inc_wr_ptr(trans, rxq);
         rxq->need_update = false;
-        IOSimpleLockUnlock(rxq->lock);
+        //IOSimpleLockUnlock(rxq->lock);
     }
 }
 
@@ -259,7 +259,7 @@ static void iwl_pcie_rxmq_restock(struct iwl_trans *trans, struct iwl_rxq *rxq)
     if (!test_bit(STATUS_DEVICE_ENABLED, &trans->status))
         return;
     
-    IOSimpleLockLock(rxq->lock);
+    //IOSimpleLockLock(rxq->lock);
     while (rxq->free_count) {
         __le64 *bd = (__le64 *)rxq->bd;
         
@@ -278,16 +278,16 @@ static void iwl_pcie_rxmq_restock(struct iwl_trans *trans, struct iwl_rxq *rxq)
         rxq->write = (rxq->write + 1) & MQ_RX_TABLE_MASK;
         rxq->free_count--;
     }
-    IOSimpleLockUnlock(rxq->lock);
+    //IOSimpleLockUnlock(rxq->lock);
     
     /*
      * If we've added more space for the firmware to place data, tell it.
      * Increment device's write pointer in multiples of 8.
      */
     if (rxq->write_actual != (rxq->write & ~0x7)) {
-        IOSimpleLockLock(rxq->lock);
+        //IOSimpleLockLock(rxq->lock);
         iwl_pcie_rxq_inc_wr_ptr(trans, rxq);
-        IOSimpleLockUnlock(rxq->lock);
+        //IOSimpleLockUnlock(rxq->lock);
     }
 }
 
@@ -312,7 +312,7 @@ static void iwl_pcie_rxsq_restock(struct iwl_trans *trans,
         return;
     }
     
-    IOSimpleLockLock(rxq->lock);
+    //IOSimpleLockLock(rxq->lock);
     while ((iwl_rxq_space(rxq) > 0) && (rxq->free_count)) {
         __le32 *bd = (__le32 *)rxq->bd;
         /* The overwritten rxb must be a used one */
@@ -331,14 +331,14 @@ static void iwl_pcie_rxsq_restock(struct iwl_trans *trans,
         rxq->write = (rxq->write + 1) & RX_QUEUE_MASK;
         rxq->free_count--;
     }
-    IOSimpleLockUnlock(rxq->lock);
+    //IOSimpleLockUnlock(rxq->lock);
     
     /* If we've added more space for the firmware to place data, tell it.
      * Increment device's write pointer in multiples of 8. */
     if (rxq->write_actual != (rxq->write & ~0x7)) {
-        IOSimpleLockLock(rxq->lock);
+        //IOSimpleLockLock(rxq->lock);
         iwl_pcie_rxq_inc_wr_ptr(trans, rxq);
-        IOSimpleLockUnlock(rxq->lock);
+        //IOSimpleLockUnlock(rxq->lock);
     }
 }
 
@@ -387,22 +387,22 @@ static void iwl_pcie_rxq_alloc_rbs(struct iwl_trans *trans, struct iwl_rxq *rxq)
     IOBufferMemoryDescriptor *page;
     
     while (1) {
-        IOSimpleLockLock(rxq->lock);
+        //IOSimpleLockLock(rxq->lock);
         if (list_empty(&rxq->rx_used)) {
-            IOSimpleLockUnlock(rxq->lock);
+            //IOSimpleLockUnlock(rxq->lock);
             return;
         }
-        IOSimpleLockUnlock(rxq->lock);
+        //IOSimpleLockUnlock(rxq->lock);
         
         /* Alloc a new receive buffer */
         page = iwl_pcie_rx_alloc_page(trans);
         if (!page)
             return;
         
-        IOSimpleLockLock(rxq->lock);
+        //IOSimpleLockLock(rxq->lock);
         
         if (list_empty(&rxq->rx_used)) {
-            IOSimpleLockUnlock(rxq->lock);
+            //IOSimpleLockUnlock(rxq->lock);
             //__free_pages(page, trans_pcie->rx_page_order);
             page->complete();
             page->release();
@@ -412,7 +412,7 @@ static void iwl_pcie_rxq_alloc_rbs(struct iwl_trans *trans, struct iwl_rxq *rxq)
         rxb = list_first_entry(&rxq->rx_used, struct iwl_rx_mem_buffer,
                                list);
         list_del(&rxb->list);
-        IOSimpleLockUnlock(rxq->lock);
+        //IOSimpleLockUnlock(rxq->lock);
         
         //BUG_ON(rxb->page);
         rxb->page = page;
@@ -424,16 +424,16 @@ static void iwl_pcie_rxq_alloc_rbs(struct iwl_trans *trans, struct iwl_rxq *rxq)
             page->release();
             rxb->page = NULL;
             
-            IOSimpleLockLock(rxq->lock);
+            //IOSimpleLockLock(rxq->lock);
             list_add(&rxb->list, &rxq->rx_used);
-            IOSimpleLockUnlock(rxq->lock);
+            //IOSimpleLockUnlock(rxq->lock);
             return;
         }
         
-        IOSimpleLockLock(rxq->lock);
+        //IOSimpleLockLock(rxq->lock);
         list_add_tail(&rxb->list, &rxq->rx_free);
         rxq->free_count++;
-        IOSimpleLockUnlock(rxq->lock);
+        //IOSimpleLockUnlock(rxq->lock);
     }
 }
 
@@ -475,11 +475,11 @@ static void iwl_pcie_rx_allocator(struct iwl_trans *trans)
     
     /* If we were scheduled - there is at least one request */
     //spin_lock(&rba->lock);
-    IOSimpleLockLock(rba->lock);
+    //IOSimpleLockLock(rba->lock);
     /* swap out the rba->rbd_empty to a local list */
     list_replace_init(&rba->rbd_empty, &local_empty);
     //spin_unlock(&rba->lock);
-    IOSimpleLockUnlock(rba->lock);
+    //IOSimpleLockUnlock(rba->lock);
     
     while (pending) {
         int i;
@@ -538,24 +538,24 @@ static void iwl_pcie_rx_allocator(struct iwl_trans *trans)
         }
         
         //spin_lock(&rba->lock);
-        IOSimpleLockLock(rba->lock);
+        //IOSimpleLockLock(rba->lock);
         /* add the allocated rbds to the allocator allocated list */
         list_splice_tail(&local_allocated, &rba->rbd_allocated);
         /* get more empty RBDs for current pending requests */
         list_splice_tail_init(&rba->rbd_empty, &local_empty);
         //spin_unlock(&rba->lock);
-        IOSimpleLockUnlock(rba->lock);
+        //IOSimpleLockUnlock(rba->lock);
         
         //atomic_inc(&rba->req_ready);
         OSIncrementAtomic(&rba->req_ready);
     }
     
     //spin_lock(&rba->lock);
-    IOSimpleLockLock(rba->lock);
+    //IOSimpleLockLock(rba->lock);
     /* return unused rbds to the allocator empty list */
     list_splice_tail(&local_empty, &rba->rbd_empty);
     //spin_unlock(&rba->lock);
-    IOSimpleLockUnlock(rba->lock);
+    //IOSimpleLockUnlock(rba->lock);
 }
 
 /* line 557
@@ -590,7 +590,7 @@ static void iwl_pcie_rx_allocator_get(struct iwl_trans *trans,
     
     
     //spin_lock(&rba->lock);
-    IOSimpleLockLock(rba->lock);
+    //IOSimpleLockLock(rba->lock);
     for (i = 0; i < RX_CLAIM_REQ_ALLOC; i++) {
         /* Get next free Rx buffer, remove it from free list */
         struct iwl_rx_mem_buffer *rxb =
@@ -600,7 +600,7 @@ static void iwl_pcie_rx_allocator_get(struct iwl_trans *trans,
         list_move(&rxb->list, &rxq->rx_free);
     }
     //spin_unlock(&rba->lock);
-    IOSimpleLockUnlock(rba->lock);
+    //IOSimpleLockUnlock(rba->lock);
     
     rxq->used_count -= RX_CLAIM_REQ_ALLOC;
     rxq->free_count += RX_CLAIM_REQ_ALLOC;
@@ -974,13 +974,13 @@ static int _iwl_pcie_rx_init(struct iwl_trans *trans)
     }
     def_rxq = trans_pcie->rxq;
 
-    IOSimpleLockLock(rba->lock);
+    //IOSimpleLockLock(rba->lock);
     rba->req_pending = 0;
     rba->req_ready = 0;
     
     INIT_LIST_HEAD(&rba->rbd_allocated);
     INIT_LIST_HEAD(&rba->rbd_empty);
-    IOSimpleLockUnlock(rba->lock);
+    //IOSimpleLockUnlock(rba->lock);
     
     /* free all first - we might be reconfigured for a different size */
     iwl_pcie_free_rbs_pool(trans);
@@ -993,7 +993,7 @@ static int _iwl_pcie_rx_init(struct iwl_trans *trans)
         
         rxq->id = i;
         
-        IOSimpleLockLock(rxq->lock);
+        //IOSimpleLockLock(rxq->lock);
         /*
          * Set read write pointer to reflect that we have processed
          * and used all buffers, but have not restocked the Rx queue
@@ -1011,7 +1011,7 @@ static int _iwl_pcie_rx_init(struct iwl_trans *trans)
 //            netif_napi_add(&trans_pcie->napi_dev, &rxq->napi,
 //                           iwl_pcie_dummy_napi_poll, 64);
         
-        IOSimpleLockUnlock(rxq->lock);
+        //IOSimpleLockUnlock(rxq->lock);
     }
     
     /* move the pool to the default queue and allocator ownerships */
@@ -1038,7 +1038,7 @@ static int _iwl_pcie_rx_init(struct iwl_trans *trans)
 }
 
 // line 967
-int IntelWifi::iwl_pcie_rx_init(struct iwl_trans *trans)
+int iwl_pcie_rx_init(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     int ret = _iwl_pcie_rx_init(trans);
@@ -1053,9 +1053,9 @@ int IntelWifi::iwl_pcie_rx_init(struct iwl_trans *trans)
     
     iwl_pcie_rxq_restock(trans, trans_pcie->rxq);
     
-    IOSimpleLockLock(trans_pcie->rxq->lock);
+    //IOSimpleLockLock(trans_pcie->rxq->lock);
     iwl_pcie_rxq_inc_wr_ptr(trans, trans_pcie->rxq);
-    IOSimpleLockUnlock(trans_pcie->rxq->lock);
+    //IOSimpleLockUnlock(trans_pcie->rxq->lock);
     
     return 0;
 }
@@ -1128,9 +1128,8 @@ void iwl_pcie_rx_free(struct iwl_trans *trans)
  * Called when a RBD can be reused. The RBD is transferred to the allocator.
  * When there are 2 empty RBDs - a request for allocation is posted
  */
-static void iwl_pcie_rx_reuse_rbd(struct iwl_trans *trans,
-                                  struct iwl_rx_mem_buffer *rxb,
-                                  struct iwl_rxq *rxq, bool emergency)
+static void iwl_pcie_rx_reuse_rbd(struct iwl_trans *trans, struct iwl_rx_mem_buffer *rxb, struct iwl_rxq *rxq,
+                                  bool emergency)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     struct iwl_rb_allocator *rba = &trans_pcie->rba;
@@ -1153,9 +1152,9 @@ static void iwl_pcie_rx_reuse_rbd(struct iwl_trans *trans,
     if ((rxq->used_count % RX_CLAIM_REQ_ALLOC) == RX_POST_REQ_ALLOC) {
         /* Move the 2 RBDs to the allocator ownership.
          Allocator has another 6 from pool for the request completion*/
-        IOSimpleLockLock(rba->lock);
+        //IOSimpleLockLock(rba->lock);
         list_splice_tail_init(&rxq->rx_used, &rba->rbd_empty);
-        IOSimpleLockUnlock(rba->lock);
+        //IOSimpleLockUnlock(rba->lock);
         
         OSIncrementAtomic(&rba->req_pending);
         // TODO: Implement
@@ -1164,9 +1163,7 @@ static void iwl_pcie_rx_reuse_rbd(struct iwl_trans *trans,
 }
 
 // line 1090
-void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans,
-                                      struct iwl_rxq *rxq,
-                                      struct iwl_rx_mem_buffer *rxb,
+void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans, struct iwl_rxq *rxq, struct iwl_rx_mem_buffer *rxb,
                                       bool emergency)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
@@ -1321,7 +1318,7 @@ void IntelWifi::iwl_pcie_rx_handle(struct iwl_trans *trans, int queue)
     bool emergency = false;
     
 restart:
-    IOSimpleLockLock(rxq->lock);
+    //IOSimpleLockLock(rxq->lock);
     /* uCode's read index (stored in shared DRAM) indicates the last Rx
      * buffer that the driver may process (last buffer filled by ucode). */
     r = le16_to_cpu(rxq->rb_stts->closed_rb_num) & 0x0FFF;
@@ -1383,9 +1380,9 @@ restart:
             struct iwl_rb_allocator *rba = &trans_pcie->rba;
             
             /* Add the remaining empty RBDs for allocator use */
-            IOSimpleLockLock(rba->lock);
+            //IOSimpleLockLock(rba->lock);
             list_splice_tail_init(&rxq->rx_used, &rba->rbd_empty);
-            IOSimpleLockUnlock(rba->lock);
+            //IOSimpleLockUnlock(rba->lock);
         } else if (emergency) {
             count++;
             if (count == 8) {
@@ -1394,7 +1391,7 @@ restart:
                     emergency = false;
                 
                 rxq->read = i;
-                IOSimpleLockUnlock(rxq->lock);
+                //IOSimpleLockUnlock(rxq->lock);
                 iwl_pcie_rxq_alloc_rbs(trans, rxq);
                 iwl_pcie_rxq_restock(trans, rxq);
                 goto restart;
@@ -1404,7 +1401,7 @@ restart:
 out:
     /* Backtrack one entry */
     rxq->read = i;
-    IOSimpleLockUnlock(rxq->lock);
+    //IOSimpleLockUnlock(rxq->lock);
     
     /*
      * handle a case where in emergency there are some unallocated RBDs.
@@ -1606,7 +1603,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
     // TODO: implement
     //    lock_map_acquire(&trans->sync_cmd_lockdep_map);
     
-    IOSimpleLockLock(trans_pcie->irq_lock);
+    //IOSimpleLockLock(trans_pcie->irq_lock);
     
     /* dram interrupt table not set yet,
      * use legacy interrupt.
@@ -1644,7 +1641,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
         if (test_bit(STATUS_INT_ENABLED, &trans->status))
             _iwl_enable_interrupts(trans);
         
-        IOSimpleLockUnlock(trans_pcie->irq_lock);
+        //IOSimpleLockUnlock(trans_pcie->irq_lock);
         //lock_map_release(&trans->sync_cmd_lockdep_map);
         return IRQ_NONE;
     }
@@ -1655,7 +1652,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
          * already raised an interrupt.
          */
         IWL_WARN(trans, "HARDWARE GONE?? INTA == 0x%08x\n", inta);
-        IOSimpleLockUnlock(trans_pcie->irq_lock);
+        //IOSimpleLockUnlock(trans_pcie->irq_lock);
         goto out;
     }
     
@@ -1676,7 +1673,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
 //        IWL_DEBUG_ISR(trans, "inta 0x%08x, enabled 0x%08x\n",
 //                      inta, iwl_read32(trans, CSR_INT_MASK));
     
-    IOSimpleLockUnlock(trans_pcie->irq_lock);
+    //IOSimpleLockUnlock(trans_pcie->irq_lock);
     
     /* Now service all interrupt bits discovered above. */
     if (inta & CSR_INT_BIT_HW_ERR) {
@@ -1821,7 +1818,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
                  inta & ~trans_pcie->inta_mask);
     }
     
-    IOSimpleLockLock(trans_pcie->irq_lock);
+    //IOSimpleLockLock(trans_pcie->irq_lock);
     /* only Re-enable all interrupt if disabled by irq */
     if (test_bit(STATUS_INT_ENABLED, &trans->status))
         _iwl_enable_interrupts(trans);
@@ -1832,7 +1829,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
     else if (handled & CSR_INT_BIT_RF_KILL)
         iwl_enable_rfkill_int(trans);
     
-    IOSimpleLockUnlock(trans_pcie->irq_lock);
+    //IOSimpleLockUnlock(trans_pcie->irq_lock);
     
 out:
     //lock_map_release(&trans->sync_cmd_lockdep_map);
@@ -1916,7 +1913,7 @@ void iwl_pcie_reset_ict(struct iwl_trans *trans)
     if (!trans_pcie->ict_tbl)
         return;
     
-    IOSimpleLockLock(trans_pcie->irq_lock);
+    //IOSimpleLockLock(trans_pcie->irq_lock);
     _iwl_disable_interrupts(trans);
     
     memset(trans_pcie->ict_tbl, 0, ICT_SIZE);
@@ -1934,7 +1931,7 @@ void iwl_pcie_reset_ict(struct iwl_trans *trans)
     trans_pcie->ict_index = 0;
     iwl_write32(trans, CSR_INT, trans_pcie->inta_mask);
     _iwl_enable_interrupts(trans);
-    IOSimpleLockUnlock(trans_pcie->irq_lock);
+    //IOSimpleLockUnlock(trans_pcie->irq_lock);
 }
 
 
@@ -1947,7 +1944,7 @@ void iwl_pcie_disable_ict(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
-    IOSimpleLockLock(trans_pcie->irq_lock);
+    //IOSimpleLockLock(trans_pcie->irq_lock);
     trans_pcie->use_ict = false;
-    IOSimpleLockUnlock(trans_pcie->irq_lock);
+    //IOSimpleLockUnlock(trans_pcie->irq_lock);
 }

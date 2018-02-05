@@ -16,6 +16,7 @@ extern "C" {
 #include "iwl-eeprom-parse.h"
 #include "iwlwifi/pcie/internal.h"
 #include "iwlwifi/iwl-scd.h"
+#include <linux/jiffies.h>
 }
 
 #include <IOKit/IOLib.h>
@@ -64,18 +65,11 @@ class IntelWifi : public IOEthernetController, public IwlTransOps
     
 public:
     virtual int start_hw(struct iwl_trans *trans, bool low_power) override;
-    virtual int start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill) override;
     virtual void op_mode_leave(struct iwl_trans *trans) override;
     virtual void set_pmi(struct iwl_trans *trans, bool state) override;
     virtual void configure(struct iwl_trans *trans, const struct iwl_trans_config *trans_cfg) override;
-    virtual void fw_alive(struct iwl_trans *trans, u32 scd_addr) override;
     virtual void stop_device(struct iwl_trans *trans, bool low_power) override;
-    virtual bool txq_enable(struct iwl_trans *trans, int queue, u16 ssn,
-                               const struct iwl_trans_txq_scd_cfg *cfg,
-                                       unsigned int queue_wdg_timeout) override;
-    virtual void txq_disable(struct iwl_trans *trans, int queue, bool configure_scd) override;
-    int send_cmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd) override;
-
+    virtual int start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill) override;
     
     virtual bool init(OSDictionary *properties) override;
     virtual void free() override;
@@ -149,11 +143,10 @@ private:
     int iwl_pcie_apm_init(struct iwl_trans *trans); // line 232
     void iwl_pcie_apm_stop(struct iwl_trans *trans, bool op_mode_leave); // line 460
     int iwl_pcie_nic_init(struct iwl_trans *trans); // line 505
-
-    void iwl_pcie_apply_destination(struct iwl_trans *trans); // line 826
-    int iwl_pcie_load_given_ucode(struct iwl_trans *trans, const struct fw_img *image); // line 900
-    int iwl_pcie_load_given_ucode_8000(struct iwl_trans *trans, const struct fw_img *image); // line 952
-    bool iwl_pcie_check_hw_rf_kill(struct iwl_trans *trans); // line 989
+    
+//    int iwl_pcie_load_given_ucode(struct iwl_trans *trans, const struct fw_img *image); // line 900
+//    int iwl_pcie_load_given_ucode_8000(struct iwl_trans *trans, const struct fw_img *image); // line 952
+    //bool iwl_pcie_check_hw_rf_kill(struct iwl_trans *trans); // line 989
 
     void iwl_pcie_init_msix(struct iwl_trans_pcie *trans_pcie); // line 1115
     
@@ -161,10 +154,9 @@ private:
     
     int iwl_trans_pcie_start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill); // line 1224
     
-    void iwl_trans_pcie_fw_alive(struct iwl_trans *trans, u32 scd_addr); // line 1312
     void iwl_trans_pcie_handle_stop_rfkill(struct iwl_trans *trans, bool was_in_rfkill); // line 1318
     void iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power); // line 1347
-    void iwl_trans_pcie_rf_kill(struct iwl_trans *trans, bool state); // line 1360
+    //void iwl_trans_pcie_rf_kill(struct iwl_trans *trans, bool state); // line 1360
     void iwl_pcie_set_interrupt_capa(struct iwl_trans *trans); // line 1489
     int _iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power); // line 1636
     int iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power); // line 1675
@@ -192,8 +184,7 @@ private:
     
     void iwl_pcie_handle_rfkill_irq(struct iwl_trans *trans);
     void iwl_pcie_irq_handle_error(struct iwl_trans *trans);
-    
-    int iwl_pcie_rx_init(struct iwl_trans *trans);
+
     void iwl_pcie_rx_handle(struct iwl_trans *trans, int queue);
     void iwl_pcie_rx_handle_rb(struct iwl_trans *trans,
                                           struct iwl_rxq *rxq,
@@ -203,56 +194,17 @@ private:
     // tx.c
     int iwl_pcie_txq_alloc(struct iwl_trans *trans, struct iwl_txq *txq, int slots_num, bool cmd_queue); // line 487
     int iwl_pcie_txq_init(struct iwl_trans *trans, struct iwl_txq *txq, int slots_num, bool cmd_queue); // line 551
-    void iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr); // line 715
     int iwl_pcie_tx_alloc(struct iwl_trans *trans); // line 907
     int iwl_pcie_tx_init(struct iwl_trans *trans); // line 973
     void iwl_pcie_txq_progress(struct iwl_txq *txq); // line 1034
     void iwl_pcie_cmdq_reclaim(struct iwl_trans *trans, int txq_id, int idx); // line 1211
-    bool iwl_trans_pcie_txq_enable(struct iwl_trans *trans, int txq_id, u16 ssn,
-                                   const struct iwl_trans_txq_scd_cfg *cfg,
-                                   unsigned int wdg_timeout); // line 1283
-    void iwl_trans_pcie_txq_disable(struct iwl_trans *trans, int txq_id, bool configure_scd); // line 1404
-    //int iwl_pcie_enqueue_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd); // line 1440
+
     void iwl_pcie_hcmd_complete(struct iwl_trans *trans,
                                            struct iwl_rx_cmd_buffer *rxb); // line 1723
-//    int iwl_pcie_send_hcmd_async(struct iwl_trans *trans, struct iwl_host_cmd *cmd);
-    
-    //int iwl_pcie_send_hcmd_sync(struct iwl_trans *trans, struct iwl_host_cmd *cmd); // line 1829
-    //int iwl_trans_pcie_send_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd); // line 1935
     int iwl_trans_pcie_tx(struct iwl_trans *trans, struct sk_buff *skb,
                           struct iwl_device_cmd *dev_cmd, int txq_id); // line 2256
     
-    // other
-    
-    inline void iwl_trans_txq_enable(struct iwl_trans *trans, int queue,
-                                             int fifo, int sta_id, int tid,
-                                             int frame_limit, u16 ssn,
-                                     unsigned int queue_wdg_timeout) {
-        struct iwl_trans_txq_scd_cfg cfg = {
-            .fifo = (u8)fifo,
-            .sta_id = (u8)sta_id,
-            .tid = (u8)tid,
-            .frame_limit = frame_limit,
-            .aggregate = sta_id >= 0,
-        };
-        
-        txq_enable(trans, queue, ssn, &cfg, queue_wdg_timeout);
-    }
-    inline void iwl_trans_ac_txq_enable(struct iwl_trans *trans, int queue, int fifo,
-                     unsigned int queue_wdg_timeout)
-    {
-        struct iwl_trans_txq_scd_cfg cfg = {
-            .fifo = (u8)fifo,
-            .sta_id = (u8)-1,
-            .tid = IWL_MAX_TID_COUNT,
-            .frame_limit = IWL_FRAME_LIMIT,
-            .aggregate = false,
-        };
-    
-        txq_enable(trans, queue, 0, &cfg, queue_wdg_timeout);
-    }
-
-    
+    // other   
     
     ifnet_t fIfNet;
     

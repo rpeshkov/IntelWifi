@@ -36,6 +36,8 @@
 
 #include "IwlDvmOpMode.hpp"
 
+#include <IOKit/IOCommandGate.h>
+
 extern "C" {
 #include "dev.h"
 #include "agn.h"
@@ -64,8 +66,19 @@ extern "C" {
 /* For reset radio, need minimal dwell time only */
 #define IWL_RADIO_RESET_DWELL_TIME    5
 
+
+// MARK: Background funcs
+static IOReturn iwl_bg_start_internal_scan(OSObject *owner,
+                                           void *arg0, void *arg1,
+                                           void *arg2, void *arg3);
+static IOReturn iwl_bg_scan_completed(OSObject *owner,
+                                  void *arg0, void *arg1,
+                                      void *arg2, void *arg3);
+
+
+
 // line 57
-int IwlDvmOpMode::iwl_send_scan_abort(struct iwl_priv *priv)
+static int iwl_send_scan_abort(struct iwl_priv *priv)
 {
     int ret;
     struct iwl_host_cmd cmd = {
@@ -123,7 +136,7 @@ static void iwl_complete_scan(struct iwl_priv *priv, bool aborted)
 
 
 // line 112
-void IwlDvmOpMode::iwl_process_scan_complete(struct iwl_priv *priv)
+static void iwl_process_scan_complete(struct iwl_priv *priv)
 {
     bool aborted;
     
@@ -177,7 +190,7 @@ out_settings:
 
 
 // line 165
-void IwlDvmOpMode::iwl_force_scan_end(struct iwl_priv *priv)
+void iwl_force_scan_end(struct iwl_priv *priv)
 {
     //lockdep_assert_held(&priv->mutex);
     
@@ -197,7 +210,7 @@ void IwlDvmOpMode::iwl_force_scan_end(struct iwl_priv *priv)
 
 
 // line 182
-void IwlDvmOpMode::iwl_do_scan_abort(struct iwl_priv *priv)
+static void iwl_do_scan_abort(struct iwl_priv *priv)
 {
     int ret;
     
@@ -240,7 +253,7 @@ int iwl_scan_cancel(struct iwl_priv *priv)
  * @ms: amount of time to wait (in milliseconds) for scan to abort
  *
  */
-void IwlDvmOpMode::iwl_scan_cancel_timeout(struct iwl_priv *priv, unsigned long ms)
+void iwl_scan_cancel_timeout(struct iwl_priv *priv, unsigned long ms)
 {
     unsigned long timeout = jiffies + msecs_to_jiffies(ms);
     
@@ -276,7 +289,7 @@ finished:
 /* line 253
  * Service response to REPLY_SCAN_CMD (0x80)
  */
-void IwlDvmOpMode::iwl_rx_reply_scan(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
+static void iwl_rx_reply_scan(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
 {
 #ifdef CONFIG_IWLWIFI_DEBUG
     struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
@@ -288,7 +301,7 @@ void IwlDvmOpMode::iwl_rx_reply_scan(struct iwl_priv *priv, struct iwl_rx_cmd_bu
 
 // line 265
 /* Service SCAN_START_NOTIFICATION (0x82) */
-void IwlDvmOpMode::iwl_rx_scan_start_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
+static void iwl_rx_scan_start_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
 {
     struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
     struct iwl_scanstart_notification *notif = (struct iwl_scanstart_notification *)pkt->data;
@@ -305,7 +318,7 @@ void IwlDvmOpMode::iwl_rx_scan_start_notif(struct iwl_priv *priv, struct iwl_rx_
 
 // line 283
 /* Service SCAN_RESULTS_NOTIFICATION (0x83) */
-void IwlDvmOpMode::iwl_rx_scan_results_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
+static void iwl_rx_scan_results_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
 {
 #ifdef CONFIG_IWLWIFI_DEBUG
     struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
@@ -329,7 +342,7 @@ void IwlDvmOpMode::iwl_rx_scan_results_notif(struct iwl_priv *priv, struct iwl_r
 
 // line 306
 /* Service SCAN_COMPLETE_NOTIFICATION (0x84) */
-void IwlDvmOpMode::iwl_rx_scan_complete_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
+static void iwl_rx_scan_complete_notif(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
 {
     struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
     struct iwl_scancomplete_notification *scan_notif = (struct iwl_scancomplete_notification *)pkt->data;
@@ -360,6 +373,8 @@ void IwlDvmOpMode::iwl_rx_scan_complete_notif(struct iwl_priv *priv, struct iwl_
     clear_bit(STATUS_SCAN_HW, &priv->status);
     // TODO: Implement
     //queue_work(priv->workqueue, &priv->scan_completed);
+    IOCommandGate *gate = static_cast<IOCommandGate *>(priv->trans->gate);
+    gate->attemptAction(iwl_bg_scan_completed, priv);
     
     if (priv->iw_mode != NL80211_IFTYPE_ADHOC && iwl_advanced_bt_coexist(priv)
     && priv->bt_status != scan_notif->bt_status) {
@@ -383,7 +398,7 @@ void IwlDvmOpMode::iwl_rx_scan_complete_notif(struct iwl_priv *priv, struct iwl_
 }
 
 // line 357
-void IwlDvmOpMode::iwl_setup_rx_scan_handlers(struct iwl_priv *priv)
+void iwl_setup_rx_scan_handlers(struct iwl_priv *priv)
 {
     /* scan handlers */
     priv->rx_handlers[REPLY_SCAN_CMD] = iwl_rx_reply_scan;
@@ -658,7 +673,7 @@ static u16 iwl_fill_probe_req(struct ieee80211_mgmt *frame, const u8 *ta,
 
 
 // line 632
-int IwlDvmOpMode::iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
+static int iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
 {
     struct iwl_host_cmd cmd = {
         .id = REPLY_SCAN_CMD,
@@ -902,15 +917,12 @@ int IwlDvmOpMode::iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vi
 
     switch (priv->scan_type) {
         case IWL_SCAN_RADIO_RESET:
-            scan->channel_count =
-                    iwl_get_channel_for_reset_scan(priv, vif, band,
-                            (struct iwl_scan_channel *)&scan->data[cmd_len]);
+            scan->channel_count = iwl_get_channel_for_reset_scan(priv, vif, band,
+                                                                 (struct iwl_scan_channel *)&scan->data[cmd_len]);
             break;
         case IWL_SCAN_NORMAL:
-            scan->channel_count =
-                    iwl_get_channels_for_scan(priv, vif, band,
-                            is_active, n_probes,
-                            (struct iwl_scan_channel *)&scan->data[cmd_len]);
+            scan->channel_count = iwl_get_channels_for_scan(priv, vif, band, is_active, n_probes,
+                                                            (struct iwl_scan_channel *)&scan->data[cmd_len]);
             break;
     }
 
@@ -943,14 +955,8 @@ int IwlDvmOpMode::iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vi
     return 0;
 }
 
-
-
-
-
-
-
 // line 929
-void IwlDvmOpMode::iwl_init_scan_params(struct iwl_priv *priv)
+void iwl_init_scan_params(struct iwl_priv *priv)
 {
     u8 ant_idx = fls(priv->nvm_data->valid_tx_ant) - 1;
     if (!priv->scan_tx_ant[NL80211_BAND_5GHZ])
@@ -960,8 +966,8 @@ void IwlDvmOpMode::iwl_init_scan_params(struct iwl_priv *priv)
 }
 
 // line 938
-int IwlDvmOpMode::iwl_scan_initiate(struct iwl_priv *priv, struct ieee80211_vif *vif, enum iwl_scan_type scan_type,
-                                    enum nl80211_band band)
+int iwl_scan_initiate(struct iwl_priv *priv, struct ieee80211_vif *vif, enum iwl_scan_type scan_type,
+                      enum nl80211_band band)
 {
     int ret;
     
@@ -1005,6 +1011,64 @@ int IwlDvmOpMode::iwl_scan_initiate(struct iwl_priv *priv, struct ieee80211_vif 
     
     return 0;
 }
+
+/* line 988
+ * internal short scan, this function should only been called while associated.
+ * It will reset and tune the radio to prevent possible RF related problem
+ */
+void iwl_internal_short_hw_scan(struct iwl_priv *priv)
+{
+    //queue_work(priv->workqueue, &priv->start_internal_scan);
+    IOCommandGate *gate = static_cast<IOCommandGate *>(priv->trans->gate);
+    gate->attemptAction(iwl_bg_start_internal_scan, priv);
+}
+
+// line 997
+static IOReturn iwl_bg_start_internal_scan(OSObject *owner,
+                                       void *arg0, void *arg1,
+                                       void *arg2, void *arg3)
+{
+    struct iwl_priv *priv = (struct iwl_priv *)arg0;//container_of(work, struct iwl_priv, start_internal_scan);
+    
+    IWL_DEBUG_SCAN(priv, "Start internal scan\n");
+    
+    // mutex_lock(&priv->mutex);
+    IOLockLock(priv->mutex);
+    
+    if (priv->scan_type == IWL_SCAN_RADIO_RESET) {
+        IWL_DEBUG_SCAN(priv, "Internal scan already in progress\n");
+        goto unlock;
+    }
+    
+    if (test_bit(STATUS_SCANNING, &priv->status)) {
+        IWL_DEBUG_SCAN(priv, "Scan already in progress.\n");
+        goto unlock;
+    }
+    
+    if (iwl_scan_initiate(priv, NULL, IWL_SCAN_RADIO_RESET, priv->band))
+        IWL_DEBUG_SCAN(priv, "failed to start internal short scan\n");
+unlock:
+    //mutex_unlock(&priv->mutex);
+    IOLockUnlock(priv->mutex);
+    
+    return kIOReturnSuccess;
+}
+
+// line 1050
+static IOReturn iwl_bg_scan_completed(OSObject *owner,
+                                  void *arg0, void *arg1,
+                                  void *arg2, void *arg3)
+{
+    struct iwl_priv *priv = (struct iwl_priv *)arg0;
+    
+    //mutex_lock(&priv->mutex);
+    //IOLockLock(priv->mutex);
+    iwl_process_scan_complete(priv);
+    // mutex_unlock(&priv->mutex);
+    //IOLockUnlock(priv->mutex);
+    return kIOReturnSuccess;
+}
+
 
 
 

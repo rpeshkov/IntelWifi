@@ -86,12 +86,10 @@ static void iwlagn_rx_csa(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
         rxon->channel = csa->channel;
         ctx->staging.channel = csa->channel;
         IWL_DEBUG_11H(priv, "CSA notif: channel %d\n", le16_to_cpu(csa->channel));
-        // TODO: Implement
-        //iwl_chswitch_done(priv, true);
+        iwl_chswitch_done(priv, true);
     } else {
         IWL_ERR(priv, "CSA notif (fail) : channel %d\n", le16_to_cpu(csa->channel));
-        // TODO: Implement
-        //iwl_chswitch_done(priv, false);
+        iwl_chswitch_done(priv, false);
     }
 }
 
@@ -221,8 +219,7 @@ int iwl_force_rf_reset(struct iwl_priv *priv, bool external)
      * beacon, or any other uCode error condition detected.
      */
     IWL_DEBUG_INFO(priv, "perform radio reset.\n");
-    // TODO: Implement
-    // iwl_internal_short_hw_scan(priv);
+    iwl_internal_short_hw_scan(priv);
     return 0;
 }
 
@@ -374,7 +371,7 @@ static void iwlagn_rx_statistics(struct iwl_priv *priv, struct iwl_rx_cmd_buffer
 
     IWL_DEBUG_RX(priv, "Statistics notification received (%d bytes).\n", len);
 
-    IOSimpleLockLock(priv->statistics.lock);
+    //IOSimpleLockLock(priv->statistics.lock);
 
     if (len == sizeof(struct iwl_bt_notif_statistics)) {
         struct iwl_bt_notif_statistics *stats;
@@ -409,7 +406,7 @@ static void iwlagn_rx_statistics(struct iwl_priv *priv, struct iwl_rx_cmd_buffer
         IWL_DEBUG_RX(priv, "len %d doesn't match BT (%zu) or normal (%zu)\n",
                  len, sizeof(struct iwl_bt_notif_statistics), sizeof(struct iwl_notif_statistics));
         
-        IOSimpleLockUnlock(priv->statistics.lock);
+        //IOSimpleLockUnlock(priv->statistics.lock);
         return;
     }
 
@@ -454,11 +451,10 @@ static void iwlagn_rx_statistics(struct iwl_priv *priv, struct iwl_rx_cmd_buffer
     if (priv->lib->temperature && change)
         priv->lib->temperature(priv);
 
-    IOSimpleLockUnlock(priv->statistics.lock);
+    //IOSimpleLockUnlock(priv->statistics.lock);
 }
 
-static void iwlagn_rx_reply_statistics(struct iwl_priv *priv,
-                                       struct iwl_rx_cmd_buffer *rxb)
+static void iwlagn_rx_reply_statistics(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
 {
     struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
     struct iwl_notif_statistics *stats = (struct iwl_notif_statistics *)pkt->data;
@@ -493,20 +489,15 @@ static void iwlagn_rx_card_state_notif(struct iwl_priv *priv,
                       (flags & CT_CARD_DISABLED) ?
                       "Reached" : "Not reached");
 
-    if (flags & (SW_CARD_DISABLED | HW_CARD_DISABLED |
-                 CT_CARD_DISABLED)) {
+    if (flags & (SW_CARD_DISABLED | HW_CARD_DISABLED | CT_CARD_DISABLED)) {
 
-        iwl_write32(priv->trans, CSR_UCODE_DRV_GP1_SET,
-                    CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
+        iwl_write32(priv->trans, CSR_UCODE_DRV_GP1_SET, CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
 
-        iwl_write_direct32(priv->trans, HBUS_TARG_MBX_C,
-                           HBUS_TARG_MBX_C_REG_BIT_CMD_BLOCKED);
+        iwl_write_direct32(priv->trans, HBUS_TARG_MBX_C, HBUS_TARG_MBX_C_REG_BIT_CMD_BLOCKED);
 
         if (!(flags & RXON_CARD_DISABLED)) {
-            iwl_write32(priv->trans, CSR_UCODE_DRV_GP1_CLR,
-                        CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
-            iwl_write_direct32(priv->trans, HBUS_TARG_MBX_C,
-                               HBUS_TARG_MBX_C_REG_BIT_CMD_BLOCKED);
+            iwl_write32(priv->trans, CSR_UCODE_DRV_GP1_CLR, CSR_UCODE_DRV_GP1_BIT_CMD_BLOCKED);
+            iwl_write_direct32(priv->trans, HBUS_TARG_MBX_C, HBUS_TARG_MBX_C_REG_BIT_CMD_BLOCKED);
         }
         // TODO: Implement
 //        if (flags & CT_CARD_DISABLED)
@@ -551,8 +542,8 @@ static void iwlagn_rx_missed_beacon_notif(struct iwl_priv *priv,
                         le32_to_cpu(missed_beacon->num_expected_beacons));
 
         // TODO: Implement
-//        if (!test_bit(STATUS_SCANNING, &priv->status))
-//            iwl_init_sensitivity(priv);
+        if (!test_bit(STATUS_SCANNING, &priv->status))
+            iwl_init_sensitivity(priv);
     }
 }
 
@@ -618,6 +609,21 @@ static int iwlagn_set_decrypted_flag(struct iwl_priv *priv,
     return 0;
 }
 
+struct beacon_header {
+    u64 timestamp;
+    u16 beacon_interval;
+    u16 capa_info;
+    
+    
+    
+};
+
+struct ssid_info {
+    u8 ssid_el_id;
+    u8 ssid_len;
+    char ssid[IEEE80211_MAX_SSID_LEN + 1];
+};
+
 // line 622
 static void iwlagn_pass_packet_to_mac80211(struct iwl_priv *priv,
                                            struct ieee80211_hdr *hdr,
@@ -626,10 +632,7 @@ static void iwlagn_pass_packet_to_mac80211(struct iwl_priv *priv,
                                            struct iwl_rx_cmd_buffer *rxb,
                                            struct ieee80211_rx_status *stats)
 {
-//    struct sk_buff *skb;
-//    __le16 fc = hdr->frame_control;
-//    struct iwl_rxon_context *ctx;
-//    unsigned int hdrlen, fraglen;
+    struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
     
     /* We only process data packets if the interface is open */
     if (unlikely(!priv->is_open)) {
@@ -640,51 +643,23 @@ static void iwlagn_pass_packet_to_mac80211(struct iwl_priv *priv,
     /* In case of HW accelerated crypto and bad decryption, drop */
     if (!iwlwifi_mod_params.swcrypto && iwlagn_set_decrypted_flag(priv, hdr, ampdu_status, stats))
         return;
+
+    //void *data = rxb->_page;
+//    struct beacon_header *bh = (struct beacon_header *) data;
+    struct ssid_info *ssid = (struct ssid_info *)(pkt->data + sizeof(struct iwl_rx_mpdu_res_start) + sizeof(*hdr) + 6);
+    ssid->ssid[ssid->ssid_len + 1] = '\0';
     
-    /* Dont use dev_alloc_skb(), we'll have enough headroom once
-     * ieee80211_hdr pulled.
-     */
-//    skb = alloc_skb(128, GFP_ATOMIC);
-//    if (!skb) {
-//        IWL_ERR(priv, "alloc_skb failed\n");
-//        return;
-//    }
-    /* If frame is small enough to fit in skb->head, pull it completely.
-     * If not, only pull ieee80211_hdr so that splice() or TCP coalesce
-     * are more efficient.
-     */
-//    hdrlen = (len <= skb_tailroom(skb)) ? len : sizeof(*hdr);
-//
-//    skb_put_data(skb, hdr, hdrlen);
-//    fraglen = len - hdrlen;
-//
-//    if (fraglen) {
-//        int offset = (void *)hdr + hdrlen -
-//        rxb_addr(rxb) + rxb_offset(rxb);
-//
-//        skb_add_rx_frag(skb, 0, rxb_steal_page(rxb), offset,
-//                        fraglen, rxb->truesize);
-//    }
+    if ((hdr->frame_control & cpu_to_le16(IEEE80211_FCTL_FTYPE | IEEE80211_FCTL_STYPE)) == cpu_to_le16(IEEE80211_FTYPE_MGMT | IEEE80211_STYPE_BEACON)) {
+        IWL_DEBUG_RX(priv, "BEACON => FC: 0x%x; SC: 0x%x; Duration ID: %d; SSID: %d %s(%d)", hdr->frame_control, hdr->seq_ctrl, hdr->duration_id, ssid->ssid_el_id, ssid->ssid, ssid->ssid_len);
+    }
+
     
-    /*
-     * Wake any queues that were stopped due to a passive channel tx
-     * failure. This can happen because the regulatory enforcement in
-     * the device waits for a beacon before allowing transmission,
-     * sometimes even after already having transmitted frames for the
-     * association because the new RXON may reset the information.
-     */
-//    if (unlikely(ieee80211_is_beacon(fc) && priv->passive_no_rx)) {
-//        for_each_context(priv, ctx) {
-//            if (!ether_addr_equal(hdr->addr3,
-//                                  ctx->active.bssid_addr))
-//                continue;
-//            iwlagn_lift_passive_no_rx(priv);
-//        }
-//    }
-//
-//    memcpy(IEEE80211_SKB_RXCB(skb), stats, sizeof(*stats));
-//
-//    ieee80211_rx_napi(priv->hw, NULL, skb, priv->napi);
+    
+    
+    
+    
+    
+    
 
 }
 
@@ -935,7 +910,7 @@ static void iwlagn_rx_noa_notification(struct iwl_priv *priv, struct iwl_rx_cmd_
  * Setup the RX handlers for each of the reply types sent from the uCode
  * to the host.
  */
-void IwlDvmOpMode::iwl_setup_rx_handlers(struct iwl_priv *priv)
+void iwl_setup_rx_handlers(struct iwl_priv *priv)
 {
     void (**handlers)(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb);
 

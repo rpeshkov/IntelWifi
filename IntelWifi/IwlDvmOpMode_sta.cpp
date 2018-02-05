@@ -78,7 +78,7 @@ static void iwl_process_add_sta_resp(struct iwl_priv *priv, struct iwl_rx_packet
     
     IWL_DEBUG_INFO(priv, "Processing response for adding station\n");
     
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     
     switch (add_sta_resp->status) {
         case ADD_STA_SUCCESS_MSK:
@@ -98,7 +98,7 @@ static void iwl_process_add_sta_resp(struct iwl_priv *priv, struct iwl_rx_packet
             break;
     }
     
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
 }
 
 // line 95
@@ -110,7 +110,7 @@ void iwl_add_sta_callback(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
 }
 
 // line 102
-int IwlDvmOpMode::iwl_send_add_sta(struct iwl_priv *priv, struct iwl_addsta_cmd *sta, u8 flags)
+int iwl_send_add_sta(struct iwl_priv *priv, struct iwl_addsta_cmd *sta, u8 flags)
 {
     int ret = 0;
     struct iwl_host_cmd cmd = {
@@ -141,9 +141,9 @@ int IwlDvmOpMode::iwl_send_add_sta(struct iwl_priv *priv, struct iwl_addsta_cmd 
     
     /* debug messages are printed in the handler */
     if (add_sta_resp->status == ADD_STA_SUCCESS_MSK) {
-        IOSimpleLockLock(priv->sta_lock);
+        //IOSimpleLockLock(priv->sta_lock);
         ret = iwl_sta_ucode_activate(priv, sta_id);
-        IOSimpleLockUnlock(priv->sta_lock);
+        //IOSimpleLockUnlock(priv->sta_lock);
     } else {
         ret = -EIO;
     }
@@ -218,7 +218,7 @@ static void iwl_sta_calc_ht_flags(struct iwl_priv *priv, struct ieee80211_sta *s
 }
 
 // line 213
-int IwlDvmOpMode::iwl_sta_update_ht(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct ieee80211_sta *sta)
+int iwl_sta_update_ht(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct ieee80211_sta *sta)
 {
     u8 sta_id = iwl_sta_id(sta);
     __le32 flags, mask;
@@ -229,10 +229,10 @@ int IwlDvmOpMode::iwl_sta_update_ht(struct iwl_priv *priv, struct iwl_rxon_conte
     
     iwl_sta_calc_ht_flags(priv, sta, ctx, &flags, &mask);
     
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     priv->stations[sta_id].sta.station_flags &= ~mask;
     priv->stations[sta_id].sta.station_flags |= flags;
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
     
     memset(&cmd, 0, sizeof(cmd));
     cmd.mode = STA_CONTROL_MODIFY_MSK;
@@ -345,19 +345,19 @@ u8 iwl_prep_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx, const u
 /** line 341
  * iwl_add_station_common -
  */
-int IwlDvmOpMode::iwl_add_station_common(struct iwl_priv *priv, struct iwl_rxon_context *ctx, const u8 *addr,
-                                         bool is_ap, struct ieee80211_sta *sta, u8 *sta_id_r)
+int iwl_add_station_common(struct iwl_priv *priv, struct iwl_rxon_context *ctx, const u8 *addr, bool is_ap,
+                           struct ieee80211_sta *sta, u8 *sta_id_r)
 {
     int ret = 0;
     u8 sta_id;
     struct iwl_addsta_cmd sta_cmd;
     
     *sta_id_r = 0;
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     sta_id = iwl_prep_station(priv, ctx, addr, is_ap, sta);
     if (sta_id == IWL_INVALID_STATION) {
         IWL_ERR(priv, "Unable to prepare station %pM for addition\n", addr);
-        IOSimpleLockUnlock(priv->sta_lock);
+        //IOSimpleLockUnlock(priv->sta_lock);
         return -EINVAL;
     }
     
@@ -368,28 +368,28 @@ int IwlDvmOpMode::iwl_add_station_common(struct iwl_priv *priv, struct iwl_rxon_
      */
     if (priv->stations[sta_id].used & IWL_STA_UCODE_INPROGRESS) {
         IWL_DEBUG_INFO(priv, "STA %d already in process of being added.\n", sta_id);
-        IOSimpleLockUnlock(priv->sta_lock);
+        //IOSimpleLockUnlock(priv->sta_lock);
         return -EEXIST;
     }
     
     if ((priv->stations[sta_id].used & IWL_STA_DRIVER_ACTIVE) && (priv->stations[sta_id].used & IWL_STA_UCODE_ACTIVE)) {
         IWL_DEBUG_ASSOC(priv, "STA %d (%pM) already added, not adding again.\n", sta_id, addr);
-        IOSimpleLockUnlock(priv->sta_lock);
+        //IOSimpleLockUnlock(priv->sta_lock);
         return -EEXIST;
     }
     
     priv->stations[sta_id].used |= IWL_STA_UCODE_INPROGRESS;
     memcpy(&sta_cmd, &priv->stations[sta_id].sta, sizeof(struct iwl_addsta_cmd));
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
     
     /* Add station to device's station table */
     ret = iwl_send_add_sta(priv, &sta_cmd, 0);
     if (ret) {
-        IOSimpleLockLock(priv->sta_lock);
+        //IOSimpleLockLock(priv->sta_lock);
         IWL_ERR(priv, "Adding station %pM failed.\n", priv->stations[sta_id].sta.sta.addr);
         priv->stations[sta_id].used &= ~IWL_STA_DRIVER_ACTIVE;
         priv->stations[sta_id].used &= ~IWL_STA_UCODE_INPROGRESS;
-        IOSimpleLockUnlock(priv->sta_lock);
+        //IOSimpleLockUnlock(priv->sta_lock);
     }
     *sta_id_r = sta_id;
     return ret;
@@ -413,7 +413,7 @@ static void iwl_sta_ucode_deactivate(struct iwl_priv *priv, u8 sta_id)
 }
 
 // line 420
-int IwlDvmOpMode::iwl_send_remove_station(struct iwl_priv *priv, const u8 *addr, int sta_id, bool temporary)
+static int iwl_send_remove_station(struct iwl_priv *priv, const u8 *addr, int sta_id, bool temporary)
 {
     struct iwl_rx_packet *pkt;
     int ret;
@@ -443,9 +443,9 @@ int IwlDvmOpMode::iwl_send_remove_station(struct iwl_priv *priv, const u8 *addr,
     switch (rem_sta_resp->status) {
         case REM_STA_SUCCESS_MSK:
             if (!temporary) {
-                IOSimpleLockLock(priv->sta_lock);
+                //IOSimpleLockLock(priv->sta_lock);
                 iwl_sta_ucode_deactivate(priv, sta_id);
-                IOSimpleLockUnlock(priv->sta_lock);
+                //IOSimpleLockUnlock(priv->sta_lock);
             }
             IWL_DEBUG_ASSOC(priv, "REPLY_REMOVE_STA PASSED\n");
             break;
@@ -463,7 +463,7 @@ int IwlDvmOpMode::iwl_send_remove_station(struct iwl_priv *priv, const u8 *addr,
 /** line 469
  * iwl_remove_station - Remove driver's knowledge of station.
  */
-int IwlDvmOpMode::iwl_remove_station(struct iwl_priv *priv, const u8 sta_id, const u8 *addr)
+int iwl_remove_station(struct iwl_priv *priv, const u8 sta_id, const u8 *addr)
 {
     u8 tid;
     
@@ -482,7 +482,7 @@ int IwlDvmOpMode::iwl_remove_station(struct iwl_priv *priv, const u8 sta_id, con
     if (WARN_ON(sta_id == IWL_INVALID_STATION))
         return -EINVAL;
     
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     
     if (!(priv->stations[sta_id].used & IWL_STA_DRIVER_ACTIVE)) {
         IWL_DEBUG_INFO(priv, "Removing %pM but non DRIVER active\n", addr);
@@ -509,11 +509,11 @@ int IwlDvmOpMode::iwl_remove_station(struct iwl_priv *priv, const u8 sta_id, con
     if (WARN_ON(priv->num_stations < 0))
         priv->num_stations = 0;
     
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
     
     return iwl_send_remove_station(priv, addr, sta_id, false);
 out_err:
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
     return -EINVAL;
 }
 
@@ -532,7 +532,7 @@ void iwl_deactivate_station(struct iwl_priv *priv, const u8 sta_id, const u8 *ad
     if (WARN_ON_ONCE(sta_id == IWL_INVALID_STATION))
         return;
     
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     
     //WARN_ON_ONCE(!(priv->stations[sta_id].used & IWL_STA_DRIVER_ACTIVE));
     
@@ -548,7 +548,7 @@ void iwl_deactivate_station(struct iwl_priv *priv, const u8 sta_id, const u8 *ad
         priv->num_stations = 0;
     
     //spin_unlock_bh(&priv->sta_lock);
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
 }
 
 
@@ -606,14 +606,14 @@ static void iwl_sta_fill_lq(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
  * other than explicit station management would cause this in
  * the ucode, e.g. unassociated RXON.
  */
-void IwlDvmOpMode::iwl_clear_ucode_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+void iwl_clear_ucode_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     int i;
     bool cleared = false;
     
     IWL_DEBUG_INFO(priv, "Clearing ucode stations in driver\n");
     
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     for (i = 0; i < IWLAGN_STATION_COUNT; i++) {
         if (ctx && ctx->ctxid != priv->stations[i].ctxid)
             continue;
@@ -624,7 +624,7 @@ void IwlDvmOpMode::iwl_clear_ucode_stations(struct iwl_priv *priv, struct iwl_rx
             cleared = true;
         }
     }
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
     
     if (!cleared)
         IWL_DEBUG_INFO(priv, "No active stations found to be cleared\n");
@@ -638,7 +638,7 @@ void IwlDvmOpMode::iwl_clear_ucode_stations(struct iwl_priv *priv, struct iwl_rx
  *
  * Function sleeps.
  */
-void IwlDvmOpMode::iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+void iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     struct iwl_addsta_cmd sta_cmd;
     static const struct iwl_link_quality_cmd zero_lq = {};
@@ -654,7 +654,7 @@ void IwlDvmOpMode::iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_c
     }
     
     IWL_DEBUG_ASSOC(priv, "Restoring all known stations ... start.\n");
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     for (i = 0; i < IWLAGN_STATION_COUNT; i++) {
         if (ctx->ctxid != priv->stations[i].ctxid)
             continue;
@@ -679,11 +679,11 @@ void IwlDvmOpMode::iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_c
                 if (memcmp(&lq, &zero_lq, sizeof(lq)))
                     send_lq = true;
             }
-            IOSimpleLockUnlock(priv->sta_lock);
+            //IOSimpleLockUnlock(priv->sta_lock);
             ret = iwl_send_add_sta(priv, &sta_cmd, 0);
             if (ret) {
-                IOSimpleLockLock(priv->sta_lock);
-                IWL_ERR(priv, "Adding station %pM failed.\n", priv->stations[i].sta.sta.addr);
+                //IOSimpleLockLock(priv->sta_lock);
+                IWL_ERR(priv, "Adding station " MAC_FMT " failed.\n", MAC_BYTES(priv->stations[i].sta.sta.addr));
                 priv->stations[i].used &= ~IWL_STA_DRIVER_ACTIVE;
                 priv->stations[i].used &= ~IWL_STA_UCODE_INPROGRESS;
                 continue;
@@ -694,12 +694,12 @@ void IwlDvmOpMode::iwl_restore_stations(struct iwl_priv *priv, struct iwl_rxon_c
              */
             if (send_lq)
                 iwl_send_lq_cmd(priv, ctx, &lq, 0, true);
-            IOSimpleLockLock(priv->sta_lock);
+            //IOSimpleLockLock(priv->sta_lock);
             priv->stations[i].used &= ~IWL_STA_UCODE_INPROGRESS;
         }
     }
     
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
     if (!found)
         IWL_DEBUG_INFO(priv, "Restoring all known stations .... no stations to be restored.\n");
     else
@@ -723,7 +723,7 @@ void iwl_dealloc_bcast_stations(struct iwl_priv *priv)
 {
     int i;
     
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     for (i = 0; i < IWLAGN_STATION_COUNT; i++) {
         if (!(priv->stations[i].used & IWL_STA_BCAST))
             continue;
@@ -735,7 +735,7 @@ void iwl_dealloc_bcast_stations(struct iwl_priv *priv)
         IOFree(priv->stations[i].lq, sizeof(*priv->stations[i].lq));
         priv->stations[i].lq = NULL;
     }
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
 }
 
 
@@ -796,7 +796,7 @@ static bool is_lq_table_valid(struct iwl_priv *priv, struct iwl_rxon_context *ct
  * this case to clear the state indicating that station creation is in
  * progress.
  */
-int IwlDvmOpMode::iwl_send_lq_cmd(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct iwl_link_quality_cmd *lq,
+int iwl_send_lq_cmd(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct iwl_link_quality_cmd *lq,
                                   u8 flags, bool init)
 {
     int ret = 0;
@@ -811,12 +811,12 @@ int IwlDvmOpMode::iwl_send_lq_cmd(struct iwl_priv *priv, struct iwl_rxon_context
         return -EINVAL;
     
     
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     if (!(priv->stations[lq->sta_id].used & IWL_STA_DRIVER_ACTIVE)) {
-        IOSimpleLockUnlock(priv->sta_lock);
+        //IOSimpleLockUnlock(priv->sta_lock);
         return -EINVAL;
     }
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
     
     iwl_dump_lq_cmd(priv, lq);
     if (WARN_ON(init && (cmd.flags & CMD_ASYNC)))
@@ -832,9 +832,9 @@ int IwlDvmOpMode::iwl_send_lq_cmd(struct iwl_priv *priv, struct iwl_rxon_context
     
     if (init) {
         IWL_DEBUG_INFO(priv, "init LQ command complete, clearing sta addition status for sta %d\n", lq->sta_id);
-        IOSimpleLockLock(priv->sta_lock);
+        //IOSimpleLockLock(priv->sta_lock);
         priv->stations[lq->sta_id].used &= ~IWL_STA_UCODE_INPROGRESS;
-        IOSimpleLockUnlock(priv->sta_lock);
+        //IOSimpleLockUnlock(priv->sta_lock);
     }
     return ret;
 }
@@ -867,8 +867,7 @@ iwl_sta_alloc_lq(struct iwl_priv *priv, struct iwl_rxon_context *ctx, u8 sta_id)
  *
  * Function sleeps.
  */
-int IwlDvmOpMode::iwlagn_add_bssid_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx, const u8 *addr,
-                                           u8 *sta_id_r)
+int iwlagn_add_bssid_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx, const u8 *addr, u8 *sta_id_r)
 {
     int ret;
     u8 sta_id;
@@ -886,9 +885,9 @@ int IwlDvmOpMode::iwlagn_add_bssid_station(struct iwl_priv *priv, struct iwl_rxo
     if (sta_id_r)
         *sta_id_r = sta_id;
     
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     priv->stations[sta_id].used |= IWL_STA_LOCAL;
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
     
     /* Set up default rate scaling table in device's station table */
     link_cmd = iwl_sta_alloc_lq(priv, ctx, sta_id);
@@ -901,9 +900,9 @@ int IwlDvmOpMode::iwlagn_add_bssid_station(struct iwl_priv *priv, struct iwl_rxo
     if (ret)
         IWL_ERR(priv, "Link quality command failed (%d)\n", ret);
     
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     priv->stations[sta_id].lq = link_cmd;
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
     
     return 0;
 }
@@ -917,9 +916,7 @@ int IwlDvmOpMode::iwlagn_add_bssid_station(struct iwl_priv *priv, struct iwl_rxo
  * commands.
  */
 
-int IwlDvmOpMode::iwl_send_static_wepkey_cmd(struct iwl_priv *priv,
-                                      struct iwl_rxon_context *ctx,
-                                      bool send_if_empty)
+static int iwl_send_static_wepkey_cmd(struct iwl_priv *priv, struct iwl_rxon_context *ctx, bool send_if_empty)
 {
     int i, not_empty = 0;
     u8 buff[sizeof(struct iwl_wep_cmd) + sizeof(struct iwl_wep_key) * WEP_KEYS_MAX];
@@ -932,8 +929,7 @@ int IwlDvmOpMode::iwl_send_static_wepkey_cmd(struct iwl_priv *priv,
     
     might_sleep();
     
-    memset(wep_cmd, 0, cmd_size +
-           (sizeof(struct iwl_wep_key) * WEP_KEYS_MAX));
+    memset(wep_cmd, 0, cmd_size + (sizeof(struct iwl_wep_key) * WEP_KEYS_MAX));
     
     for (i = 0; i < WEP_KEYS_MAX ; i++) {
         wep_cmd->key[i].key_index = i;
@@ -962,8 +958,7 @@ int IwlDvmOpMode::iwl_send_static_wepkey_cmd(struct iwl_priv *priv,
 }
 
 // line 1001
-int IwlDvmOpMode::iwl_restore_default_wep_keys(struct iwl_priv *priv,
-                                 struct iwl_rxon_context *ctx)
+int iwl_restore_default_wep_keys(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     //lockdep_assert_held(&priv->mutex);
     
@@ -971,7 +966,7 @@ int IwlDvmOpMode::iwl_restore_default_wep_keys(struct iwl_priv *priv,
 }
 
 // line 1009
-int IwlDvmOpMode::iwl_remove_default_wep_key(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
+int iwl_remove_default_wep_key(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
                                              struct ieee80211_key_conf *keyconf)
 {
     int ret;
@@ -993,7 +988,7 @@ int IwlDvmOpMode::iwl_remove_default_wep_key(struct iwl_priv *priv, struct iwl_r
 }
 
 // line 1034
-int IwlDvmOpMode::iwl_set_default_wep_key(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
+int iwl_set_default_wep_key(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
                                           struct ieee80211_key_conf *keyconf)
 {
     int ret;
@@ -1051,16 +1046,16 @@ static u8 iwlagn_key_sta_id(struct iwl_priv *priv, struct ieee80211_vif *vif, st
 
 
 // line 1097
-int IwlDvmOpMode::iwlagn_send_sta_key(struct iwl_priv *priv, struct ieee80211_key_conf *keyconf, u8 sta_id,
+static int iwlagn_send_sta_key(struct iwl_priv *priv, struct ieee80211_key_conf *keyconf, u8 sta_id,
                                       u32 tkip_iv32, u16 *tkip_p1k, u32 cmd_flags)
 {
     __le16 key_flags;
     struct iwl_addsta_cmd sta_cmd;
     int i;
     
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     memcpy(&sta_cmd, &priv->stations[sta_id].sta, sizeof(sta_cmd));
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
     
     key_flags = cpu_to_le16(keyconf->keyidx << STA_KEY_FLG_KEYID_POS);
     key_flags |= STA_KEY_FLG_MAP_KEY_MSK;
@@ -1102,9 +1097,8 @@ int IwlDvmOpMode::iwlagn_send_sta_key(struct iwl_priv *priv, struct ieee80211_ke
 }
 
 // line 1150
-void IwlDvmOpMode::iwl_update_tkip_key(struct iwl_priv *priv, struct ieee80211_vif *vif,
-                                       struct ieee80211_key_conf *keyconf, struct ieee80211_sta *sta, u32 iv32,
-                                       u16 *phase1key)
+void iwl_update_tkip_key(struct iwl_priv *priv, struct ieee80211_vif *vif, struct ieee80211_key_conf *keyconf,
+                         struct ieee80211_sta *sta, u32 iv32, u16 *phase1key)
 {
     u8 sta_id = iwlagn_key_sta_id(priv, vif, sta);
     
@@ -1121,7 +1115,7 @@ void IwlDvmOpMode::iwl_update_tkip_key(struct iwl_priv *priv, struct ieee80211_v
 }
 
 // line 1170
-int IwlDvmOpMode::iwl_remove_dynamic_key(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
+int iwl_remove_dynamic_key(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
                            struct ieee80211_key_conf *keyconf,
                            struct ieee80211_sta *sta)
 {
@@ -1133,11 +1127,11 @@ int IwlDvmOpMode::iwl_remove_dynamic_key(struct iwl_priv *priv, struct iwl_rxon_
     if (sta_id == IWL_INVALID_STATION)
         return -ENOENT;
     
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     memcpy(&sta_cmd, &priv->stations[sta_id].sta, sizeof(sta_cmd));
     if (!(priv->stations[sta_id].used & IWL_STA_UCODE_ACTIVE))
         sta_id = IWL_INVALID_STATION;
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
     
     if (sta_id == IWL_INVALID_STATION)
         return 0;
@@ -1166,7 +1160,7 @@ int IwlDvmOpMode::iwl_remove_dynamic_key(struct iwl_priv *priv, struct iwl_rxon_
 }
 
 // line 1218
-int IwlDvmOpMode::iwl_set_dynamic_key(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
+int iwl_set_dynamic_key(struct iwl_priv *priv, struct iwl_rxon_context *ctx,
                                       struct ieee80211_key_conf *keyconf, struct ieee80211_sta *sta)
 {
     struct ieee80211_key_seq seq;
@@ -1229,22 +1223,22 @@ int IwlDvmOpMode::iwl_set_dynamic_key(struct iwl_priv *priv, struct iwl_rxon_con
  * and marks it driver active, so that it will be restored to the
  * device at the next best time.
  */
-int IwlDvmOpMode::iwlagn_alloc_bcast_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+int iwlagn_alloc_bcast_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     struct iwl_link_quality_cmd *link_cmd;
     u8 sta_id;
     
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     sta_id = iwl_prep_station(priv, ctx, iwl_bcast_addr, false, NULL);
     if (sta_id == IWL_INVALID_STATION) {
         IWL_ERR(priv, "Unable to prepare broadcast station\n");
-        IOSimpleLockUnlock(priv->sta_lock);
+        //IOSimpleLockUnlock(priv->sta_lock);
         return -EINVAL;
     }
     
     priv->stations[sta_id].used |= IWL_STA_DRIVER_ACTIVE;
     priv->stations[sta_id].used |= IWL_STA_BCAST;
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
     
     link_cmd = iwl_sta_alloc_lq(priv, ctx, sta_id);
     if (!link_cmd) {
@@ -1252,9 +1246,9 @@ int IwlDvmOpMode::iwlagn_alloc_bcast_station(struct iwl_priv *priv, struct iwl_r
         return -ENOMEM;
     }
 
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     priv->stations[sta_id].lq = link_cmd;
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
     
     return 0;
 }
@@ -1265,7 +1259,7 @@ int IwlDvmOpMode::iwlagn_alloc_bcast_station(struct iwl_priv *priv, struct iwl_r
  * Only used by iwlagn. Placed here to have all bcast station management
  * code together.
  */
-int IwlDvmOpMode::iwl_update_bcast_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+int iwl_update_bcast_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     struct iwl_link_quality_cmd *link_cmd;
     u8 sta_id = ctx->bcast_sta_id;
@@ -1276,13 +1270,13 @@ int IwlDvmOpMode::iwl_update_bcast_station(struct iwl_priv *priv, struct iwl_rxo
         return -ENOMEM;
     }
     
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     if (priv->stations[sta_id].lq)
         IOFree(priv->stations[sta_id].lq, sizeof(struct iwl_link_quality_cmd));
     else
         IWL_DEBUG_INFO(priv, "Bcast station rate scaling has not been initialized yet.\n");
     priv->stations[sta_id].lq = link_cmd;
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
     
     return 0;
 }

@@ -34,7 +34,7 @@ struct statistics_general_data {
 };
 
 // line 93
-int IwlDvmOpMode::iwl_send_calib_results(struct iwl_priv *priv)
+int iwl_send_calib_results(struct iwl_priv *priv)
 {
     struct iwl_host_cmd hcmd = {
         .id = REPLY_PHY_CALIBRATION_CMD,
@@ -49,8 +49,7 @@ int IwlDvmOpMode::iwl_send_calib_results(struct iwl_priv *priv)
         hcmd.dataflags[0] = IWL_HCMD_DFL_NOCOPY;
         ret = iwl_dvm_send_cmd(priv, &hcmd);
         if (ret) {
-            IWL_ERR(priv, "Error %d on calib cmd %d\n",
-                    ret, res->hdr.op_code);
+            IWL_ERR(priv, "Error %d on calib cmd %d\n", ret, res->hdr.op_code);
             return ret;
         }
     }
@@ -61,8 +60,7 @@ int IwlDvmOpMode::iwl_send_calib_results(struct iwl_priv *priv)
 
 
 // line 117
-int IwlDvmOpMode::iwl_calib_set(struct iwl_priv *priv,
-                  const struct iwl_calib_hdr *cmd, int len)
+int iwl_calib_set(struct iwl_priv *priv, const struct iwl_calib_hdr *cmd, int len)
 {
     struct iwl_calib_result *res, *tmp;
     vm_size_t alloc_size = sizeof(*res) + len - sizeof(struct iwl_calib_hdr);
@@ -88,35 +86,22 @@ int IwlDvmOpMode::iwl_calib_set(struct iwl_priv *priv,
 }
 
 // line 430
-static void iwl_prepare_legacy_sensitivity_tbl(struct iwl_priv *priv,
-                                               struct iwl_sensitivity_data *data,
-                                               __le16 *tbl)
+static void iwl_prepare_legacy_sensitivity_tbl(struct iwl_priv *priv, struct iwl_sensitivity_data *data, __le16 *tbl)
 {
-    tbl[HD_AUTO_CORR32_X4_TH_ADD_MIN_INDEX] =
-    cpu_to_le16((u16)data->auto_corr_ofdm);
-    tbl[HD_AUTO_CORR32_X4_TH_ADD_MIN_MRC_INDEX] =
-    cpu_to_le16((u16)data->auto_corr_ofdm_mrc);
-    tbl[HD_AUTO_CORR32_X1_TH_ADD_MIN_INDEX] =
-    cpu_to_le16((u16)data->auto_corr_ofdm_x1);
-    tbl[HD_AUTO_CORR32_X1_TH_ADD_MIN_MRC_INDEX] =
-    cpu_to_le16((u16)data->auto_corr_ofdm_mrc_x1);
+    tbl[HD_AUTO_CORR32_X4_TH_ADD_MIN_INDEX] = cpu_to_le16((u16)data->auto_corr_ofdm);
+    tbl[HD_AUTO_CORR32_X4_TH_ADD_MIN_MRC_INDEX] = cpu_to_le16((u16)data->auto_corr_ofdm_mrc);
+    tbl[HD_AUTO_CORR32_X1_TH_ADD_MIN_INDEX] = cpu_to_le16((u16)data->auto_corr_ofdm_x1);
+    tbl[HD_AUTO_CORR32_X1_TH_ADD_MIN_MRC_INDEX] = cpu_to_le16((u16)data->auto_corr_ofdm_mrc_x1);
     
-    tbl[HD_AUTO_CORR40_X4_TH_ADD_MIN_INDEX] =
-    cpu_to_le16((u16)data->auto_corr_cck);
-    tbl[HD_AUTO_CORR40_X4_TH_ADD_MIN_MRC_INDEX] =
-    cpu_to_le16((u16)data->auto_corr_cck_mrc);
+    tbl[HD_AUTO_CORR40_X4_TH_ADD_MIN_INDEX] = cpu_to_le16((u16)data->auto_corr_cck);
+    tbl[HD_AUTO_CORR40_X4_TH_ADD_MIN_MRC_INDEX] = cpu_to_le16((u16)data->auto_corr_cck_mrc);
     
-    tbl[HD_MIN_ENERGY_CCK_DET_INDEX] =
-    cpu_to_le16((u16)data->nrg_th_cck);
-    tbl[HD_MIN_ENERGY_OFDM_DET_INDEX] =
-    cpu_to_le16((u16)data->nrg_th_ofdm);
+    tbl[HD_MIN_ENERGY_CCK_DET_INDEX] = cpu_to_le16((u16)data->nrg_th_cck);
+    tbl[HD_MIN_ENERGY_OFDM_DET_INDEX] = cpu_to_le16((u16)data->nrg_th_ofdm);
     
-    tbl[HD_BARKER_CORR_TH_ADD_MIN_INDEX] =
-    cpu_to_le16(data->barker_corr_th_min);
-    tbl[HD_BARKER_CORR_TH_ADD_MIN_MRC_INDEX] =
-    cpu_to_le16(data->barker_corr_th_min_mrc);
-    tbl[HD_OFDM_ENERGY_TH_IN_INDEX] =
-    cpu_to_le16(data->nrg_th_cca);
+    tbl[HD_BARKER_CORR_TH_ADD_MIN_INDEX] = cpu_to_le16(data->barker_corr_th_min);
+    tbl[HD_BARKER_CORR_TH_ADD_MIN_MRC_INDEX] = cpu_to_le16(data->barker_corr_th_min_mrc);
+    tbl[HD_OFDM_ENERGY_TH_IN_INDEX] = cpu_to_le16(data->nrg_th_cca);
     
     IWL_DEBUG_CALIB(priv, "ofdm: ac %u mrc %u x1 %u mrc_x1 %u thresh %u\n",
                     data->auto_corr_ofdm, data->auto_corr_ofdm_mrc,
@@ -131,7 +116,7 @@ static void iwl_prepare_legacy_sensitivity_tbl(struct iwl_priv *priv,
 /* line 470
  * Prepare a SENSITIVITY_CMD, send to uCode if values have changed
  */
-int IwlDvmOpMode::iwl_sensitivity_write(struct iwl_priv *priv)
+static int iwl_sensitivity_write(struct iwl_priv *priv)
 {
     struct iwl_sensitivity_cmd cmd;
     struct iwl_sensitivity_data *data = NULL;
@@ -152,15 +137,13 @@ int IwlDvmOpMode::iwl_sensitivity_write(struct iwl_priv *priv)
     cmd.control = SENSITIVITY_CMD_CONTROL_WORK_TABLE;
     
     /* Don't send command to uCode if nothing has changed */
-    if (!memcmp(&cmd.table[0], &(priv->sensitivity_tbl[0]),
-                sizeof(u16)*HD_TABLE_SIZE)) {
+    if (!memcmp(&cmd.table[0], &(priv->sensitivity_tbl[0]), sizeof(u16)*HD_TABLE_SIZE)) {
         IWL_DEBUG_CALIB(priv, "No change in SENSITIVITY_CMD\n");
         return 0;
     }
     
     /* Copy table for comparison next time */
-    memcpy(&(priv->sensitivity_tbl[0]), &(cmd.table[0]),
-           sizeof(u16)*HD_TABLE_SIZE);
+    memcpy(&(priv->sensitivity_tbl[0]), &(cmd.table[0]), sizeof(u16)*HD_TABLE_SIZE);
     
     return iwl_dvm_send_cmd(priv, &cmd_out);
 }
@@ -168,7 +151,7 @@ int IwlDvmOpMode::iwl_sensitivity_write(struct iwl_priv *priv)
 /* line 505
  * Prepare a SENSITIVITY_CMD, send to uCode if values have changed
  */
-int IwlDvmOpMode::iwl_enhance_sensitivity_write(struct iwl_priv *priv)
+static int iwl_enhance_sensitivity_write(struct iwl_priv *priv)
 {
     struct iwl_enhance_sensitivity_cmd cmd;
     struct iwl_sensitivity_data *data = NULL;
@@ -186,71 +169,45 @@ int IwlDvmOpMode::iwl_enhance_sensitivity_write(struct iwl_priv *priv)
     iwl_prepare_legacy_sensitivity_tbl(priv, data, &cmd.enhance_table[0]);
     
     if (priv->lib->hd_v2) {
-        cmd.enhance_table[HD_INA_NON_SQUARE_DET_OFDM_INDEX] =
-        HD_INA_NON_SQUARE_DET_OFDM_DATA_V2;
-        cmd.enhance_table[HD_INA_NON_SQUARE_DET_CCK_INDEX] =
-        HD_INA_NON_SQUARE_DET_CCK_DATA_V2;
-        cmd.enhance_table[HD_CORR_11_INSTEAD_OF_CORR_9_EN_INDEX] =
-        HD_CORR_11_INSTEAD_OF_CORR_9_EN_DATA_V2;
-        cmd.enhance_table[HD_OFDM_NON_SQUARE_DET_SLOPE_MRC_INDEX] =
-        HD_OFDM_NON_SQUARE_DET_SLOPE_MRC_DATA_V2;
-        cmd.enhance_table[HD_OFDM_NON_SQUARE_DET_INTERCEPT_MRC_INDEX] =
-        HD_OFDM_NON_SQUARE_DET_INTERCEPT_MRC_DATA_V2;
-        cmd.enhance_table[HD_OFDM_NON_SQUARE_DET_SLOPE_INDEX] =
-        HD_OFDM_NON_SQUARE_DET_SLOPE_DATA_V2;
-        cmd.enhance_table[HD_OFDM_NON_SQUARE_DET_INTERCEPT_INDEX] =
-        HD_OFDM_NON_SQUARE_DET_INTERCEPT_DATA_V2;
-        cmd.enhance_table[HD_CCK_NON_SQUARE_DET_SLOPE_MRC_INDEX] =
-        HD_CCK_NON_SQUARE_DET_SLOPE_MRC_DATA_V2;
-        cmd.enhance_table[HD_CCK_NON_SQUARE_DET_INTERCEPT_MRC_INDEX] =
-        HD_CCK_NON_SQUARE_DET_INTERCEPT_MRC_DATA_V2;
-        cmd.enhance_table[HD_CCK_NON_SQUARE_DET_SLOPE_INDEX] =
-        HD_CCK_NON_SQUARE_DET_SLOPE_DATA_V2;
-        cmd.enhance_table[HD_CCK_NON_SQUARE_DET_INTERCEPT_INDEX] =
-        HD_CCK_NON_SQUARE_DET_INTERCEPT_DATA_V2;
+        cmd.enhance_table[HD_INA_NON_SQUARE_DET_OFDM_INDEX] = HD_INA_NON_SQUARE_DET_OFDM_DATA_V2;
+        cmd.enhance_table[HD_INA_NON_SQUARE_DET_CCK_INDEX] = HD_INA_NON_SQUARE_DET_CCK_DATA_V2;
+        cmd.enhance_table[HD_CORR_11_INSTEAD_OF_CORR_9_EN_INDEX] = HD_CORR_11_INSTEAD_OF_CORR_9_EN_DATA_V2;
+        cmd.enhance_table[HD_OFDM_NON_SQUARE_DET_SLOPE_MRC_INDEX] = HD_OFDM_NON_SQUARE_DET_SLOPE_MRC_DATA_V2;
+        cmd.enhance_table[HD_OFDM_NON_SQUARE_DET_INTERCEPT_MRC_INDEX] = HD_OFDM_NON_SQUARE_DET_INTERCEPT_MRC_DATA_V2;
+        cmd.enhance_table[HD_OFDM_NON_SQUARE_DET_SLOPE_INDEX] = HD_OFDM_NON_SQUARE_DET_SLOPE_DATA_V2;
+        cmd.enhance_table[HD_OFDM_NON_SQUARE_DET_INTERCEPT_INDEX] = HD_OFDM_NON_SQUARE_DET_INTERCEPT_DATA_V2;
+        cmd.enhance_table[HD_CCK_NON_SQUARE_DET_SLOPE_MRC_INDEX] = HD_CCK_NON_SQUARE_DET_SLOPE_MRC_DATA_V2;
+        cmd.enhance_table[HD_CCK_NON_SQUARE_DET_INTERCEPT_MRC_INDEX] = HD_CCK_NON_SQUARE_DET_INTERCEPT_MRC_DATA_V2;
+        cmd.enhance_table[HD_CCK_NON_SQUARE_DET_SLOPE_INDEX] = HD_CCK_NON_SQUARE_DET_SLOPE_DATA_V2;
+        cmd.enhance_table[HD_CCK_NON_SQUARE_DET_INTERCEPT_INDEX] = HD_CCK_NON_SQUARE_DET_INTERCEPT_DATA_V2;
     } else {
-        cmd.enhance_table[HD_INA_NON_SQUARE_DET_OFDM_INDEX] =
-        HD_INA_NON_SQUARE_DET_OFDM_DATA_V1;
-        cmd.enhance_table[HD_INA_NON_SQUARE_DET_CCK_INDEX] =
-        HD_INA_NON_SQUARE_DET_CCK_DATA_V1;
-        cmd.enhance_table[HD_CORR_11_INSTEAD_OF_CORR_9_EN_INDEX] =
-        HD_CORR_11_INSTEAD_OF_CORR_9_EN_DATA_V1;
-        cmd.enhance_table[HD_OFDM_NON_SQUARE_DET_SLOPE_MRC_INDEX] =
-        HD_OFDM_NON_SQUARE_DET_SLOPE_MRC_DATA_V1;
-        cmd.enhance_table[HD_OFDM_NON_SQUARE_DET_INTERCEPT_MRC_INDEX] =
-        HD_OFDM_NON_SQUARE_DET_INTERCEPT_MRC_DATA_V1;
-        cmd.enhance_table[HD_OFDM_NON_SQUARE_DET_SLOPE_INDEX] =
-        HD_OFDM_NON_SQUARE_DET_SLOPE_DATA_V1;
-        cmd.enhance_table[HD_OFDM_NON_SQUARE_DET_INTERCEPT_INDEX] =
-        HD_OFDM_NON_SQUARE_DET_INTERCEPT_DATA_V1;
-        cmd.enhance_table[HD_CCK_NON_SQUARE_DET_SLOPE_MRC_INDEX] =
-        HD_CCK_NON_SQUARE_DET_SLOPE_MRC_DATA_V1;
-        cmd.enhance_table[HD_CCK_NON_SQUARE_DET_INTERCEPT_MRC_INDEX] =
-        HD_CCK_NON_SQUARE_DET_INTERCEPT_MRC_DATA_V1;
-        cmd.enhance_table[HD_CCK_NON_SQUARE_DET_SLOPE_INDEX] =
-        HD_CCK_NON_SQUARE_DET_SLOPE_DATA_V1;
-        cmd.enhance_table[HD_CCK_NON_SQUARE_DET_INTERCEPT_INDEX] =
-        HD_CCK_NON_SQUARE_DET_INTERCEPT_DATA_V1;
+        cmd.enhance_table[HD_INA_NON_SQUARE_DET_OFDM_INDEX] = HD_INA_NON_SQUARE_DET_OFDM_DATA_V1;
+        cmd.enhance_table[HD_INA_NON_SQUARE_DET_CCK_INDEX] = HD_INA_NON_SQUARE_DET_CCK_DATA_V1;
+        cmd.enhance_table[HD_CORR_11_INSTEAD_OF_CORR_9_EN_INDEX] = HD_CORR_11_INSTEAD_OF_CORR_9_EN_DATA_V1;
+        cmd.enhance_table[HD_OFDM_NON_SQUARE_DET_SLOPE_MRC_INDEX] = HD_OFDM_NON_SQUARE_DET_SLOPE_MRC_DATA_V1;
+        cmd.enhance_table[HD_OFDM_NON_SQUARE_DET_INTERCEPT_MRC_INDEX] = HD_OFDM_NON_SQUARE_DET_INTERCEPT_MRC_DATA_V1;
+        cmd.enhance_table[HD_OFDM_NON_SQUARE_DET_SLOPE_INDEX] = HD_OFDM_NON_SQUARE_DET_SLOPE_DATA_V1;
+        cmd.enhance_table[HD_OFDM_NON_SQUARE_DET_INTERCEPT_INDEX] = HD_OFDM_NON_SQUARE_DET_INTERCEPT_DATA_V1;
+        cmd.enhance_table[HD_CCK_NON_SQUARE_DET_SLOPE_MRC_INDEX] = HD_CCK_NON_SQUARE_DET_SLOPE_MRC_DATA_V1;
+        cmd.enhance_table[HD_CCK_NON_SQUARE_DET_INTERCEPT_MRC_INDEX] = HD_CCK_NON_SQUARE_DET_INTERCEPT_MRC_DATA_V1;
+        cmd.enhance_table[HD_CCK_NON_SQUARE_DET_SLOPE_INDEX] = HD_CCK_NON_SQUARE_DET_SLOPE_DATA_V1;
+        cmd.enhance_table[HD_CCK_NON_SQUARE_DET_INTERCEPT_INDEX] = HD_CCK_NON_SQUARE_DET_INTERCEPT_DATA_V1;
     }
     
     /* Update uCode's "work" table, and copy it to DSP */
     cmd.control = SENSITIVITY_CMD_CONTROL_WORK_TABLE;
     
     /* Don't send command to uCode if nothing has changed */
-    if (!memcmp(&cmd.enhance_table[0], &(priv->sensitivity_tbl[0]),
-                sizeof(u16)*HD_TABLE_SIZE) &&
-        !memcmp(&cmd.enhance_table[HD_INA_NON_SQUARE_DET_OFDM_INDEX],
-                &(priv->enhance_sensitivity_tbl[0]),
+    if (!memcmp(&cmd.enhance_table[0], &(priv->sensitivity_tbl[0]), sizeof(u16)*HD_TABLE_SIZE) &&
+        !memcmp(&cmd.enhance_table[HD_INA_NON_SQUARE_DET_OFDM_INDEX], &(priv->enhance_sensitivity_tbl[0]),
                 sizeof(u16)*ENHANCE_HD_TABLE_ENTRIES)) {
             IWL_DEBUG_CALIB(priv, "No change in SENSITIVITY_CMD\n");
             return 0;
         }
     
     /* Copy table for comparison next time */
-    memcpy(&(priv->sensitivity_tbl[0]), &(cmd.enhance_table[0]),
-           sizeof(u16)*HD_TABLE_SIZE);
-    memcpy(&(priv->enhance_sensitivity_tbl[0]),
-           &(cmd.enhance_table[HD_INA_NON_SQUARE_DET_OFDM_INDEX]),
+    memcpy(&(priv->sensitivity_tbl[0]), &(cmd.enhance_table[0]), sizeof(u16)*HD_TABLE_SIZE);
+    memcpy(&(priv->enhance_sensitivity_tbl[0]), &(cmd.enhance_table[HD_INA_NON_SQUARE_DET_OFDM_INDEX]),
            sizeof(u16)*ENHANCE_HD_TABLE_ENTRIES);
     
     return iwl_dvm_send_cmd(priv, &cmd_out);
@@ -258,7 +215,7 @@ int IwlDvmOpMode::iwl_enhance_sensitivity_write(struct iwl_priv *priv)
 
 
 // line 594
-void IwlDvmOpMode::iwl_init_sensitivity(struct iwl_priv *priv)
+void iwl_init_sensitivity(struct iwl_priv *priv)
 {
     int ret = 0;
     int i;
@@ -318,16 +275,13 @@ void IwlDvmOpMode::iwl_init_sensitivity(struct iwl_priv *priv)
 
 
 // line 1098
-void IwlDvmOpMode::iwl_reset_run_time_calib(struct iwl_priv *priv)
+void iwl_reset_run_time_calib(struct iwl_priv *priv)
 {
     int i;
-    memset(&(priv->sensitivity_data), 0,
-           sizeof(struct iwl_sensitivity_data));
-    memset(&(priv->chain_noise_data), 0,
-           sizeof(struct iwl_chain_noise_data));
+    memset(&(priv->sensitivity_data), 0, sizeof(struct iwl_sensitivity_data));
+    memset(&(priv->chain_noise_data), 0, sizeof(struct iwl_chain_noise_data));
     for (i = 0; i < NUM_RX_CHAINS; i++)
-        priv->chain_noise_data.delta_gain_code[i] =
-        CHAIN_NOISE_DELTA_GAIN_INIT_VAL;
+        priv->chain_noise_data.delta_gain_code[i] = CHAIN_NOISE_DELTA_GAIN_INIT_VAL;
     
     /* Ask for statistics now, the uCode will send notification
      * periodically after association */

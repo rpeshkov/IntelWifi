@@ -416,8 +416,7 @@ void IntelWifi::iwl_pcie_apm_stop(struct iwl_trans *trans, bool op_mode_leave)
      * Clear "initialization complete" bit to move adapter from
      * D0A* (powered-up Active) --> D0U* (Uninitialized) state.
      */
-    iwl_clear_bit(trans, CSR_GP_CNTRL,
-                      CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
+    iwl_clear_bit(trans, CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_INIT_DONE);
 }
 
 // line 505
@@ -427,9 +426,9 @@ int IntelWifi::iwl_pcie_nic_init(struct iwl_trans *trans)
     int ret;
     
     /* nic_init */
-    IOSimpleLockLock(trans_pcie->irq_lock);
+    //IOSimpleLockLock(trans_pcie->irq_lock);
     ret = iwl_pcie_apm_init(trans);
-    IOSimpleLockUnlock(trans_pcie->irq_lock);
+    //IOSimpleLockUnlock(trans_pcie->irq_lock);
     
     if (ret)
         return ret;
@@ -496,15 +495,13 @@ int iwl_pcie_prepare_card_hw(struct iwl_trans *trans)
     if (ret >= 0)
         return 0;
     
-    iwl_set_bit(trans, CSR_DBG_LINK_PWR_MGMT_REG,
-                    CSR_RESET_LINK_PWR_MGMT_DISABLED);
+    iwl_set_bit(trans, CSR_DBG_LINK_PWR_MGMT_REG, CSR_RESET_LINK_PWR_MGMT_DISABLED);
     
     IODelay(2000);
     
     for (iter = 0; iter < 10; iter++) {
         /* If HW is not ready, prepare the conditions to check again */
-        iwl_set_bit(trans, CSR_HW_IF_CONFIG_REG,
-                        CSR_HW_IF_CONFIG_REG_PREPARE);
+        iwl_set_bit(trans, CSR_HW_IF_CONFIG_REG, CSR_HW_IF_CONFIG_REG_PREPARE);
         
         do {
             ret = iwl_pcie_set_hw_ready(trans);
@@ -764,20 +761,16 @@ static int iwl_pcie_load_cpu_sections(struct iwl_trans *trans,
 
 
 // line 826
-void IntelWifi::iwl_pcie_apply_destination(struct iwl_trans *trans)
+void iwl_pcie_apply_destination(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     const struct iwl_fw_dbg_dest_tlv *dest = trans->dbg_dest_tlv;
     int i;
     
     if (dest->version)
-        IWL_ERR(trans,
-                "DBG DEST version is %d - expect issues\n",
-                dest->version);
+        IWL_ERR(trans, "DBG DEST version is %d - expect issues\n", dest->version);
     
-    IWL_INFO(trans, "Applying debug destination %s\n",
-             get_fw_dbg_mode_string(dest->monitor_mode));
-    
+    IWL_INFO(trans, "Applying debug destination %s\n", get_fw_dbg_mode_string(dest->monitor_mode));
     
     if (dest->monitor_mode == EXTERNAL_MODE) {
         // TODO: Implement
@@ -821,34 +814,26 @@ void IntelWifi::iwl_pcie_apply_destination(struct iwl_trans *trans)
         }
     }
     
-    // TODO: Implement
 monitor:
     if (dest->monitor_mode == EXTERNAL_MODE && trans_pcie->fw_mon_size) {
-        iwl_write_prph(trans, le32_to_cpu(dest->base_reg),
-                       (u32)(trans_pcie->fw_mon_phys >> dest->base_shift));
+        iwl_write_prph(trans, le32_to_cpu(dest->base_reg), (u32)(trans_pcie->fw_mon_phys >> dest->base_shift));
         if (trans->cfg->device_family >= IWL_DEVICE_FAMILY_8000)
             iwl_write_prph(trans, le32_to_cpu(dest->end_reg),
-                           (u32)((trans_pcie->fw_mon_phys +
-                            trans_pcie->fw_mon_size - 256) >>
-                           dest->end_shift));
+                           (u32)((trans_pcie->fw_mon_phys + trans_pcie->fw_mon_size - 256) >> dest->end_shift));
         else
             iwl_write_prph(trans, le32_to_cpu(dest->end_reg),
-                           (u32)((trans_pcie->fw_mon_phys +
-                            trans_pcie->fw_mon_size) >>
-                           dest->end_shift));
+                           (u32)((trans_pcie->fw_mon_phys + trans_pcie->fw_mon_size) >> dest->end_shift));
     }
 }
 
 // line 900
-int IntelWifi::iwl_pcie_load_given_ucode(struct iwl_trans *trans,
-                                         const struct fw_img *image)
+static int iwl_pcie_load_given_ucode(struct iwl_trans *trans, const struct fw_img *image)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     int ret = 0;
     int first_ucode_section;
     
-    IWL_DEBUG_FW(trans, "working with %s CPU\n",
-                 image->is_dual_cpus ? "Dual" : "Single");
+    IWL_DEBUG_FW(trans, "working with %s CPU\n", image->is_dual_cpus ? "Dual" : "Single");
     
     /* load to FW the binary non secured sections of CPU1 */
     ret = iwl_pcie_load_cpu_sections(trans, image, 1, &first_ucode_section);
@@ -870,8 +855,7 @@ int IntelWifi::iwl_pcie_load_given_ucode(struct iwl_trans *trans,
     
     /* supported for 7000 only for the moment */
     
-    if (iwlwifi_mod_params.fw_monitor &&
-        trans->cfg->device_family == IWL_DEVICE_FAMILY_7000) {
+    if (iwlwifi_mod_params.fw_monitor && trans->cfg->device_family == IWL_DEVICE_FAMILY_7000) {
         // TODO: Implement
         //iwl_pcie_alloc_fw_monitor(trans, 0);
 
@@ -892,20 +876,17 @@ int IntelWifi::iwl_pcie_load_given_ucode(struct iwl_trans *trans,
 }
 
 // line 952
-int IntelWifi::iwl_pcie_load_given_ucode_8000(struct iwl_trans *trans,
-                                              const struct fw_img *image)
+static int iwl_pcie_load_given_ucode_8000(struct iwl_trans *trans, const struct fw_img *image)
 {
     int ret = 0;
     int first_ucode_section;
     
-    IWL_DEBUG_FW(trans, "working with %s CPU\n",
-                 image->is_dual_cpus ? "Dual" : "Single");
+    IWL_DEBUG_FW(trans, "working with %s CPU\n", image->is_dual_cpus ? "Dual" : "Single");
     
     if (trans->dbg_dest_tlv)
         iwl_pcie_apply_destination(trans);
     
-    IWL_DEBUG_POWER(trans, "Original WFPM value = 0x%08X\n",
-                    iwl_read_prph(trans, WFPM_GP2));
+    IWL_DEBUG_POWER(trans, "Original WFPM value = 0x%08X\n", iwl_read_prph(trans, WFPM_GP2));
     
     /*
      * Set default value. On resume reading the values that were
@@ -919,18 +900,16 @@ int IntelWifi::iwl_pcie_load_given_ucode_8000(struct iwl_trans *trans,
     iwl_write_prph(trans, RELEASE_CPU_RESET, RELEASE_CPU_RESET_BIT);
     
     /* load to FW the binary Secured sections of CPU1 */
-    ret = iwl_pcie_load_cpu_sections_8000(trans, image, 1,
-                                          &first_ucode_section);
+    ret = iwl_pcie_load_cpu_sections_8000(trans, image, 1, &first_ucode_section);
     if (ret)
         return ret;
     
     /* load to FW the binary sections of CPU2 */
-    return iwl_pcie_load_cpu_sections_8000(trans, image, 2,
-                                           &first_ucode_section);
+    return iwl_pcie_load_cpu_sections_8000(trans, image, 2, &first_ucode_section);
 }
 
 // line 989
-bool IntelWifi::iwl_pcie_check_hw_rf_kill(struct iwl_trans *trans)
+bool iwl_pcie_check_hw_rf_kill(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie =  IWL_TRANS_GET_PCIE_TRANS(trans);
     bool hw_rfkill = iwl_is_rfkill_set(trans);
@@ -1247,7 +1226,7 @@ out:
 
 
 // line 1312
-void IntelWifi::iwl_trans_pcie_fw_alive(struct iwl_trans *trans, u32 scd_addr)
+void iwl_trans_pcie_fw_alive(struct iwl_trans *trans, u32 scd_addr)
 {
     iwl_pcie_reset_ict(trans);
     iwl_pcie_tx_start(trans, scd_addr);
@@ -1300,7 +1279,7 @@ void IntelWifi::iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_pow
 
 
 // line 1360
-void IntelWifi::iwl_trans_pcie_rf_kill(struct iwl_trans *trans, bool state)
+void iwl_trans_pcie_rf_kill(struct iwl_trans *trans, bool state)
 {
     //struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
@@ -1487,8 +1466,7 @@ void iwl_trans_pcie_configure(struct iwl_trans *trans,
                trans_pcie->n_no_reclaim_cmds * sizeof(u8));
     
     trans_pcie->rx_buf_size = trans_cfg->rx_buf_size;
-    trans_pcie->rx_page_order =
-    iwl_trans_get_rb_size_order(trans_pcie->rx_buf_size);
+    trans_pcie->rx_page_order = iwl_trans_get_rb_size_order(trans_pcie->rx_buf_size);
     
     trans_pcie->bc_table_dword = trans_cfg->bc_table_dword;
     trans_pcie->scd_set_active = trans_cfg->scd_set_active;
@@ -1704,8 +1682,12 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
      * and sometimes even causes the whole platform to get stuck. This
      * workaround makes the hardware not go into the problematic state.
      */
-    if (trans->cfg->integrated && trans->cfg->device_family == IWL_DEVICE_FAMILY_9000 && CSR_HW_REV_STEP(trans->hw_rev) == SILICON_A_STEP)
+    if (trans->cfg->integrated
+    && trans->cfg->device_family == IWL_DEVICE_FAMILY_9000
+    && CSR_HW_REV_STEP(trans->hw_rev) == SILICON_A_STEP) {
         iwl_set_bit(trans, CSR_HOST_CHICKEN, CSR_HOST_CHICKEN_PM_IDLE_SRC_DIS_SB_PME);
+    }
+    
     
 #ifdef CONFIG_IWLMVM
     trans->hw_rf_id = iwl_read32(trans, CSR_HW_RF_ID);

@@ -17,7 +17,7 @@ extern "C" {
 
 
 // line 49
-int IwlDvmOpMode::iwlagn_send_tx_power(struct iwl_priv *priv)
+int iwlagn_send_tx_power(struct iwl_priv *priv)
 {
     struct iwlagn_tx_power_dbm_cmd tx_power_cmd;
     u8 tx_ant_cfg_cmd;
@@ -114,7 +114,7 @@ static const __le32 iwlagn_concurrent_lookup[IWLAGN_BT_DECISION_LUT_SIZE] = {
 
 
 // line 224
-void IwlDvmOpMode::iwlagn_send_advance_bt_config(struct iwl_priv *priv)
+void iwlagn_send_advance_bt_config(struct iwl_priv *priv)
 {
     struct iwl_basic_bt_cmd basic = {
         .max_kill = IWLAGN_BT_MAX_KILL_DEFAULT,

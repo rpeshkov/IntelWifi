@@ -9,6 +9,7 @@
 extern "C" {
 #include "agn.h"
 #include "dev.h"
+#include "commands.h"
 }
 
 #include "IwlDvmOpMode.hpp"
@@ -21,7 +22,7 @@ extern "C" {
 /* line 35
  * initialize rxon structure with default values from eeprom
  */
-void IwlDvmOpMode::iwl_connection_init_rx_config(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+void iwl_connection_init_rx_config(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     memset(&ctx->staging, 0, sizeof(ctx->staging));
     
@@ -79,12 +80,13 @@ void IwlDvmOpMode::iwl_connection_init_rx_config(struct iwl_priv *priv, struct i
 }
 
 // line 99
-int IwlDvmOpMode::iwlagn_disable_bss(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct iwl_rxon_cmd *send)
+static int iwlagn_disable_bss(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct iwl_rxon_cmd *send)
 {
     __le32 old_filter = send->filter_flags;
     int ret;
     
     send->filter_flags &= ~RXON_FILTER_ASSOC_MSK;
+    
     ret = iwl_dvm_send_cmd_pdu(priv, ctx->rxon_cmd, 0, sizeof(*send), send);
     
     send->filter_flags = old_filter;
@@ -96,7 +98,7 @@ int IwlDvmOpMode::iwlagn_disable_bss(struct iwl_priv *priv, struct iwl_rxon_cont
 }
 
 // line 119
-int IwlDvmOpMode::iwlagn_disable_pan(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct iwl_rxon_cmd *send)
+static int iwlagn_disable_pan(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct iwl_rxon_cmd *send)
 {
     struct iwl_notification_wait disable_wait;
     __le32 old_filter = send->filter_flags;
@@ -130,7 +132,7 @@ int IwlDvmOpMode::iwlagn_disable_pan(struct iwl_priv *priv, struct iwl_rxon_cont
 }
 
 // line 156
-int IwlDvmOpMode::iwlagn_disconn_pan(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct iwl_rxon_cmd *send)
+static int iwlagn_disconn_pan(struct iwl_priv *priv, struct iwl_rxon_context *ctx, struct iwl_rxon_cmd *send)
 {
     __le32 old_filter = send->filter_flags;
     int ret;
@@ -144,7 +146,7 @@ int IwlDvmOpMode::iwlagn_disconn_pan(struct iwl_priv *priv, struct iwl_rxon_cont
 }
 
 // line 172
-void IwlDvmOpMode::iwlagn_update_qos(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+static void iwlagn_update_qos(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     int ret;
     
@@ -172,7 +174,7 @@ void IwlDvmOpMode::iwlagn_update_qos(struct iwl_priv *priv, struct iwl_rxon_cont
 
 
 // line 212
-int IwlDvmOpMode::iwlagn_send_rxon_assoc(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+static int iwlagn_send_rxon_assoc(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     int ret = 0;
     struct iwl_rxon_assoc_cmd rxon_assoc;
@@ -247,7 +249,7 @@ static u16 iwl_adjust_beacon_interval(u16 beacon_val, u16 max_beacon_val)
 
 
 // line 292
-int IwlDvmOpMode::iwl_send_rxon_timing(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+static int iwl_send_rxon_timing(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     u64 tsf;
     s32 interval_tm, rem;
@@ -272,28 +274,24 @@ int IwlDvmOpMode::iwl_send_rxon_timing(struct iwl_priv *priv, struct iwl_rxon_co
      */
     ctx->timing.atim_window = 0;
     
-    if (ctx->ctxid == IWL_RXON_CTX_PAN &&
-        (!ctx->vif || ctx->vif->type != NL80211_IFTYPE_STATION) &&
-        iwl_is_associated(priv, IWL_RXON_CTX_BSS) &&
-        priv->contexts[IWL_RXON_CTX_BSS].vif &&
-        priv->contexts[IWL_RXON_CTX_BSS].vif->bss_conf.beacon_int) {
-        ctx->timing.beacon_interval =
-                priv->contexts[IWL_RXON_CTX_BSS].timing.beacon_interval;
+    if (ctx->ctxid == IWL_RXON_CTX_PAN
+    && (!ctx->vif || ctx->vif->type != NL80211_IFTYPE_STATION)
+    && iwl_is_associated(priv, IWL_RXON_CTX_BSS)
+    && priv->contexts[IWL_RXON_CTX_BSS].vif
+    && priv->contexts[IWL_RXON_CTX_BSS].vif->bss_conf.beacon_int) {
+        ctx->timing.beacon_interval = priv->contexts[IWL_RXON_CTX_BSS].timing.beacon_interval;
         beacon_int = le16_to_cpu(ctx->timing.beacon_interval);
-    } else if (ctx->ctxid == IWL_RXON_CTX_BSS &&
-               iwl_is_associated(priv, IWL_RXON_CTX_PAN) &&
-               priv->contexts[IWL_RXON_CTX_PAN].vif &&
-               priv->contexts[IWL_RXON_CTX_PAN].vif->bss_conf.beacon_int &&
-               (!iwl_is_associated_ctx(ctx) || !ctx->vif ||
-                !ctx->vif->bss_conf.beacon_int)) {
-                   ctx->timing.beacon_interval =
-                        priv->contexts[IWL_RXON_CTX_PAN].timing.beacon_interval;
-                   beacon_int = le16_to_cpu(ctx->timing.beacon_interval);
-               } else {
-                   beacon_int = iwl_adjust_beacon_interval(beacon_int,
-                                                           IWL_MAX_UCODE_BEACON_INTERVAL * TIME_UNIT);
-                   ctx->timing.beacon_interval = cpu_to_le16(beacon_int);
-               }
+    } else if (ctx->ctxid == IWL_RXON_CTX_BSS
+    && iwl_is_associated(priv, IWL_RXON_CTX_PAN)
+    && priv->contexts[IWL_RXON_CTX_PAN].vif
+    && priv->contexts[IWL_RXON_CTX_PAN].vif->bss_conf.beacon_int
+    && (!iwl_is_associated_ctx(ctx) || !ctx->vif || !ctx->vif->bss_conf.beacon_int)) {
+       ctx->timing.beacon_interval = priv->contexts[IWL_RXON_CTX_PAN].timing.beacon_interval;
+       beacon_int = le16_to_cpu(ctx->timing.beacon_interval);
+    } else {
+       beacon_int = iwl_adjust_beacon_interval(beacon_int, IWL_MAX_UCODE_BEACON_INTERVAL * TIME_UNIT);
+       ctx->timing.beacon_interval = cpu_to_le16(beacon_int);
+    }
     
     ctx->beacon_int = beacon_int;
     
@@ -310,13 +308,12 @@ int IwlDvmOpMode::iwl_send_rxon_timing(struct iwl_priv *priv, struct iwl_rxon_co
                     le32_to_cpu(ctx->timing.beacon_init_val),
                     le16_to_cpu(ctx->timing.atim_window));
     
-    return iwl_dvm_send_cmd_pdu(priv, ctx->rxon_timing_cmd,
-                                0, sizeof(ctx->timing), &ctx->timing);
+    return iwl_dvm_send_cmd_pdu(priv, ctx->rxon_timing_cmd, 0, sizeof(ctx->timing), &ctx->timing);
 }
 
 
 // line 360
-int IwlDvmOpMode::iwlagn_rxon_disconn(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+static int iwlagn_rxon_disconn(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     int ret;
     struct iwl_rxon_cmd *active = (struct iwl_rxon_cmd *)&ctx->active;
@@ -360,7 +357,7 @@ int IwlDvmOpMode::iwlagn_rxon_disconn(struct iwl_priv *priv, struct iwl_rxon_con
 
 
 // line 402
-int IwlDvmOpMode::iwl_set_tx_power(struct iwl_priv *priv, s8 tx_power, bool force)
+static int iwl_set_tx_power(struct iwl_priv *priv, s8 tx_power, bool force)
 {
     int ret;
     s8 prev_tx_power;
@@ -376,17 +373,13 @@ int IwlDvmOpMode::iwl_set_tx_power(struct iwl_priv *priv, s8 tx_power, bool forc
         return 0;
     
     if (tx_power < IWLAGN_TX_POWER_TARGET_POWER_MIN) {
-        IWL_WARN(priv,
-                 "Requested user TXPOWER %d below lower limit %d.\n",
-                 tx_power,
-                 IWLAGN_TX_POWER_TARGET_POWER_MIN);
+        IWL_WARN(priv, "Requested user TXPOWER %d below lower limit %d.\n", tx_power, IWLAGN_TX_POWER_TARGET_POWER_MIN);
         return -EINVAL;
     }
     
     if (tx_power > DIV_ROUND_UP(priv->nvm_data->max_tx_pwr_half_dbm, 2)) {
-        IWL_WARN(priv,
-                 "Requested user TXPOWER %d above upper limit %d.\n",
-                 tx_power, priv->nvm_data->max_tx_pwr_half_dbm);
+        IWL_WARN(priv, "Requested user TXPOWER %d above upper limit %d.\n", tx_power,
+                 priv->nvm_data->max_tx_pwr_half_dbm);
         return -EINVAL;
     }
     
@@ -418,7 +411,7 @@ int IwlDvmOpMode::iwl_set_tx_power(struct iwl_priv *priv, s8 tx_power, bool forc
 }
 
 // line 460
-int IwlDvmOpMode::iwlagn_rxon_connect(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+static int iwlagn_rxon_connect(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     int ret;
     struct iwl_rxon_cmd *active = (struct iwl_rxon_cmd *)&ctx->active;
@@ -489,7 +482,7 @@ int IwlDvmOpMode::iwlagn_rxon_connect(struct iwl_priv *priv, struct iwl_rxon_con
 
 
 // line 529
-int IwlDvmOpMode::iwlagn_set_pan_params(struct iwl_priv *priv)
+int iwlagn_set_pan_params(struct iwl_priv *priv)
 {
     struct iwl_wipan_params_cmd cmd;
     struct iwl_rxon_context *ctx_bss, *ctx_pan;
@@ -577,9 +570,7 @@ int IwlDvmOpMode::iwlagn_set_pan_params(struct iwl_priv *priv)
 }
 
 // line 617
-static void _iwl_set_rxon_ht(struct iwl_priv *priv,
-                             struct iwl_ht_config *ht_conf,
-                             struct iwl_rxon_context *ctx)
+static void _iwl_set_rxon_ht(struct iwl_priv *priv, struct iwl_ht_config *ht_conf, struct iwl_rxon_context *ctx)
 {
     struct iwl_rxon_cmd *rxon = &ctx->staging;
     
@@ -728,8 +719,7 @@ static void iwl_set_rxon_hwcrypto(struct iwl_priv *priv, struct iwl_rxon_context
 
 // line 771
 /* validate RXON structure is valid */
-static int iwl_check_rxon_cmd(struct iwl_priv *priv,
-                              struct iwl_rxon_context *ctx)
+static int iwl_check_rxon_cmd(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     struct iwl_rxon_cmd *rxon = &ctx->staging;
     u32 errors = 0;
@@ -830,17 +820,13 @@ static int iwl_full_rxon_required(struct iwl_priv *priv,
     CHK(!iwl_is_associated_ctx(ctx));
     CHK(!ether_addr_equal(staging->bssid_addr, active->bssid_addr));
     CHK(!ether_addr_equal(staging->node_addr, active->node_addr));
-    CHK(!ether_addr_equal(staging->wlap_bssid_addr,
-                          active->wlap_bssid_addr));
+    CHK(!ether_addr_equal(staging->wlap_bssid_addr, active->wlap_bssid_addr));
     CHK_NEQ(staging->dev_type, active->dev_type);
     CHK_NEQ(staging->channel, active->channel);
     CHK_NEQ(staging->air_propagation, active->air_propagation);
-    CHK_NEQ(staging->ofdm_ht_single_stream_basic_rates,
-            active->ofdm_ht_single_stream_basic_rates);
-    CHK_NEQ(staging->ofdm_ht_dual_stream_basic_rates,
-            active->ofdm_ht_dual_stream_basic_rates);
-    CHK_NEQ(staging->ofdm_ht_triple_stream_basic_rates,
-            active->ofdm_ht_triple_stream_basic_rates);
+    CHK_NEQ(staging->ofdm_ht_single_stream_basic_rates, active->ofdm_ht_single_stream_basic_rates);
+    CHK_NEQ(staging->ofdm_ht_dual_stream_basic_rates, active->ofdm_ht_dual_stream_basic_rates);
+    CHK_NEQ(staging->ofdm_ht_triple_stream_basic_rates, active->ofdm_ht_triple_stream_basic_rates);
     CHK_NEQ(staging->assoc_id, active->assoc_id);
     
     /* flags, filter_flags, ofdm_basic_rates, and cck_basic_rates can
@@ -848,12 +834,10 @@ static int iwl_full_rxon_required(struct iwl_priv *priv,
      * flag transitions are allowed using RXON_ASSOC */
     
     /* Check if we are not switching bands */
-    CHK_NEQ(staging->flags & RXON_FLG_BAND_24G_MSK,
-            active->flags & RXON_FLG_BAND_24G_MSK);
+    CHK_NEQ(staging->flags & RXON_FLG_BAND_24G_MSK, active->flags & RXON_FLG_BAND_24G_MSK);
     
     /* Check if we are switching association toggle */
-    CHK_NEQ(staging->filter_flags & RXON_FILTER_ASSOC_MSK,
-            active->filter_flags & RXON_FILTER_ASSOC_MSK);
+    CHK_NEQ(staging->filter_flags & RXON_FILTER_ASSOC_MSK, active->filter_flags & RXON_FILTER_ASSOC_MSK);
     
 #undef CHK
 #undef CHK_NEQ
@@ -993,7 +977,7 @@ static void iwl_calc_basic_rates(struct iwl_priv *priv, struct iwl_rxon_context 
  * 4. full RXON command - associated bit set
  * 5. use RXON_ASSOC command to update any flags changes
  */
-int IwlDvmOpMode::iwlagn_commit_rxon(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+int iwlagn_commit_rxon(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
 {
     /* cast away the const for active_rxon in this function */
     struct iwl_rxon_cmd *active = (struct iwl_rxon_cmd *)&ctx->active;
@@ -1102,7 +1086,7 @@ int IwlDvmOpMode::iwlagn_commit_rxon(struct iwl_priv *priv, struct iwl_rxon_cont
 }
 
 // line 1547
-void IwlDvmOpMode::iwlagn_post_scan(struct iwl_priv *priv)
+void iwlagn_post_scan(struct iwl_priv *priv)
 {
     struct iwl_rxon_context *ctx;
     

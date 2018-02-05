@@ -17,16 +17,21 @@ IwlDvmOpMode::IwlDvmOpMode(IwlTransOps *ops) {
 
 
 struct ieee80211_hw *IwlDvmOpMode::start(struct iwl_trans *trans, const struct iwl_cfg *cfg, const struct iwl_fw *fw, struct dentry *dbgfs_dir) {
-    IOLockLock(mutex);
+    //IOLockLock(mutex);
     priv = iwl_op_mode_dvm_start(trans, cfg, fw, dbgfs_dir);
-    
     iwlagn_mac_start(priv);
-    IOLockUnlock(mutex);
+    struct ieee80211_vif *vif = (struct ieee80211_vif *)IOMalloc(sizeof(struct ieee80211_vif) + sizeof(struct iwl_vif_priv));
+    memcpy(vif->addr, &this->priv->hw->wiphy->addresses[0], ETH_ALEN);
+    vif->type = NL80211_IFTYPE_STATION;
+    IOSleep(1000);
+    int ret = iwlagn_mac_add_interface(this->priv, vif);
+    IWL_DEBUG_INFO(this->priv->trans, "ADD_INTERFACE: %d", ret);
+    
+    //IOLockUnlock(mutex);
     return priv->hw;
 }
 
 void IwlDvmOpMode::nic_config(struct iwl_priv *priv) {
-    
     iwl_nic_config(this->priv);
 }
 
@@ -79,11 +84,16 @@ void IwlDvmOpMode::scan() {
 //    bzero(this->priv->scan_request->channels[0], sizeof(struct ieee80211_channel));
 //    this->priv->scan_request->channels[0]->band = NL80211_BAND_2GHZ;
     
-    iwl_scan_initiate(this->priv, NULL, IWL_SCAN_NORMAL, NL80211_BAND_2GHZ);
+    int ret = iwl_scan_initiate(this->priv, NULL, IWL_SCAN_NORMAL, NL80211_BAND_2GHZ);
+    
+    if (ret) {
+        IWL_DEBUG_SCAN(this->priv, "Scan failed with status: %d", ret);
+    }
 }
 
 void IwlDvmOpMode::add_interface(struct ieee80211_vif *vif) {
-    IOLockLock(mutex);
+    DebugLog("ADD INTERFACE");
+//    IOLockLock(mutex);
     
     
 //    struct ieee80211_channel_switch *chsw = (struct ieee80211_channel_switch *)IOMalloc(sizeof(struct ieee80211_channel_switch));
@@ -94,11 +104,11 @@ void IwlDvmOpMode::add_interface(struct ieee80211_vif *vif) {
 //    chsw->chandef.width = NL80211_CHAN_WIDTH_20;
 //    iwlagn_mac_channel_switch(this->priv, vif, chsw);
     
-    int ret = iwlagn_mac_add_interface(this->priv, vif);
-    IWL_DEBUG_INFO(this->priv->trans, "ADD_INTERFACE: %d", ret);
+//    int ret = iwlagn_mac_add_interface(this->priv, vif);
+//    IWL_DEBUG_INFO(this->priv->trans, "ADD_INTERFACE: %d", ret);
     
     
-    IOLockUnlock(mutex);
+//    IOLockUnlock(mutex);
 }
 
 void IwlDvmOpMode::channel_switch(struct iwl_priv *priv, struct ieee80211_vif *vif, struct ieee80211_channel_switch *chsw) {

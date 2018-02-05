@@ -306,31 +306,31 @@ static void iwl_legacy_tt_handler(struct iwl_priv *priv, s32 temp, bool force)
         if (old_state == IWL_TI_CT_KILL)
             clear_bit(STATUS_CT_KILL, &priv->status);
         
-        // TODO: Implement
-//        if (tt->state != IWL_TI_CT_KILL && iwl_power_update_mode(priv, true)) {
-//            /* TT state not updated
-//             * try again during next temperature read
-//             */
-//            if (old_state == IWL_TI_CT_KILL)
-//                set_bit(STATUS_CT_KILL, &priv->status);
-//            tt->state = old_state;
-//            IWL_ERR(priv, "Cannot update power mode, TT state not updated\n");
-//        } else {
-//            if (tt->state == IWL_TI_CT_KILL) {
-//                if (force) {
-//                    set_bit(STATUS_CT_KILL, &priv->status);
-//                    iwl_perform_ct_kill_task(priv, true);
-//                } else {
-//                    iwl_prepare_ct_kill_task(priv);
-//                    tt->state = old_state;
-//                }
-//            } else if (old_state == IWL_TI_CT_KILL && tt->state != IWL_TI_CT_KILL) {
-//                iwl_perform_ct_kill_task(priv, false);
-//            }
-//
-//            IWL_DEBUG_TEMP(priv, "Temperature state changed %u\n", tt->state);
-//            IWL_DEBUG_TEMP(priv, "Power Index change to %u\n", tt->tt_power_mode);
-//        }
+
+        if (tt->state != IWL_TI_CT_KILL && iwl_power_update_mode(priv, true)) {
+            /* TT state not updated
+             * try again during next temperature read
+             */
+            if (old_state == IWL_TI_CT_KILL)
+                set_bit(STATUS_CT_KILL, &priv->status);
+            tt->state = old_state;
+            IWL_ERR(priv, "Cannot update power mode, TT state not updated\n");
+        } else {
+            if (tt->state == IWL_TI_CT_KILL) {
+                if (force) {
+                    set_bit(STATUS_CT_KILL, &priv->status);
+                    iwl_perform_ct_kill_task(priv, true);
+                } else {
+                    iwl_prepare_ct_kill_task(priv);
+                    tt->state = old_state;
+                }
+            } else if (old_state == IWL_TI_CT_KILL && tt->state != IWL_TI_CT_KILL) {
+                iwl_perform_ct_kill_task(priv, false);
+            }
+
+            IWL_DEBUG_TEMP(priv, "Temperature state changed %u\n", tt->state);
+            IWL_DEBUG_TEMP(priv, "Power Index change to %u\n", tt->tt_power_mode);
+        }
         IOLockUnlock(priv->mutex);
     }
 }
@@ -438,31 +438,30 @@ static void iwl_advance_tt_handler(struct iwl_priv *priv, s32 temp, bool force)
         if (old_state == IWL_TI_CT_KILL)
             clear_bit(STATUS_CT_KILL, &priv->status);
         
-        // TODO: Implement
-//        if (tt->state != IWL_TI_CT_KILL && iwl_power_update_mode(priv, true)) {
-//            /* TT state not updated
-//             * try again during next temperature read
-//             */
-//            IWL_ERR(priv, "Cannot update power mode, TT state not updated\n");
-//            if (old_state == IWL_TI_CT_KILL)
-//                set_bit(STATUS_CT_KILL, &priv->status);
-//            tt->state = old_state;
-//        } else {
-//            IWL_DEBUG_TEMP(priv, "Thermal Throttling to new state: %u\n", tt->state);
-//            if (old_state != IWL_TI_CT_KILL && tt->state == IWL_TI_CT_KILL) {
-//                if (force) {
-//                    IWL_DEBUG_TEMP(priv, "Enter IWL_TI_CT_KILL\n");
-//                    set_bit(STATUS_CT_KILL, &priv->status);
-//                    iwl_perform_ct_kill_task(priv, true);
-//                } else {
-//                    tt->state = old_state;
-//                    iwl_prepare_ct_kill_task(priv);
-//                }
-//            } else if (old_state == IWL_TI_CT_KILL && tt->state != IWL_TI_CT_KILL) {
-//                IWL_DEBUG_TEMP(priv, "Exit IWL_TI_CT_KILL\n");
-//                iwl_perform_ct_kill_task(priv, false);
-//            }
-//        }
+        if (tt->state != IWL_TI_CT_KILL && iwl_power_update_mode(priv, true)) {
+            /* TT state not updated
+             * try again during next temperature read
+             */
+            IWL_ERR(priv, "Cannot update power mode, TT state not updated\n");
+            if (old_state == IWL_TI_CT_KILL)
+                set_bit(STATUS_CT_KILL, &priv->status);
+            tt->state = old_state;
+        } else {
+            IWL_DEBUG_TEMP(priv, "Thermal Throttling to new state: %u\n", tt->state);
+            if (old_state != IWL_TI_CT_KILL && tt->state == IWL_TI_CT_KILL) {
+                if (force) {
+                    IWL_DEBUG_TEMP(priv, "Enter IWL_TI_CT_KILL\n");
+                    set_bit(STATUS_CT_KILL, &priv->status);
+                    iwl_perform_ct_kill_task(priv, true);
+                } else {
+                    tt->state = old_state;
+                    iwl_prepare_ct_kill_task(priv);
+                }
+            } else if (old_state == IWL_TI_CT_KILL && tt->state != IWL_TI_CT_KILL) {
+                IWL_DEBUG_TEMP(priv, "Exit IWL_TI_CT_KILL\n");
+                iwl_perform_ct_kill_task(priv, false);
+            }
+        }
         IOLockUnlock(priv->mutex);
     }
 }
@@ -657,12 +656,17 @@ void iwl_tt_exit(struct iwl_priv *priv)
     
     if (priv->thermal_throttle.advanced_tt) {
         /* free advance thermal throttling memory */
-        IOFree(tt->restriction, tt->restriction_size);
-        tt->restriction_size = 0;
-        tt->restriction = NULL;
-        IOFree(tt->transaction, tt->transaction_size);
-        tt->transaction = NULL;
-        tt->transaction_size = 0;
+        if (tt->restriction) {
+            IOFree(tt->restriction, tt->restriction_size);
+            tt->restriction_size = 0;
+            tt->restriction = NULL;
+        }
+        
+        if (tt->transaction) {
+            IOFree(tt->transaction, tt->transaction_size);
+            tt->transaction = NULL;
+            tt->transaction_size = 0;
+        }
     }
 }
 

@@ -116,7 +116,7 @@ static const struct iwl_hcmd_arr iwl_dvm_groups[] = {
 
 
 // line 162
-void IwlDvmOpMode::iwl_update_chain_flags(struct iwl_priv *priv)
+void iwl_update_chain_flags(struct iwl_priv *priv)
 {
     struct iwl_rxon_context *ctx;
     
@@ -129,7 +129,7 @@ void IwlDvmOpMode::iwl_update_chain_flags(struct iwl_priv *priv)
 
 
 // line 374
-int IwlDvmOpMode::iwl_send_statistics_request(struct iwl_priv *priv, u8 flags, bool clear)
+int iwl_send_statistics_request(struct iwl_priv *priv, u8 flags, bool clear)
 {
     struct iwl_statistics_cmd statistics_cmd = {
         .configuration_flags = clear ? IWL_STATS_CONF_CLEAR_STATS : 0,
@@ -227,7 +227,7 @@ static void iwl_init_context(struct iwl_priv *priv, u32 ucode_flags)
 }
 
 // line 678
-void IwlDvmOpMode::iwl_rf_kill_ct_config(struct iwl_priv *priv)
+static void iwl_rf_kill_ct_config(struct iwl_priv *priv)
 {
     struct iwl_ct_kill_config cmd;
     struct iwl_ct_kill_throttling_config adv_cmd;
@@ -245,11 +245,8 @@ void IwlDvmOpMode::iwl_rf_kill_ct_config(struct iwl_priv *priv)
         if (ret)
             IWL_ERR(priv, "REPLY_CT_KILL_CONFIG_CMD failed\n");
         else
-            IWL_DEBUG_INFO(priv, "REPLY_CT_KILL_CONFIG_CMD "
-                           "succeeded, critical temperature enter is %d,"
-                           "exit is %d\n",
-                           priv->hw_params.ct_kill_threshold,
-                           priv->hw_params.ct_kill_exit_threshold);
+            IWL_DEBUG_INFO(priv, "REPLY_CT_KILL_CONFIG_CMD succeeded, critical temperature enter is %d, exit is %d\n",
+                           priv->hw_params.ct_kill_threshold, priv->hw_params.ct_kill_exit_threshold);
     } else {
         cmd.critical_temperature_R =
         cpu_to_le32(priv->hw_params.ct_kill_threshold);
@@ -260,16 +257,14 @@ void IwlDvmOpMode::iwl_rf_kill_ct_config(struct iwl_priv *priv)
         if (ret)
             IWL_ERR(priv, "REPLY_CT_KILL_CONFIG_CMD failed\n");
         else
-            IWL_DEBUG_INFO(priv, "REPLY_CT_KILL_CONFIG_CMD "
-                           "succeeded, "
-                           "critical temperature is %d\n",
+            IWL_DEBUG_INFO(priv, "REPLY_CT_KILL_CONFIG_CMD succeeded, critical temperature is %d\n",
                            priv->hw_params.ct_kill_threshold);
     }
 }
 
 
 // line 723
-int IwlDvmOpMode::iwlagn_send_calib_cfg_rt(struct iwl_priv *priv, u32 cfg)
+static int iwlagn_send_calib_cfg_rt(struct iwl_priv *priv, u32 cfg)
 {
     struct iwl_calib_cfg_cmd calib_cfg_cmd;
     struct iwl_host_cmd cmd = {
@@ -286,7 +281,7 @@ int IwlDvmOpMode::iwlagn_send_calib_cfg_rt(struct iwl_priv *priv, u32 cfg)
 }
 
 // line 740
-int IwlDvmOpMode::iwlagn_send_tx_ant_config(struct iwl_priv *priv, u8 valid_tx_ant)
+static int iwlagn_send_tx_ant_config(struct iwl_priv *priv, u8 valid_tx_ant)
 {
     struct iwl_tx_ant_config_cmd tx_ant_cmd = {
         .valid = cpu_to_le32(valid_tx_ant),
@@ -295,8 +290,7 @@ int IwlDvmOpMode::iwlagn_send_tx_ant_config(struct iwl_priv *priv, u8 valid_tx_a
     if (IWL_UCODE_API(priv->fw->ucode_ver) > 1) {
         IWL_DEBUG_HC(priv, "select valid tx ant: %u\n", valid_tx_ant);
         
-        return iwl_dvm_send_cmd_pdu(priv, TX_ANT_CONFIGURATION_CMD, 0,
-                                    sizeof(struct iwl_tx_ant_config_cmd),
+        return iwl_dvm_send_cmd_pdu(priv, TX_ANT_CONFIGURATION_CMD, 0, sizeof(struct iwl_tx_ant_config_cmd),
                                     &tx_ant_cmd);
     } else {
         IWL_DEBUG_HC(priv, "TX_ANT_CONFIGURATION_CMD not supported\n");
@@ -305,7 +299,7 @@ int IwlDvmOpMode::iwlagn_send_tx_ant_config(struct iwl_priv *priv, u8 valid_tx_a
 }
 
 // line 757
-void IwlDvmOpMode::iwl_send_bt_config(struct iwl_priv *priv)
+static void iwl_send_bt_config(struct iwl_priv *priv)
 {
     struct iwl_bt_cmd bt_cmd = {
         .lead_time = BT_LEAD_TIME_DEF,
@@ -320,11 +314,9 @@ void IwlDvmOpMode::iwl_send_bt_config(struct iwl_priv *priv)
         bt_cmd.flags = BT_COEX_ENABLE;
     
     priv->bt_enable_flag = bt_cmd.flags;
-    IWL_DEBUG_INFO(priv, "BT coex %s\n",
-                   (bt_cmd.flags == BT_COEX_DISABLE) ? "disable" : "active");
+    IWL_DEBUG_INFO(priv, "BT coex %s\n", (bt_cmd.flags == BT_COEX_DISABLE) ? "disable" : "active");
 
-    if (iwl_dvm_send_cmd_pdu(priv, REPLY_BT_CONFIG,
-                             0, sizeof(struct iwl_bt_cmd), &bt_cmd))
+    if (iwl_dvm_send_cmd_pdu(priv, REPLY_BT_CONFIG, 0, sizeof(struct iwl_bt_cmd), &bt_cmd))
         IWL_ERR(priv, "failed to send BT Coex Config\n");
 }
 
@@ -335,7 +327,7 @@ void IwlDvmOpMode::iwl_send_bt_config(struct iwl_priv *priv)
  *                   from protocol/runtime uCode (initialization uCode's
  *                   Alive gets handled by iwl_init_alive_start()).
  */
-int IwlDvmOpMode::iwl_alive_start(struct iwl_priv *priv)
+int iwl_alive_start(struct iwl_priv *priv)
 {
     int ret = 0;
     struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
@@ -444,7 +436,7 @@ static void iwl_clear_driver_stations(struct iwl_priv *priv)
     struct iwl_rxon_context *ctx;
     
     //spin_lock_bh(&priv->sta_lock);
-    IOSimpleLockLock(priv->sta_lock);
+    //IOSimpleLockLock(priv->sta_lock);
     memset(priv->stations, 0, sizeof(priv->stations));
     priv->num_stations = 0;
     
@@ -463,12 +455,12 @@ static void iwl_clear_driver_stations(struct iwl_priv *priv)
     }
     
     //spin_unlock_bh(&priv->sta_lock);
-    IOSimpleLockUnlock(priv->sta_lock);
+    //IOSimpleLockUnlock(priv->sta_lock);
 }
 
 
 // line 916
-void IwlDvmOpMode::iwl_down(struct iwl_priv *priv)
+void iwl_down(struct iwl_priv *priv)
 {
     int exit_pending;
     
@@ -481,7 +473,7 @@ void IwlDvmOpMode::iwl_down(struct iwl_priv *priv)
     exit_pending = test_and_set_bit(STATUS_EXIT_PENDING, &priv->status);
     
     iwl_clear_ucode_stations(priv, NULL);
-//    iwl_dealloc_bcast_stations(priv);
+    iwl_dealloc_bcast_stations(priv);
     iwl_clear_driver_stations(priv);
     
     /* reset BT coex data */
@@ -512,12 +504,9 @@ void IwlDvmOpMode::iwl_down(struct iwl_priv *priv)
     priv->num_aux_in_flight = 0;
     
     /* Clear out all status bits but a few that are stable across reset */
-    priv->status &= test_bit(STATUS_RF_KILL_HW, &priv->status) <<
-                            STATUS_RF_KILL_HW |
-                    test_bit(STATUS_FW_ERROR, &priv->status) <<
-                            STATUS_FW_ERROR |
-                    test_bit(STATUS_EXIT_PENDING, &priv->status) <<
-                            STATUS_EXIT_PENDING;
+    priv->status &= test_bit(STATUS_RF_KILL_HW, &priv->status) << STATUS_RF_KILL_HW
+                  | test_bit(STATUS_FW_ERROR, &priv->status) << STATUS_FW_ERROR
+                  | test_bit(STATUS_EXIT_PENDING, &priv->status) << STATUS_EXIT_PENDING;
     
     //dev_kfree_skb(priv->beacon_skb);
     //priv->beacon_skb = NULL;
@@ -525,7 +514,7 @@ void IwlDvmOpMode::iwl_down(struct iwl_priv *priv)
 
 
 // line 1112
-int IwlDvmOpMode::iwl_init_drv(struct iwl_priv *priv)
+static int iwl_init_drv(struct iwl_priv *priv)
 {
     priv->sta_lock = IOSimpleLockAlloc();
  
@@ -542,10 +531,7 @@ int IwlDvmOpMode::iwl_init_drv(struct iwl_priv *priv)
     priv->missed_beacon_threshold = IWL_MISSED_BEACON_THRESHOLD_DEF;
     priv->agg_tids_count = 0;
     
-    uint64_t uptime;
-    clock_get_uptime(&uptime);
-    
-    priv->rx_statistics_jiffies = uptime;
+    priv->rx_statistics_jiffies = jiffies;
     
     /* Choose which receivers/antennas to use */
     iwlagn_set_rxon_chain(priv, &priv->contexts[IWL_RXON_CTX_BSS]);
@@ -844,7 +830,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     
     // TODO: This was added by me. Without it, channel is not initialized and rxon commit fails
     def = (struct cfg80211_chan_def *)IOMalloc(sizeof(struct cfg80211_chan_def));
-    def->chan = &priv->nvm_data->channels[4];
+    def->chan = &priv->nvm_data->channels[3];
     def->width =  NL80211_CHAN_WIDTH_40;
     def->center_freq1 = def->chan->center_freq;
     

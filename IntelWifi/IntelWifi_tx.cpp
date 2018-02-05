@@ -256,13 +256,13 @@ void iwl_pcie_txq_check_wrptrs(struct iwl_trans *trans)
             continue;
 
         //spin_lock_bh(&txq->lock);
-        IOSimpleLockLock(txq->lock);
+        //IOSimpleLockLock(txq->lock);
         if (txq->need_update) {
             iwl_pcie_txq_inc_wr_ptr(trans, txq);
             txq->need_update = false;
         }
         //spin_unlock_bh(&txq->lock);
-        IOSimpleLockUnlock(txq->lock);
+        //IOSimpleLockUnlock(txq->lock);
     }
 }
 
@@ -590,14 +590,13 @@ static void iwl_pcie_txq_free(struct iwl_trans *trans, int txq_id)
 
 
 // line 715
-void IntelWifi::iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr)
+void iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     int nq = trans->cfg->base_params->num_of_queues;
     int chan;
     u32 reg_val;
-    int clear_dwords = (SCD_TRANS_TBL_OFFSET_QUEUE(nq) -
-                        SCD_CONTEXT_MEM_LOWER_BOUND) / sizeof(u32);
+    int clear_dwords = (SCD_TRANS_TBL_OFFSET_QUEUE(nq) - SCD_CONTEXT_MEM_LOWER_BOUND) / sizeof(u32);
     
     /* make sure all queue are not stopped/used */
     memset(trans_pcie->queue_stopped, 0, sizeof(trans_pcie->queue_stopped));
@@ -610,12 +609,9 @@ void IntelWifi::iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr)
 //            scd_base_addr != trans_pcie->scd_base_addr);
     
     /* reset context data, TX status and translation data */
-    iwl_trans_write_mem(trans, trans_pcie->scd_base_addr +
-                        SCD_CONTEXT_MEM_LOWER_BOUND,
-                        NULL, clear_dwords);
+    iwl_trans_write_mem(trans, trans_pcie->scd_base_addr + SCD_CONTEXT_MEM_LOWER_BOUND, NULL, clear_dwords);
     
-    iwl_write_prph(trans, SCD_DRAM_BASE_ADDR,
-                   (u32)trans_pcie->scd_bc_tbls.dma >> 10);
+    iwl_write_prph(trans, SCD_DRAM_BASE_ADDR, (u32)trans_pcie->scd_bc_tbls.dma >> 10);
     
     /* The chain extension of the SCD doesn't work well. This feature is
      * enabled by default by the HW, so we need to disable it manually.
@@ -623,9 +619,7 @@ void IntelWifi::iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr)
     if (trans->cfg->base_params->scd_chain_ext_wa)
         iwl_write_prph(trans, SCD_CHAINEXT_EN, 0);
     
-    iwl_trans_ac_txq_enable(trans, trans_pcie->cmd_queue,
-                            trans_pcie->cmd_fifo,
-                            trans_pcie->cmd_q_wdg_timeout);
+    iwl_trans_ac_txq_enable(trans, trans_pcie->cmd_queue, trans_pcie->cmd_fifo, trans_pcie->cmd_q_wdg_timeout);
     
     /* Activate all Tx DMA/FIFO channels */
     iwl_scd_activate_fifos(trans);
@@ -638,13 +632,11 @@ void IntelWifi::iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr)
     
     /* Update FH chicken bits */
     reg_val = iwl_read_direct32(trans, FH_TX_CHICKEN_BITS_REG);
-    iwl_write_direct32(trans, FH_TX_CHICKEN_BITS_REG,
-                       reg_val | FH_TX_CHICKEN_BITS_SCD_AUTO_RETRY_EN);
+    iwl_write_direct32(trans, FH_TX_CHICKEN_BITS_REG, reg_val | FH_TX_CHICKEN_BITS_SCD_AUTO_RETRY_EN);
     
     /* Enable L1-Active */
     if (trans->cfg->device_family < IWL_DEVICE_FAMILY_8000)
-        iwl_clear_bits_prph(trans, APMG_PCIDEV_STT_REG,
-                            APMG_PCIDEV_STT_VAL_L1_ACT_DIS);
+        iwl_clear_bits_prph(trans, APMG_PCIDEV_STT_REG, APMG_PCIDEV_STT_VAL_L1_ACT_DIS);
 }
 
 // line 812
@@ -655,7 +647,7 @@ static void iwl_pcie_tx_stop_fh(struct iwl_trans *trans)
     int ch, ret;
     u32 mask = 0;
 
-    IOSimpleLockLock(trans_pcie->irq_lock);
+    //IOSimpleLockLock(trans_pcie->irq_lock);
     
     if (!iwl_trans_grab_nic_access(trans, &state))
         goto out;
@@ -669,14 +661,14 @@ static void iwl_pcie_tx_stop_fh(struct iwl_trans *trans)
     /* Wait for DMA channels to be idle */
     ret = iwl_poll_bit(trans, FH_TSSR_TX_STATUS_REG, mask, mask, 5000);
     if (ret < 0)
-        IWL_ERR(trans,
-                "Failing on timeout while stopping DMA channel %d [0x%08x]\n",
+        IWL_ERR(trans, "Failing on timeout while stopping DMA channel %d [0x%08x]\n",
                 ch, iwl_read32(trans, FH_TSSR_TX_STATUS_REG));
     
     iwl_trans_release_nic_access(trans, &state);
     
 out:
-    IOSimpleLockUnlock(trans_pcie->irq_lock);
+    //IOSimpleLockUnlock(trans_pcie->irq_lock);
+    return;
 }
 
 /* line 843
@@ -827,7 +819,7 @@ int IntelWifi::iwl_pcie_tx_init(struct iwl_trans *trans)
         alloc = true;
     }
     
-    IOSimpleLockLock(trans_pcie->irq_lock);
+    //IOSimpleLockLock(trans_pcie->irq_lock);
     
     /* Turn off all Tx DMA fifos */
     iwl_scd_deactivate_fifos(trans);
@@ -837,7 +829,7 @@ int IntelWifi::iwl_pcie_tx_init(struct iwl_trans *trans)
                        (u32)trans_pcie->kw.dma >> 4);
     
     // spin_unlock(&trans_pcie->irq_lock);
-    IOSimpleLockUnlock(trans_pcie->irq_lock);
+    //IOSimpleLockUnlock(trans_pcie->irq_lock);
     
     /* Alloc and init all Tx queues, including the command queue (#4/#9) */
     for (txq_id = 0; txq_id < trans->cfg->base_params->num_of_queues;
@@ -1018,7 +1010,7 @@ static int iwl_pcie_txq_set_ratid_map(struct iwl_trans *trans, u16 ra_tid, u16 t
 #define BUILD_RAxTID(sta_id, tid)    (((sta_id) << 4) + (tid))
 
 // line 1283
-bool IntelWifi::iwl_trans_pcie_txq_enable(struct iwl_trans *trans, int txq_id, u16 ssn,
+bool iwl_trans_pcie_txq_enable(struct iwl_trans *trans, int txq_id, u16 ssn,
                                const struct iwl_trans_txq_scd_cfg *cfg,
                                unsigned int wdg_timeout)
 {
@@ -1031,9 +1023,7 @@ bool IntelWifi::iwl_trans_pcie_txq_enable(struct iwl_trans *trans, int txq_id, u
         IWL_DEBUG_TX_QUEUES(trans, "queue %d already used - expect issues", txq_id);
     }
     
-    //txq->wd_timeout = msecs_to_jiffies(wdg_timeout);
-    // Macro is this:     return (m + (MSEC_PER_SEC / HZ) - 1) / (MSEC_PER_SEC / HZ);
-    txq->wd_timeout = wdg_timeout;
+    txq->wd_timeout = msecs_to_jiffies(wdg_timeout);
     
     if (cfg) {
         fifo = cfg->fifo;
@@ -1144,11 +1134,10 @@ void iwl_trans_pcie_txq_set_shared_mode(struct iwl_trans *trans, u32 txq_id,
 
 
 // line 1404
-void IntelWifi::iwl_trans_pcie_txq_disable(struct iwl_trans *trans, int txq_id, bool configure_scd)
+void iwl_trans_pcie_txq_disable(struct iwl_trans *trans, int txq_id, bool configure_scd)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
-    u32 stts_addr = trans_pcie->scd_base_addr +
-    SCD_TX_STTS_QUEUE_OFFSET(txq_id);
+    u32 stts_addr = trans_pcie->scd_base_addr + SCD_TX_STTS_QUEUE_OFFSET(txq_id);
     static const u32 zero_val[4] = {};
     
     trans_pcie->txq[txq_id]->frozen_expiry_remainder = 0;
@@ -1169,8 +1158,7 @@ void IntelWifi::iwl_trans_pcie_txq_disable(struct iwl_trans *trans, int txq_id, 
     if (configure_scd) {
         iwl_scd_txq_set_inactive(trans, txq_id);
         
-        iwl_trans_write_mem(trans, stts_addr, (void *)zero_val,
-                            ARRAY_SIZE(zero_val));
+        iwl_trans_write_mem(trans, stts_addr, (void *)zero_val, ARRAY_SIZE(zero_val));
     }
     
     // TODO: Implement
@@ -1288,14 +1276,15 @@ static int iwl_pcie_enqueue_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *c
     }
     
     //spin_lock_bh(&txq->lock);
-    IOSimpleLockLock(txq->lock);
+    //IOSimpleLockLock(txq->lock);
     
     if (iwl_queue_space(txq) < ((cmd->flags & CMD_ASYNC) ? 2 : 1)) {
         //spin_unlock_bh(&txq->lock);
-        IOSimpleLockUnlock(txq->lock);
+        //IOSimpleLockUnlock(txq->lock);
         
         IWL_ERR(trans, "No space in command queue\n");
-        iwl_op_mode_cmd_queue_full(trans->op_mode);
+        // TODO: Implement
+        //iwl_op_mode_cmd_queue_full(trans->op_mode);
         idx = -ENOSPC;
         goto free_dup_buf;
     }
@@ -1313,21 +1302,15 @@ static int iwl_pcie_enqueue_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *c
         out_cmd->hdr_wide.cmd = iwl_cmd_opcode(cmd->id);
         out_cmd->hdr_wide.group_id = group_id;
         out_cmd->hdr_wide.version = iwl_cmd_version(cmd->id);
-        out_cmd->hdr_wide.length =
-        cpu_to_le16(cmd_size -
-                    sizeof(struct iwl_cmd_header_wide));
+        out_cmd->hdr_wide.length = cpu_to_le16(cmd_size - sizeof(struct iwl_cmd_header_wide));
         out_cmd->hdr_wide.reserved = 0;
-        out_cmd->hdr_wide.sequence =
-        cpu_to_le16(QUEUE_TO_SEQ(trans_pcie->cmd_queue) |
-                    INDEX_TO_SEQ(txq->write_ptr));
+        out_cmd->hdr_wide.sequence = cpu_to_le16(QUEUE_TO_SEQ(trans_pcie->cmd_queue) | INDEX_TO_SEQ(txq->write_ptr));
         
         cmd_pos = sizeof(struct iwl_cmd_header_wide);
         copy_size = sizeof(struct iwl_cmd_header_wide);
     } else {
         out_cmd->hdr.cmd = iwl_cmd_opcode(cmd->id);
-        out_cmd->hdr.sequence =
-        cpu_to_le16(QUEUE_TO_SEQ(trans_pcie->cmd_queue) |
-                    INDEX_TO_SEQ(txq->write_ptr));
+        out_cmd->hdr.sequence = cpu_to_le16(QUEUE_TO_SEQ(trans_pcie->cmd_queue) | INDEX_TO_SEQ(txq->write_ptr));
         out_cmd->hdr.group_id = 0;
         
         cmd_pos = sizeof(struct iwl_cmd_header);
@@ -1515,7 +1498,7 @@ static int iwl_pcie_enqueue_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *c
     
 out:
     //spin_unlock_bh(&txq->lock);
-    IOSimpleLockUnlock(txq->lock);
+    //IOSimpleLockUnlock(txq->lock);
 free_dup_buf:
 //    if (idx < 0)
 //        kfree(dup_buf);
@@ -1563,14 +1546,13 @@ void IntelWifi::iwl_pcie_hcmd_complete(struct iwl_trans *trans,
      * in the queue management code. */
     if (txq_id != trans_pcie->cmd_queue) {
         IWL_ERR(trans, "wrong command queue %d (should be %d), sequence 0x%X readp=%d writep=%d\n",
-             txq_id, trans_pcie->cmd_queue, sequence, txq->read_ptr,
-                     txq->write_ptr);
+                txq_id, trans_pcie->cmd_queue, sequence, txq->read_ptr, txq->write_ptr);
         //iwl_print_hex_error(trans, pkt, 32);
         return;
     }
     
     //spin_lock_bh(&txq->lock);
-    IOSimpleLockLock(txq->lock);
+    //IOSimpleLockLock(txq->lock);
     
     cmd_index = iwl_pcie_get_cmd_index(txq, index);
     cmd = txq->entries[cmd_index].cmd;
@@ -1621,7 +1603,7 @@ void IntelWifi::iwl_pcie_hcmd_complete(struct iwl_trans *trans,
     meta->flags = 0;
     
     //spin_unlock_bh(&txq->lock);
-    IOSimpleLockUnlock(txq->lock);
+    //IOSimpleLockUnlock(txq->lock);
 }
 
 
@@ -1662,7 +1644,7 @@ static int iwl_pcie_send_hcmd_sync(struct iwl_trans *trans, struct iwl_host_cmd 
     
     IOLockLock(trans_pcie->wait_command_queue);
     AbsoluteTime deadline;
-    clock_interval_to_deadline(HOST_COMPLETE_TIMEOUT, kMillisecondScale, (UInt64 *) &deadline);
+    clock_interval_to_deadline(HOST_COMPLETE_TIMEOUT * 2, kMillisecondScale, (UInt64 *) &deadline);
     ret = IOLockSleepDeadline(trans_pcie->wait_command_queue, &trans->status, deadline, THREAD_INTERRUPTIBLE);
     IOLockUnlock(trans_pcie->wait_command_queue);
     

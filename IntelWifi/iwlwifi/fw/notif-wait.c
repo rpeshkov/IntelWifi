@@ -85,7 +85,7 @@ bool iwl_notification_wait(struct iwl_notif_wait_data *notif_wait,
 	if (!list_empty(&notif_wait->notif_waits)) {
 		struct iwl_notification_wait *w;
 
-        IOSimpleLockLock(notif_wait->notif_wait_lock);
+        //IOSimpleLockLock(notif_wait->notif_wait_lock);
 		list_for_each_entry(w, &notif_wait->notif_waits, list) {
 			int i;
 			bool found = false;
@@ -118,7 +118,7 @@ bool iwl_notification_wait(struct iwl_notif_wait_data *notif_wait,
 				triggered = true;
 			}
 		}
-        IOSimpleLockUnlock(notif_wait->notif_wait_lock);
+        //IOSimpleLockUnlock(notif_wait->notif_wait_lock);
 	}
 
 	return triggered;
@@ -129,10 +129,10 @@ void iwl_abort_notification_waits(struct iwl_notif_wait_data *notif_wait)
 {
 	struct iwl_notification_wait *wait_entry;
 
-    IOSimpleLockLock(notif_wait->notif_wait_lock);
+    //IOSimpleLockLock(notif_wait->notif_wait_lock);
 	list_for_each_entry(wait_entry, &notif_wait->notif_waits, list)
 		wait_entry->aborted = true;
-    IOSimpleLockUnlock(notif_wait->notif_wait_lock);
+    //IOSimpleLockUnlock(notif_wait->notif_wait_lock);
     
     // TODO: Implement
 	//wake_up_all(&notif_wait->notif_waitq);
@@ -161,18 +161,18 @@ iwl_init_notification_wait(struct iwl_notif_wait_data *notif_wait,
 	wait_entry->triggered = false;
 	wait_entry->aborted = false;
 
-    IOSimpleLockLock(notif_wait->notif_wait_lock);
+    //IOSimpleLockLock(notif_wait->notif_wait_lock);
 	list_add(&wait_entry->list, &notif_wait->notif_waits);
-    IOSimpleLockUnlock(notif_wait->notif_wait_lock);
+    //IOSimpleLockUnlock(notif_wait->notif_wait_lock);
 }
 IWL_EXPORT_SYMBOL(iwl_init_notification_wait);
 
 void iwl_remove_notification(struct iwl_notif_wait_data *notif_wait,
 			     struct iwl_notification_wait *wait_entry)
 {
-    IOSimpleLockLock(notif_wait->notif_wait_lock);
+    //IOSimpleLockLock(notif_wait->notif_wait_lock);
 	list_del(&wait_entry->list);
-    IOSimpleLockUnlock(notif_wait->notif_wait_lock);
+    //IOSimpleLockUnlock(notif_wait->notif_wait_lock);
 }
 IWL_EXPORT_SYMBOL(iwl_remove_notification);
 
