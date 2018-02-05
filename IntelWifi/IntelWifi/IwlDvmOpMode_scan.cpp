@@ -126,7 +126,7 @@ static void iwl_complete_scan(struct iwl_priv *priv, bool aborted)
     if (priv->scan_request) {
         IWL_DEBUG_SCAN(priv, "Complete scan in mac80211\n");
         // TODO: Implement
-        //ieee80211_scan_completed(priv->hw, &info);
+        // ieee80211_scan_completed(priv->hw, &info);
     }
     
     priv->scan_type = IWL_SCAN_NORMAL;
@@ -147,7 +147,8 @@ static void iwl_process_scan_complete(struct iwl_priv *priv)
     
     IWL_DEBUG_SCAN(priv, "Completed scan.\n");
     
-    //cancel_delayed_work(&priv->scan_check);
+    // TODO: Implement
+    // cancel_delayed_work(&priv->scan_check);
     
     aborted = test_and_clear_bit(STATUS_SCAN_ABORTING, &priv->status);
     if (aborted)
@@ -1024,15 +1025,12 @@ void iwl_internal_short_hw_scan(struct iwl_priv *priv)
 }
 
 // line 997
-static IOReturn iwl_bg_start_internal_scan(OSObject *owner,
-                                       void *arg0, void *arg1,
-                                       void *arg2, void *arg3)
+static IOReturn iwl_bg_start_internal_scan(OSObject *owner, void *arg0, void *arg1, void *arg2, void *arg3)
 {
     struct iwl_priv *priv = (struct iwl_priv *)arg0;//container_of(work, struct iwl_priv, start_internal_scan);
     
     IWL_DEBUG_SCAN(priv, "Start internal scan\n");
     
-    // mutex_lock(&priv->mutex);
     IOLockLock(priv->mutex);
     
     if (priv->scan_type == IWL_SCAN_RADIO_RESET) {
@@ -1048,7 +1046,6 @@ static IOReturn iwl_bg_start_internal_scan(OSObject *owner,
     if (iwl_scan_initiate(priv, NULL, IWL_SCAN_RADIO_RESET, priv->band))
         IWL_DEBUG_SCAN(priv, "failed to start internal short scan\n");
 unlock:
-    //mutex_unlock(&priv->mutex);
     IOLockUnlock(priv->mutex);
     
     return kIOReturnSuccess;

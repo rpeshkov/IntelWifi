@@ -14,12 +14,8 @@
 
 #include "IntelWifi.hpp"
 
+#include "kext_user_shared.h"
 
-// User client method dispatch selectors.
-enum {
-    kMyUserClientOpen,
-    kNumberOfMethods // Must be last
-};
 
 class IntelWifiUserClient : public IOUserClient {
     OSDeclareDefaultStructors(IntelWifiUserClient)
@@ -37,8 +33,8 @@ protected:
     virtual IOReturn externalMethod(uint32_t selector, IOExternalMethodArguments *arguments,
                                     IOExternalMethodDispatch *dispatch, OSObject *target, void *reference);
     
-    static IOReturn openUserClient(IntelWifiUserClient *target, void *reference, IOExternalMethodArguments *arguments);
-    IOReturn openUserClientImpl();
+    static IOReturn scan(IntelWifiUserClient *target, void *reference, IOExternalMethodArguments *arguments);
+    IOReturn scanImpl();
 };
 
 

@@ -13,8 +13,9 @@
 OSDefineMetaClassAndStructors(IntelWifiUserClient, IOUserClient)
 
 const IOExternalMethodDispatch IntelWifiUserClient::sMethods[kNumberOfMethods] = {
-    { //kMyUserClientOpen
-        (IOExternalMethodAction) &IntelWifiUserClient::openUserClient,
+    {
+        // kIwlClientScan
+        (IOExternalMethodAction) &IntelWifiUserClient::scan,
         0,
         0,
         0,
@@ -56,13 +57,11 @@ IOReturn IntelWifiUserClient::externalMethod(uint32_t selector,
     
 }
 
-IOReturn IntelWifiUserClient::openUserClient(IntelWifiUserClient *target,
-                                             void *reference,
-                                             IOExternalMethodArguments *arguments) {
-    return target->openUserClientImpl();
+IOReturn IntelWifiUserClient::scan(IntelWifiUserClient *target, void *reference, IOExternalMethodArguments *arguments) {
+    return target->scanImpl();
 }
 
-IOReturn IntelWifiUserClient::openUserClientImpl() {
+IOReturn IntelWifiUserClient::scanImpl() {
     this->fProvider->opmode->scan();
     return kIOReturnSuccess;
 }

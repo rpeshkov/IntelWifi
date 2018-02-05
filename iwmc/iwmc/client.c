@@ -17,6 +17,8 @@
 
 #include "client.h"
 
+#include "kext_user_shared.h"
+
 /**
  * Private data of the client
  */
@@ -94,5 +96,5 @@ void iwmc_free(struct iwmc_client* client) {
  */
 void iwmc_scan(struct iwmc_client* client) {
     struct iwmc_priv *priv = IWMC_PRIV(client);
-    IOConnectCallScalarMethod(priv->data_port, 0, 0, 0, 0, 0);
+    IOConnectCallScalarMethod(priv->data_port, kIwlClientScan, 0, 0, 0, 0);
 }

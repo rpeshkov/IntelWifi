@@ -244,6 +244,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = ../common;
 			};
 			name = Debug;
 		};
@@ -252,6 +253,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = ../common;
 			};
 			name = Release;
 		};

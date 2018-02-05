@@ -703,6 +703,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.12;
 				SYSTEM_HEADER_SEARCH_PATHS = IntelWifi/porting/;
+				USER_HEADER_SEARCH_PATHS = ../common;
 				WARNING_CFLAGS = "-Wno-inconsistent-missing-override";
 				WRAPPER_EXTENSION = kext;
 			};
@@ -726,6 +727,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.12;
 				SYSTEM_HEADER_SEARCH_PATHS = IntelWifi/porting/;
+				USER_HEADER_SEARCH_PATHS = ../common;
 				WARNING_CFLAGS = "-Wno-inconsistent-missing-override";
 				WRAPPER_EXTENSION = kext;
 			};
