@@ -77,16 +77,16 @@ int iwlagn_mac_setup_register(struct iwl_priv *priv, const struct iwl_ucode_capa
     hw->rate_control_algorithm = "iwl-agn-rs";
     
     /* Tell mac80211 our characteristics */
-//    ieee80211_hw_set(hw, SIGNAL_DBM);
-//    ieee80211_hw_set(hw, AMPDU_AGGREGATION);
-//    ieee80211_hw_set(hw, NEED_DTIM_BEFORE_ASSOC);
-//    ieee80211_hw_set(hw, SPECTRUM_MGMT);
-//    ieee80211_hw_set(hw, REPORTS_TX_ACK_STATUS);
-//    ieee80211_hw_set(hw, QUEUE_CONTROL);
-//    ieee80211_hw_set(hw, SUPPORTS_PS);
-//    ieee80211_hw_set(hw, SUPPORTS_DYNAMIC_PS);
-//    ieee80211_hw_set(hw, SUPPORT_FAST_XMIT);
-//    ieee80211_hw_set(hw, WANT_MONITOR_VIF);
+    ieee80211_hw_set(hw, SIGNAL_DBM);
+    ieee80211_hw_set(hw, AMPDU_AGGREGATION);
+    ieee80211_hw_set(hw, NEED_DTIM_BEFORE_ASSOC);
+    ieee80211_hw_set(hw, SPECTRUM_MGMT);
+    ieee80211_hw_set(hw, REPORTS_TX_ACK_STATUS);
+    ieee80211_hw_set(hw, QUEUE_CONTROL);
+    ieee80211_hw_set(hw, SUPPORTS_PS);
+    ieee80211_hw_set(hw, SUPPORTS_DYNAMIC_PS);
+    ieee80211_hw_set(hw, SUPPORT_FAST_XMIT);
+    ieee80211_hw_set(hw, WANT_MONITOR_VIF);
     
     if (priv->trans->max_skb_frags)
         hw->netdev_features = NETIF_F_HIGHDMA | NETIF_F_SG;
@@ -102,17 +102,15 @@ int iwlagn_mac_setup_register(struct iwl_priv *priv, const struct iwl_ucode_capa
      */
     
     if (priv->nvm_data->sku_cap_11n_enable)
-        hw->wiphy->features |= NL80211_FEATURE_DYNAMIC_SMPS |
-        NL80211_FEATURE_STATIC_SMPS;
+        hw->wiphy->features |= NL80211_FEATURE_DYNAMIC_SMPS | NL80211_FEATURE_STATIC_SMPS;
     
     /*
      * Enable 11w if advertised by firmware and software crypto
      * is not enabled (as the firmware will interpret some mgmt
      * packets, so enabling it with software crypto isn't safe)
      */
-//    if (priv->fw->ucode_capa.flags & IWL_UCODE_TLV_FLAGS_MFP &&
-//        !iwlwifi_mod_params.swcrypto)
-//        ieee80211_hw_set(hw, MFP_CAPABLE);
+    if (priv->fw->ucode_capa.flags & IWL_UCODE_TLV_FLAGS_MFP && !iwlwifi_mod_params.swcrypto)
+        ieee80211_hw_set(hw, MFP_CAPABLE);
     
     hw->sta_data_size = sizeof(struct iwl_station_priv);
     hw->vif_data_size = sizeof(struct iwl_vif_priv);
@@ -285,9 +283,8 @@ int IwlDvmOpMode::iwlagn_mac_start(struct iwl_priv *priv)
 }
 
 // line 964
-void IwlDvmOpMode::iwlagn_mac_channel_switch(struct iwl_priv *priv,
-                                      struct ieee80211_vif *vif,
-                                      struct ieee80211_channel_switch *ch_switch)
+void IwlDvmOpMode::iwlagn_mac_channel_switch(struct iwl_priv *priv, struct ieee80211_vif *vif,
+                                             struct ieee80211_channel_switch *ch_switch)
 {
     //struct iwl_priv *priv = IWL_MAC80211_GET_DVM(hw);
     //struct ieee80211_conf *conf = &hw->conf;
@@ -515,10 +512,10 @@ int IwlDvmOpMode::iwlagn_mac_add_interface(struct iwl_priv *priv, struct ieee802
      * only be present by itself, and will be removed before
      * other interfaces are added, this is safe.
      */
-//    if (vif->type == NL80211_IFTYPE_MONITOR)
-//        ieee80211_hw_set(priv->hw, RX_INCLUDES_FCS);
-//    else
-//        __clear_bit(IEEE80211_HW_RX_INCLUDES_FCS, priv->hw->flags);
+    if (vif->type == NL80211_IFTYPE_MONITOR)
+        ieee80211_hw_set(priv->hw, RX_INCLUDES_FCS);
+    else
+        __clear_bit(IEEE80211_HW_RX_INCLUDES_FCS, priv->hw->flags);
     
     err = iwl_setup_interface(priv, ctx);
     if (!err || reset)

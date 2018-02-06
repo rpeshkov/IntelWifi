@@ -608,8 +608,6 @@ static int iwl_pcie_rx_alloc(struct iwl_trans *trans)
     int i;
     int free_size = trans->cfg->mq_rx_supported ? sizeof(__le64) : sizeof(__le32);
     
-    DebugLog("QUEUES NUM: %d", trans->num_rx_queues);
-    
     if (WARN_ON(trans_pcie->rxq))
         return -EINVAL;
     

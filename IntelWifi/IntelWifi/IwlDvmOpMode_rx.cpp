@@ -609,21 +609,6 @@ static int iwlagn_set_decrypted_flag(struct iwl_priv *priv,
     return 0;
 }
 
-struct beacon_header {
-    u64 timestamp;
-    u16 beacon_interval;
-    u16 capa_info;
-    
-    
-    
-};
-
-struct ssid_info {
-    u8 ssid_el_id;
-    u8 ssid_len;
-    char ssid[IEEE80211_MAX_SSID_LEN + 1];
-};
-
 // line 622
 static void iwlagn_pass_packet_to_mac80211(struct iwl_priv *priv,
                                            struct ieee80211_hdr *hdr,
@@ -643,25 +628,23 @@ static void iwlagn_pass_packet_to_mac80211(struct iwl_priv *priv,
     /* In case of HW accelerated crypto and bad decryption, drop */
     if (!iwlwifi_mod_params.swcrypto && iwlagn_set_decrypted_flag(priv, hdr, ampdu_status, stats))
         return;
-
-    //void *data = rxb->_page;
-//    struct beacon_header *bh = (struct beacon_header *) data;
-    struct ssid_info *ssid = (struct ssid_info *)(pkt->data + sizeof(struct iwl_rx_mpdu_res_start) + sizeof(*hdr) + 6);
-    ssid->ssid[ssid->ssid_len + 1] = '\0';
     
-    if ((hdr->frame_control & cpu_to_le16(IEEE80211_FCTL_FTYPE | IEEE80211_FCTL_STYPE)) == cpu_to_le16(IEEE80211_FTYPE_MGMT | IEEE80211_STYPE_BEACON)) {
-        IWL_DEBUG_RX(priv, "BEACON => FC: 0x%x; SC: 0x%x; Duration ID: %d; SSID: %d %s(%d)", hdr->frame_control, hdr->seq_ctrl, hdr->duration_id, ssid->ssid_el_id, ssid->ssid, ssid->ssid_len);
+    if (ieee80211_is_mgmt(hdr->frame_control)) {
+        IWL_DEBUG_FRAME(priv, "Management frame. Frame control: 0x%x", hdr->frame_control);
+        struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt *)(pkt->data + sizeof(ampdu_status));
+        if (ieee80211_is_beacon(hdr->frame_control) && priv->scan_request) {
+            u8 ssid_el_id = mgmt->u.beacon.variable[0];
+            u8 ssid_len = mgmt->u.beacon.variable[1];
+            char ssid[IEEE80211_MAX_SSID_LEN + 1];
+            memcpy(ssid, mgmt->u.beacon.variable + 2, ssid_len);
+            ssid[ssid_len] = '\0';
+            IWL_DEBUG_FRAME(priv, "BEACON => FC: 0x%x; SC: 0x%x; Duration ID: %d; SSID: %d %s(%d)",
+                         mgmt->frame_control, mgmt->seq_ctrl, mgmt->duration, ssid_el_id, ssid, ssid_len);
+        }
     }
-
-    
-    
-    
-    
-    
-    
-    
-
 }
+
+
 
 
 // line 692
@@ -758,8 +741,7 @@ static int iwlagn_calc_rssi(struct iwl_priv *priv, struct iwl_rx_phy_res *rx_res
 /* line 792
  * Called for REPLY_RX_MPDU_CMD
  */
-static void iwlagn_rx_reply_rx(struct iwl_priv *priv,
-                               struct iwl_rx_cmd_buffer *rxb)
+static void iwlagn_rx_reply_rx(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
 {
     struct ieee80211_hdr *header;
     struct ieee80211_rx_status rx_status = {};

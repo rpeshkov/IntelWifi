@@ -310,9 +310,8 @@ int IwlDvmOpMode::iwl_load_ucode_wait_alive(struct iwl_priv *priv, enum iwl_ucod
     priv->cur_ucode = ucode_type;
     priv->ucode_loaded = false;
     
-    iwl_init_notification_wait(&priv->notif_wait, &alive_wait,
-                               alive_cmd, ARRAY_SIZE(alive_cmd),
-                               iwl_alive_fn, &alive_data);
+    iwl_init_notification_wait(&priv->notif_wait, &alive_wait, alive_cmd, ARRAY_SIZE(alive_cmd), iwl_alive_fn,
+                               &alive_data);
 
     //ret = iwl_trans_start_fw(priv->trans, fw, false);
     ret = _ops->start_fw(priv->trans, fw, false);
@@ -326,8 +325,7 @@ int IwlDvmOpMode::iwl_load_ucode_wait_alive(struct iwl_priv *priv, enum iwl_ucod
      * Some things may run in the background now, but we
      * just wait for the ALIVE notification here.
      */
-    ret = iwl_wait_notification(&priv->notif_wait, &alive_wait,
-                                UCODE_ALIVE_TIMEOUT);
+    ret = iwl_wait_notification(&priv->notif_wait, &alive_wait, UCODE_ALIVE_TIMEOUT);
     if (ret) {
         priv->cur_ucode = old_type;
         return ret;
@@ -350,8 +348,7 @@ int IwlDvmOpMode::iwl_load_ucode_wait_alive(struct iwl_priv *priv, enum iwl_ucod
     
     ret = iwl_alive_notify(priv);
     if (ret) {
-        IWL_WARN(priv,
-                 "Could not complete ALIVE transition: %d\n", ret);
+        IWL_WARN(priv, "Could not complete ALIVE transition: %d\n", ret);
         priv->cur_ucode = old_type;
         return ret;
     }
@@ -373,8 +370,7 @@ bool IwlDvmOpMode::iwlagn_wait_calib(struct iwl_notif_wait_data *notif_wait,
     hdr = (struct iwl_calib_hdr *)pkt->data;
     
     if (iwl_calib_set(priv, hdr, iwl_rx_packet_payload_len(pkt)))
-        IWL_ERR(priv, "Failed to record calibration data %d\n",
-            hdr->op_code);
+        IWL_ERR(priv, "Failed to record calibration data %d\n", hdr->op_code);
     
     return false;
 }
@@ -394,8 +390,7 @@ int IwlDvmOpMode::iwl_run_init_ucode(struct iwl_priv *priv)
     if (!priv->fw->img[IWL_UCODE_INIT].num_sec)
         return 0;
     
-    iwl_init_notification_wait(&priv->notif_wait, &calib_wait,
-                               calib_complete, ARRAY_SIZE(calib_complete),
+    iwl_init_notification_wait(&priv->notif_wait, &calib_wait, calib_complete, ARRAY_SIZE(calib_complete),
                                iwlagn_wait_calib, priv);
     
     /* Will also start the device */
@@ -411,8 +406,7 @@ int IwlDvmOpMode::iwl_run_init_ucode(struct iwl_priv *priv)
      * Some things may run in the background now, but we
      * just wait for the calibration complete notification.
      */
-    ret = iwl_wait_notification(&priv->notif_wait, &calib_wait,
-                                UCODE_CALIB_TIMEOUT);
+    ret = iwl_wait_notification(&priv->notif_wait, &calib_wait, UCODE_CALIB_TIMEOUT);
     
     goto out;
     

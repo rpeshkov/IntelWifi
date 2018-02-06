@@ -58,5 +58,7 @@
 #define IWL_DEBUG_WEP(priv, args...) DebugLog("DEBUG WEP: " args)
 #define IWL_DEBUG_TEMP(priv, args...) DebugLog("DEBUG TEMP: " args)
 
+#define IWL_DEBUG_FRAME(priv, args...) DebugLog("DEBUG FRAME: " args)
+
 
 #endif /* Logging_h */

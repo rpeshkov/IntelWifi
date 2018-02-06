@@ -198,6 +198,9 @@ struct iwl_station_entry {
 	struct iwl_addsta_cmd sta;
 	u8 used, ctxid;
 	struct iwl_link_quality_cmd *lq;
+    
+    // MARK: rpeshkov added
+    char ssid[IEEE80211_MAX_SSID_LEN + 1];
 };
 
 /*
@@ -210,7 +213,6 @@ struct iwl_station_entry {
 struct iwl_station_priv {
 	struct iwl_rxon_context *ctx;
 	struct iwl_lq_sta lq_sta;
-	//atomic_t pending_frames;
     int pending_frames;
 	bool client;
 	bool asleep;

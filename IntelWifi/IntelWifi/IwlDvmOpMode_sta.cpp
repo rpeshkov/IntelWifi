@@ -356,7 +356,7 @@ int iwl_add_station_common(struct iwl_priv *priv, struct iwl_rxon_context *ctx, 
     //IOSimpleLockLock(priv->sta_lock);
     sta_id = iwl_prep_station(priv, ctx, addr, is_ap, sta);
     if (sta_id == IWL_INVALID_STATION) {
-        IWL_ERR(priv, "Unable to prepare station %pM for addition\n", addr);
+        IWL_ERR(priv, "Unable to prepare station " MAC_FMT " for addition\n", MAC_BYTES(addr));
         //IOSimpleLockUnlock(priv->sta_lock);
         return -EINVAL;
     }
@@ -373,7 +373,7 @@ int iwl_add_station_common(struct iwl_priv *priv, struct iwl_rxon_context *ctx, 
     }
     
     if ((priv->stations[sta_id].used & IWL_STA_DRIVER_ACTIVE) && (priv->stations[sta_id].used & IWL_STA_UCODE_ACTIVE)) {
-        IWL_DEBUG_ASSOC(priv, "STA %d (%pM) already added, not adding again.\n", sta_id, addr);
+        IWL_DEBUG_ASSOC(priv, "STA %d (" MAC_FMT ") already added, not adding again.\n", sta_id, MAC_BYTES(addr));
         //IOSimpleLockUnlock(priv->sta_lock);
         return -EEXIST;
     }
@@ -386,7 +386,7 @@ int iwl_add_station_common(struct iwl_priv *priv, struct iwl_rxon_context *ctx, 
     ret = iwl_send_add_sta(priv, &sta_cmd, 0);
     if (ret) {
         //IOSimpleLockLock(priv->sta_lock);
-        IWL_ERR(priv, "Adding station %pM failed.\n", priv->stations[sta_id].sta.sta.addr);
+        IWL_ERR(priv, "Adding station " MAC_FMT " failed.\n", MAC_BYTES(priv->stations[sta_id].sta.sta.addr));
         priv->stations[sta_id].used &= ~IWL_STA_DRIVER_ACTIVE;
         priv->stations[sta_id].used &= ~IWL_STA_UCODE_INPROGRESS;
         //IOSimpleLockUnlock(priv->sta_lock);
