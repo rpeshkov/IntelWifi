@@ -16,6 +16,7 @@
 #include <linux/types.h>
 
 #include <sys/kernel_types.h>
+#include <sys/queue.h>
 
 
 #include "iwl-modparams.h"
@@ -63,7 +64,7 @@ struct iwl_rx_mem_buffer {
     void *page;
     u16 vid;
     bool invalid;
-    struct list_head list;
+    TAILQ_ENTRY(iwl_rx_mem_buffer) list;
 };
 
 /**
@@ -119,8 +120,8 @@ struct iwl_rxq {
     u32 used_count;
     u32 write_actual;
     u32 queue_size;
-    struct list_head rx_free;
-    struct list_head rx_used;
+    TAILQ_HEAD(, iwl_rx_mem_buffer) rx_free;
+    TAILQ_HEAD(, iwl_rx_mem_buffer) rx_used;
     bool need_update;
     struct iwl_rb_status *rb_stts;
     dma_addr_t rb_stts_dma;
@@ -144,8 +145,8 @@ struct iwl_rxq {
 struct iwl_rb_allocator {
     int req_pending;
     int req_ready;
-    struct list_head rbd_allocated;
-    struct list_head rbd_empty;
+    TAILQ_HEAD(, iwl_rx_mem_buffer) rbd_allocated;
+    TAILQ_HEAD(, iwl_rx_mem_buffer) rbd_empty;
     IOSimpleLock *lock;
 //    struct workqueue_struct *alloc_wq;
 //    struct work_struct rx_alloc;

@@ -12,8 +12,6 @@
 
 #include <linux/types.h>
 #include <linux/compiler.h>
-#include "list.h"
-
 #include <macro_stubs.h>
 
 #include <sys/errno.h>

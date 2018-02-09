@@ -28,7 +28,6 @@
 
 
 #include <linux/kernel.h>
-#include <linux/module.h>
 #include <linux/mac80211.h>
 extern "C" {
 #include "iwl-io.h"

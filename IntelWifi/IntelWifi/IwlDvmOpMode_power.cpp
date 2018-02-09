@@ -30,7 +30,7 @@
 
 extern "C" {
 #include <linux/kernel.h>
-#include <linux/module.h>
+
     //#include <linux/slab.h>
     //#include <net/mac80211.h>
 #include "power.h"

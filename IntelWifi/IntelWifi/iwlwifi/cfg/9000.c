@@ -49,7 +49,7 @@
  *
  *****************************************************************************/
 
-#include <linux/module.h>
+#include <macro_stubs.h>
 #include "iwl-config.h"
 #include "iwl-agn-hw.h"
 

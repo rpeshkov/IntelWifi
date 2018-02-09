@@ -40,12 +40,10 @@ typedef s16 __s16;
 typedef s32 __s32;
 typedef s64 __s64;
 
+typedef u64 dma_addr_t;
+
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
-
-
-
-typedef u64 dma_addr_t;
 
 /**
  * upper_32_bits - return bits 32-63 of a number
@@ -63,11 +61,6 @@ typedef u64 dma_addr_t;
  */
 #define lower_32_bits(n) ((u32)(n))
 
-
-
-
-
-
 #define cpu_to_le64 __cpu_to_le64
 #define le64_to_cpu __le64_to_cpu
 #define cpu_to_le32 __cpu_to_le32
@@ -80,9 +73,6 @@ typedef u64 dma_addr_t;
 #define be32_to_cpu __be32_to_cpu
 #define cpu_to_be16 __cpu_to_be16
 #define be16_to_cpu __be16_to_cpu
-
-
-
 
 #define __cpu_to_le64(x) ((__force __le64)(__u64)(x))
 #define __le64_to_cpu(x) ((__force __u64)(__le64)(x))
@@ -111,24 +101,11 @@ static inline __u16 __le16_to_cpup(const __le16 *p)
     return (__force __u16)*p;
 }
 
-
-
-
-
-
 #define ETHTOOL_FWVERS_LEN    32
 
 
 #define RT_ALIGN_T(u, uAlignment, type) ( ((type)(u) + ((uAlignment) - 1)) & ~(type)((uAlignment) - 1) )
 #define RT_ALIGN_Z(cb, uAlignment)              RT_ALIGN_T(cb, uAlignment, size_t)
 #define ALIGN RT_ALIGN_Z
-
-struct list_head {
-    struct list_head *next, *prev;
-};
-
-
-
-
 
 #endif /* types_h */

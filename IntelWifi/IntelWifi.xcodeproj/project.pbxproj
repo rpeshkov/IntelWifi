@@ -60,7 +60,6 @@
 		A63CB75C2010FB5E0097DA79 /* IwlDvmOpMode_lib.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A63CB75B2010FB5E0097DA79 /* IwlDvmOpMode_lib.cpp */; };
 		A63CB75E2010FDA00097DA79 /* IwlDvmOpMode_rxon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A63CB75D2010FDA00097DA79 /* IwlDvmOpMode_rxon.cpp */; };
 		A63CB760201100F10097DA79 /* IwlDvmOpMode_calib.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A63CB75F201100F10097DA79 /* IwlDvmOpMode_calib.cpp */; };
-		A642B2CC20004F5000264363 /* list.h in Headers */ = {isa = PBXBuildFile; fileRef = A642B2C920004F4F00264363 /* list.h */; };
 		A642B2CE20004F5000264363 /* compiler.h in Headers */ = {isa = PBXBuildFile; fileRef = A642B2CB20004F5000264363 /* compiler.h */; };
 		A65083781FEFB2DC001300AC /* IntelWifi.hpp in Headers */ = {isa = PBXBuildFile; fileRef = A65083771FEFB2DC001300AC /* IntelWifi.hpp */; };
 		A650837A1FEFB2DC001300AC /* IntelWifi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A65083791FEFB2DC001300AC /* IntelWifi.cpp */; };
@@ -119,7 +118,6 @@
 		A615259D1FF4B6F90094A282 /* a000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = a000.c; sourceTree = "<group>"; };
 		A615259E1FF4B6F90094A282 /* 7000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = 7000.c; sourceTree = "<group>"; };
 		A615259F1FF4B6F90094A282 /* 2000.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = 2000.c; sourceTree = "<group>"; };
-		A61525AA1FF4B72C0094A282 /* module.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = module.h; sourceTree = "<group>"; };
 		A61525AC1FF4B86E0094A282 /* types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = types.h; sourceTree = "<group>"; };
 		A61525AD1FF4B8830094A282 /* netdevice.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = netdevice.h; sourceTree = "<group>"; };
 		A61525AE1FF4B8970094A282 /* ieee80211.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ieee80211.h; sourceTree = "<group>"; };
@@ -152,7 +150,6 @@
 		A63CB75D2010FDA00097DA79 /* IwlDvmOpMode_rxon.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IwlDvmOpMode_rxon.cpp; sourceTree = "<group>"; };
 		A63CB75F201100F10097DA79 /* IwlDvmOpMode_calib.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IwlDvmOpMode_calib.cpp; sourceTree = "<group>"; };
 		A63CB76120110D360097DA79 /* mac80211.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mac80211.h; sourceTree = "<group>"; };
-		A642B2C920004F4F00264363 /* list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = list.h; sourceTree = "<group>"; };
 		A642B2CB20004F5000264363 /* compiler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = compiler.h; sourceTree = "<group>"; };
 		A65083741FEFB2DC001300AC /* IntelWifi.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = IntelWifi.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		A65083771FEFB2DC001300AC /* IntelWifi.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IntelWifi.hpp; sourceTree = "<group>"; };
@@ -275,9 +272,7 @@
 				A61525AE1FF4B8970094A282 /* ieee80211.h */,
 				A6FEB8302023E364001FE12D /* jiffies.h */,
 				A61525CF1FF4CFF60094A282 /* kernel.h */,
-				A642B2C920004F4F00264363 /* list.h */,
 				A63CB76120110D360097DA79 /* mac80211.h */,
-				A61525AA1FF4B72C0094A282 /* module.h */,
 				A61525AD1FF4B8830094A282 /* netdevice.h */,
 				A61525AF1FF4B8A30094A282 /* nl80211.h */,
 				A61525AC1FF4B86E0094A282 /* types.h */,
@@ -414,7 +409,6 @@
 				A61264FA1FF20162006A7AEA /* iwl-csr.h in Headers */,
 				A6142739200203220093DED7 /* rs.h in Headers */,
 				A614367F1FFAF8FD00852FEC /* Configuration.h in Headers */,
-				A642B2CC20004F5000264363 /* list.h in Headers */,
 				A642B2CE20004F5000264363 /* compiler.h in Headers */,
 				A6B62E1E201AA58C00426B95 /* iwl-scd.h in Headers */,
 				A614273B200204B90093DED7 /* power.h in Headers */,

@@ -39,6 +39,6 @@
 #define WARN_ON(x) (x)
 #define WARN_ON_ONCE(x) (x)
 
-
+#define __stringify OS_STRINGIFY
 
 #endif /* macro_stubs_h */

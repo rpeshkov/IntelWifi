@@ -64,7 +64,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  *****************************************************************************/
-#include <linux/module.h>
+#include <macro_stubs.h>
 
 #include "iwl-drv.h"
 #include "iwl-csr.h"
@@ -1543,7 +1543,7 @@ struct iwl_drv *iwl_drv_start(struct iwl_trans *trans)
 
 	//init_completion(&drv->request_firmware_complete);
 	//INIT_LIST_HEAD(&drv->list);
-    STAILQ_INIT(&drv->list);
+    // STAILQ_INIT(&drv->list);
 
 #ifdef CONFIG_IWLWIFI_DEBUGFS
 	/* Create the device debugfs entries. */
