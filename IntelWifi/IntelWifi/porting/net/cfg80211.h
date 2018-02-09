@@ -908,7 +908,7 @@ struct wiphy {
     const struct ieee80211_ht_cap *ht_capa_mod_mask;
     const struct ieee80211_vht_cap *vht_capa_mod_mask;
     
-    struct list_head wdev_list;
+//    struct list_head wdev_list;
     
     /* the network namespace this phy lives in currently */
     //possible_net_t _net;

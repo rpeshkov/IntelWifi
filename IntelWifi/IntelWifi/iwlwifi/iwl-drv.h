@@ -64,6 +64,9 @@
 
 #ifndef __iwl_drv_h__
 #define __iwl_drv_h__
+
+#include <sys/queue.h>
+
 #include "fw/img.h"
 
 
@@ -86,6 +89,8 @@
 #define EXT_NVM_RF_CFG_TYPE_MSK(x)   (((x) >> 12) & 0xFFF)
 #define EXT_NVM_RF_CFG_TX_ANT_MSK(x) (((x) >> 24) & 0xF)
 #define EXT_NVM_RF_CFG_RX_ANT_MSK(x) (((x) >> 28) & 0xF)
+
+struct iwlwifi_opmode_table;
 
 /**
  * DOC: Driver system flows - drv component
@@ -124,7 +129,8 @@
  * @request_firmware_complete: the firmware has been obtained from user space
  */
 struct iwl_drv {
-    struct list_head list;
+    //struct list_head list;
+    STAILQ_ENTRY(iwl_drv) list;
     struct iwl_fw fw;
     
     struct iwl_op_mode *op_mode;

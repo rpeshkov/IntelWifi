@@ -116,7 +116,8 @@ static IOLock *iwlwifi_opmode_table_mtx;
 static struct iwlwifi_opmode_table {
 	const char *name;			/* name: iwldvm, iwlmvm, etc */
 	const struct iwl_op_mode_ops *ops;	/* pointer to op_mode ops */
-	struct list_head drv;		/* list of devices using this op_mode */
+	//struct list_head drv;		/* list of devices using this op_mode */
+    STAILQ_HEAD(, iwl_drv) drv;
 } iwlwifi_opmode_table[] = {		/* ops set when driver is initialized */
 	[DVM_OP_MODE] = { .name = "iwldvm", .ops = NULL },
 	[MVM_OP_MODE] = { .name = "iwlmvm", .ops = NULL },
@@ -1542,7 +1543,8 @@ struct iwl_drv *iwl_drv_start(struct iwl_trans *trans)
 	drv->dev = trans->dev;
 
 	//init_completion(&drv->request_firmware_complete);
-	INIT_LIST_HEAD(&drv->list);
+	//INIT_LIST_HEAD(&drv->list);
+    //STAILQ_INIT(&drv->list);
 
 #ifdef CONFIG_IWLWIFI_DEBUGFS
 	/* Create the device debugfs entries. */
@@ -1599,8 +1601,11 @@ void iwl_drv_stop(struct iwl_drv *drv)
 	 * when firmware loading failed -- in that
 	 * case we can't remove it from any list.
 	 */
-    if (!list_empty(&drv->list))
-        list_del(&drv->list);
+//    if (!STAILQ_EMPTY(&drv->list))
+//
+//        STAILQ_REMOVE(&drv->list, <#elm#>, <#type#>, <#field#>)
+//        //STAILQ_REMOVE_HEAD(&drv->list, drv);
+//        list_del(&drv->list);
 
     IOLockUnlock(iwlwifi_opmode_table_mtx);
 
@@ -1640,7 +1645,8 @@ int iwl_opmode_register(const char *name, const struct iwl_op_mode_ops *ops)
 			continue;
 		op->ops = ops;
 		/* TODO: need to handle exceptional case */
-		list_for_each_entry(drv, &op->drv, list)
+        STAILQ_FOREACH(drv, &op->drv, list)
+		//list_for_each_entry(drv, &op->drv, list)
 			drv->op_mode = _iwl_op_mode_start(drv, op);
 
         IOLockUnlock(iwlwifi_opmode_table_mtx);
@@ -1664,7 +1670,8 @@ void iwl_opmode_deregister(const char *name)
 		iwlwifi_opmode_table[i].ops = NULL;
 
 		/* call the stop routine for all devices */
-		list_for_each_entry(drv, &iwlwifi_opmode_table[i].drv, list)
+        STAILQ_FOREACH(drv, &iwlwifi_opmode_table[i].drv, list)
+		//list_for_each_entry(drv, &iwlwifi_opmode_table[i].drv, list)
 			_iwl_op_mode_stop(drv);
 
         IOLockUnlock(iwlwifi_opmode_table_mtx);
@@ -1682,7 +1689,7 @@ static int __unused iwl_drv_init(void)
     iwlwifi_opmode_table_mtx = IOLockAlloc();
 
 	for (i = 0; i < ARRAY_SIZE(iwlwifi_opmode_table); i++)
-		INIT_LIST_HEAD(&iwlwifi_opmode_table[i].drv);
+		STAILQ_INIT(&iwlwifi_opmode_table[i].drv);
 
 	pr_info(DRV_DESCRIPTION "\n");
 	pr_info(DRV_COPYRIGHT "\n");
