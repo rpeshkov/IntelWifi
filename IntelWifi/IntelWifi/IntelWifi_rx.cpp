@@ -532,15 +532,12 @@ static void iwl_pcie_rx_allocator(struct iwl_trans *trans)
         //spin_unlock(&rba->lock);
         //IOSimpleLockUnlock(rba->lock);
         
-        //atomic_inc(&rba->req_ready);
         OSIncrementAtomic(&rba->req_ready);
     }
     
-    //spin_lock(&rba->lock);
     //IOSimpleLockLock(rba->lock);
     /* return unused rbds to the allocator empty list */
     list_splice_tail(&local_empty, &rba->rbd_empty);
-    //spin_unlock(&rba->lock);
     //IOSimpleLockUnlock(rba->lock);
 }
 
@@ -557,7 +554,6 @@ static void iwl_pcie_rx_allocator_get(struct iwl_trans *trans, struct iwl_rxq *r
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     struct iwl_rb_allocator *rba = &trans_pcie->rba;
     int i;
-    
     //lockdep_assert_held(&rxq->lock);
     
     /*

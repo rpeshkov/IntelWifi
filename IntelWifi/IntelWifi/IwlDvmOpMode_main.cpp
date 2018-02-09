@@ -520,7 +520,7 @@ static int iwl_init_drv(struct iwl_priv *priv)
  
     priv->mutex = IOLockAlloc();
     
-    INIT_LIST_HEAD(&priv->calib_results);
+    STAILQ_INIT(&priv->calib_results);
     
     priv->band = NL80211_BAND_2GHZ;
     

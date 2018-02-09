@@ -129,7 +129,6 @@ struct iwlwifi_opmode_table;
  * @request_firmware_complete: the firmware has been obtained from user space
  */
 struct iwl_drv {
-    //struct list_head list;
     STAILQ_ENTRY(iwl_drv) list;
     struct iwl_fw fw;
     

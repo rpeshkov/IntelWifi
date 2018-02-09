@@ -153,7 +153,6 @@ iwl_init_notification_wait(struct iwl_notif_wait_data *notif_wait, struct iwl_no
 	wait_entry->aborted = false;
 
     //IOSimpleLockLock(notif_wait->notif_wait_lock);
-	//list_add(&wait_entry->list, &notif_wait->notif_waits);
     STAILQ_INSERT_HEAD(&notif_wait->notif_waits, wait_entry, list);
     //IOSimpleLockUnlock(notif_wait->notif_wait_lock);
 }
@@ -163,7 +162,6 @@ void iwl_remove_notification(struct iwl_notif_wait_data *notif_wait,
 			     struct iwl_notification_wait *wait_entry)
 {
     //IOSimpleLockLock(notif_wait->notif_wait_lock);
-	//list_del(&wait_entry->list);
     STAILQ_REMOVE_HEAD(&notif_wait->notif_waits, list);
     //IOSimpleLockUnlock(notif_wait->notif_wait_lock);
 }

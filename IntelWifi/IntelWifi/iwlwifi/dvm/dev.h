@@ -677,7 +677,7 @@ struct iwl_priv {
 
 	struct napi_struct *napi;
 
-	struct list_head calib_results;
+    STAILQ_HEAD(, iwl_calib_result) calib_results;
 
 	struct workqueue_struct *workqueue;
 

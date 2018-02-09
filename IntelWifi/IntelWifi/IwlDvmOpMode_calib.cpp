@@ -18,7 +18,7 @@ extern "C" {
 
 /* Opaque calibration results */
 struct iwl_calib_result {
-    struct list_head list;
+    STAILQ_ENTRY(iwl_calib_result) list;
     size_t cmd_len;
     struct iwl_calib_hdr hdr;
     /* data follows */
@@ -41,7 +41,7 @@ int iwl_send_calib_results(struct iwl_priv *priv)
     };
     struct iwl_calib_result *res;
     
-    list_for_each_entry(res, &priv->calib_results, list) {
+    STAILQ_FOREACH(res, &priv->calib_results, list) {
         int ret;
         
         hcmd.len[0] = res->cmd_len;
@@ -71,16 +71,17 @@ int iwl_calib_set(struct iwl_priv *priv, const struct iwl_calib_hdr *cmd, int le
     memcpy(&res->hdr, cmd, len);
     res->cmd_len = len;
     
-    list_for_each_entry(tmp, &priv->calib_results, list) {
+    STAILQ_FOREACH(tmp, &priv->calib_results, list) {
         if (tmp->hdr.op_code == res->hdr.op_code) {
-            list_replace(&tmp->list, &res->list);
+            STAILQ_INSERT_AFTER(&priv->calib_results, tmp, res, list);
+            STAILQ_REMOVE(&priv->calib_results, tmp, iwl_calib_result, list);
             IOFree(tmp, alloc_size);
             return 0;
         }
     }
     
     /* wasn't in list already */
-    list_add_tail(&res->list, &priv->calib_results);
+    STAILQ_INSERT_TAIL(&priv->calib_results, res, list);
     
     return 0;
 }

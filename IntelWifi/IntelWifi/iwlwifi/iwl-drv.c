@@ -116,8 +116,7 @@ static IOLock *iwlwifi_opmode_table_mtx;
 static struct iwlwifi_opmode_table {
 	const char *name;			/* name: iwldvm, iwlmvm, etc */
 	const struct iwl_op_mode_ops *ops;	/* pointer to op_mode ops */
-	//struct list_head drv;		/* list of devices using this op_mode */
-    STAILQ_HEAD(, iwl_drv) drv;
+    STAILQ_HEAD(, iwl_drv) drv; /* list of devices using this op_mode */
 } iwlwifi_opmode_table[] = {		/* ops set when driver is initialized */
 	[DVM_OP_MODE] = { .name = "iwldvm", .ops = NULL },
 	[MVM_OP_MODE] = { .name = "iwlmvm", .ops = NULL },
@@ -1544,7 +1543,7 @@ struct iwl_drv *iwl_drv_start(struct iwl_trans *trans)
 
 	//init_completion(&drv->request_firmware_complete);
 	//INIT_LIST_HEAD(&drv->list);
-    //STAILQ_INIT(&drv->list);
+    STAILQ_INIT(&drv->list);
 
 #ifdef CONFIG_IWLWIFI_DEBUGFS
 	/* Create the device debugfs entries. */
@@ -1646,7 +1645,6 @@ int iwl_opmode_register(const char *name, const struct iwl_op_mode_ops *ops)
 		op->ops = ops;
 		/* TODO: need to handle exceptional case */
         STAILQ_FOREACH(drv, &op->drv, list)
-		//list_for_each_entry(drv, &op->drv, list)
 			drv->op_mode = _iwl_op_mode_start(drv, op);
 
         IOLockUnlock(iwlwifi_opmode_table_mtx);
@@ -1671,7 +1669,6 @@ void iwl_opmode_deregister(const char *name)
 
 		/* call the stop routine for all devices */
         STAILQ_FOREACH(drv, &iwlwifi_opmode_table[i].drv, list)
-		//list_for_each_entry(drv, &iwlwifi_opmode_table[i].drv, list)
 			_iwl_op_mode_stop(drv);
 
         IOLockUnlock(iwlwifi_opmode_table_mtx);
