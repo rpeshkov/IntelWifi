@@ -38,8 +38,7 @@ public:
     IwlDvmOpMode(IwlTransOps *ops);
     virtual struct ieee80211_hw *start(struct iwl_trans *trans,
                                 const struct iwl_cfg *cfg,
-                                const struct iwl_fw *fw,
-                                struct dentry *dbgfs_dir) override;
+                                const struct iwl_fw *fw) override;
     virtual void nic_config(struct iwl_priv *priv) override;
     
     virtual void stop(struct iwl_priv *priv) override;
@@ -56,8 +55,7 @@ private:
     // main.c
     struct iwl_priv *iwl_op_mode_dvm_start(struct iwl_trans *trans,
                                            const struct iwl_cfg *cfg,
-                                           const struct iwl_fw *fw,
-                                           struct dentry *dbgfs_dir); // line 1232
+                                           const struct iwl_fw *fw); // line 1232
     void iwl_op_mode_dvm_stop(struct iwl_priv* priv); // line 1524
     
     // mac80211.c

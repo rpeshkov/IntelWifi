@@ -1557,7 +1557,7 @@ void IntelWifi::iwl_pcie_handle_rfkill_irq(struct iwl_trans *trans)
 }
 
 // line 1559
-irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
+void IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
 {
     struct iwl_trans *trans = (struct iwl_trans *)dev_id;
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
@@ -1606,7 +1606,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
         
         //IOSimpleLockUnlock(trans_pcie->irq_lock);
         //lock_map_release(&trans->sync_cmd_lockdep_map);
-        return IRQ_NONE;
+        return;
     }
     
     if (unlikely(inta == 0xFFFFFFFF || (inta & 0xFFFFFFF0) == 0xa5a5a5a0)) {
@@ -1792,7 +1792,7 @@ irqreturn_t IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
     
 out:
     //lock_map_release(&trans->sync_cmd_lockdep_map);
-    return IRQ_HANDLED;
+    return;
 }
 
 /******************************************************************************

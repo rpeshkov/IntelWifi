@@ -9,7 +9,9 @@
 #ifndef compiler_h
 #define compiler_h
 
-#include <linux/types.h>
+#define __packed __attribute__((packed))
+#define __aligned(x)        __attribute__((aligned(x)))
+#define __must_check        __attribute__((warn_unused_result))
 
 #define __READ_ONCE_SIZE                        \
 ({                                    \
@@ -115,6 +117,10 @@ union { typeof(x) __val; char __c[1]; } __u =    \
 __write_once_size(&(x), __u.__c, sizeof(x));    \
 __u.__val;                    \
 })
+
+
+
+
 
 
 

@@ -12,6 +12,8 @@
 #include <IOKit/IOTypes.h>
 #include <libkern/OSAtomic.h>
 
+#include <linux/compiler.h>
+#include <macro_stubs.h>
 #include "bitfield.h"
 
 typedef UInt8  u8;
@@ -19,31 +21,29 @@ typedef UInt16 u16;
 typedef UInt32 u32;
 typedef UInt64 u64;
 
-typedef UInt8 __u8;
-typedef UInt16 __u16;
-typedef UInt32 __u32;
-typedef UInt64 __u64;
+typedef u8 __u8;
+typedef u16 __u16;
+typedef u32 __u32;
+typedef u64 __u64;
 
-typedef UInt16 __le16;
-typedef UInt32 __le32;
-typedef UInt64 __le64;
-
+typedef __u16 __le16;
+typedef __u32 __le32;
+typedef __u64 __le64;
 
 typedef SInt8  s8;
 typedef SInt16 s16;
 typedef SInt32 s32;
 typedef SInt64 s64;
 
-typedef SInt8  __s8;
-typedef SInt16 __s16;
-typedef SInt32 __s32;
-typedef SInt64 __s64;
+typedef s8  __s8;
+typedef s16 __s16;
+typedef s32 __s32;
+typedef s64 __s64;
 
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
-//#define __unused __attribute__((__unused__))
-#define __packed __attribute__((packed))
+
 
 typedef u64 dma_addr_t;
 
@@ -64,8 +64,7 @@ typedef u64 dma_addr_t;
 #define lower_32_bits(n) ((u32)(n))
 
 
-#define __bitwise
-#define __force
+
 
 
 
@@ -118,8 +117,7 @@ static inline __u16 __le16_to_cpup(const __le16 *p)
 
 
 #define ETHTOOL_FWVERS_LEN    32
-#define ETHTOOL_BUSINFO_LEN    32
-#define ETHTOOL_EROMVERS_LEN    32
+
 
 #define RT_ALIGN_T(u, uAlignment, type) ( ((type)(u) + ((uAlignment) - 1)) & ~(type)((uAlignment) - 1) )
 #define RT_ALIGN_Z(cb, uAlignment)              RT_ALIGN_T(cb, uAlignment, size_t)

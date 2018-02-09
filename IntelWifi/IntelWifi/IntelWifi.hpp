@@ -175,7 +175,7 @@ private:
 
     
     // rx.c
-    irqreturn_t iwl_pcie_irq_handler(int irq, void *dev_id);
+    void iwl_pcie_irq_handler(int irq, void *dev_id);
     
     void iwl_pcie_handle_rfkill_irq(struct iwl_trans *trans);
     void iwl_pcie_irq_handle_error(struct iwl_trans *trans);

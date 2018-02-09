@@ -515,7 +515,7 @@ int IwlDvmOpMode::iwlagn_mac_add_interface(struct iwl_priv *priv, struct ieee802
     if (vif->type == NL80211_IFTYPE_MONITOR)
         ieee80211_hw_set(priv->hw, RX_INCLUDES_FCS);
     else
-        __clear_bit(IEEE80211_HW_RX_INCLUDES_FCS, priv->hw->flags);
+        clear_bit(IEEE80211_HW_RX_INCLUDES_FCS, priv->hw->flags);
     
     err = iwl_setup_interface(priv, ctx);
     if (!err || reset)

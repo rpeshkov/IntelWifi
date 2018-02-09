@@ -65,7 +65,6 @@
  *****************************************************************************/
 
 #include <linux/module.h>
-#include <linux/stringify.h>
 #include "iwl-config.h"
 #include "iwl-agn-hw.h"
 

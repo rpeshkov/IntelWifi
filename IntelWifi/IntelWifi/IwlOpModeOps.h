@@ -22,8 +22,7 @@ public:
     
     virtual struct ieee80211_hw *start(struct iwl_trans *trans,
                                  const struct iwl_cfg *cfg,
-                                 const struct iwl_fw *fw,
-                                 struct dentry *dbgfs_dir) = 0;
+                                 const struct iwl_fw *fw) = 0;
     virtual void nic_config(struct iwl_priv *priv) = 0;
     virtual void stop(struct iwl_priv *priv) = 0;
     virtual void rx(struct iwl_priv *priv, struct napi_struct *napi, struct iwl_rx_cmd_buffer *rxb) = 0;

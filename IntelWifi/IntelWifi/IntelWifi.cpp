@@ -206,7 +206,7 @@ bool IntelWifi::start(IOService *provider) {
     }
     
     opmode = new IwlDvmOpMode(this);
-    hw = opmode->start(fTrans, fTrans->cfg, &fTrans->drv->fw, NULL);
+    hw = opmode->start(fTrans, fTrans->cfg, &fTrans->drv->fw);
     
     if (!hw) {
         TraceLog("ERROR: Error while preparing HW");

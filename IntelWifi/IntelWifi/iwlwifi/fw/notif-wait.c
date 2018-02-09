@@ -62,9 +62,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  *****************************************************************************/
-//#include <linux/sched.h>
-#include <linux/export.h>
-
 #include "iwl-drv.h"
 #include "notif-wait.h"
 
@@ -100,12 +97,9 @@ bool iwl_notification_wait(struct iwl_notif_wait_data *notif_wait,
 				continue;
 
 			for (i = 0; i < w->n_cmds; i++) {
-				u16 rec_id = WIDE_ID(pkt->hdr.group_id,
-						     pkt->hdr.cmd);
+				u16 rec_id = WIDE_ID(pkt->hdr.group_id, pkt->hdr.cmd);
 
-				if (w->cmds[i] == rec_id ||
-				    (!iwl_cmd_groupid(w->cmds[i]) &&
-				     DEF_ID(w->cmds[i]) == rec_id)) {
+				if (w->cmds[i] == rec_id || (!iwl_cmd_groupid(w->cmds[i]) && DEF_ID(w->cmds[i]) == rec_id)) {
 					found = true;
 					break;
 				}
@@ -144,12 +138,10 @@ void iwl_abort_notification_waits(struct iwl_notif_wait_data *notif_wait)
 IWL_EXPORT_SYMBOL(iwl_abort_notification_waits);
 
 void
-iwl_init_notification_wait(struct iwl_notif_wait_data *notif_wait,
-			   struct iwl_notification_wait *wait_entry,
-			   const u16 *cmds, int n_cmds,
-			   bool (*fn)(struct iwl_notif_wait_data *notif_wait,
-				      struct iwl_rx_packet *pkt, void *data),
-			   void *fn_data)
+iwl_init_notification_wait(struct iwl_notif_wait_data *notif_wait, struct iwl_notification_wait *wait_entry,
+                           const u16 *cmds, int n_cmds,
+                           bool (*fn)(struct iwl_notif_wait_data *notif_wait, struct iwl_rx_packet *pkt, void *data),
+                           void *fn_data)
 {
 	if (WARN_ON(n_cmds > MAX_NOTIF_CMDS))
 		n_cmds = MAX_NOTIF_CMDS;

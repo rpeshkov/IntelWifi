@@ -64,11 +64,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  *****************************************************************************/
-#include <linux/completion.h>
-#include <linux/dma-mapping.h>
-#include <linux/firmware.h>
 #include <linux/module.h>
-#include <linux/vmalloc.h>
 
 #include "iwl-drv.h"
 #include "iwl-csr.h"
@@ -81,6 +77,16 @@
 #include "iwl-modparams.h"
 
 #include "firmware_file.h"
+
+
+struct firmware {
+    size_t size;
+    const u8 *data;
+    
+    /* firmware loader private fields */
+    void *priv;
+};
+
 
 /******************************************************************************
  *
@@ -491,7 +497,7 @@ static void iwl_set_ucode_api_flags(struct iwl_drv *drv, const u8 *data,
 
 	for (i = 0; i < 32; i++) {
 		if (api_flags & BIT(i))
-			__set_bit(i + 32 * api_index, capa->_api);
+			set_bit(i + 32 * api_index, capa->_api);
 	}
 }
 
@@ -512,7 +518,7 @@ static void iwl_set_ucode_capabilities(struct iwl_drv *drv, const u8 *data,
 
 	for (i = 0; i < 32; i++) {
 		if (api_flags & BIT(i))
-			__set_bit(i + 32 * api_index, capa->_capa);
+			set_bit(i + 32 * api_index, capa->_capa);
 	}
 }
 
@@ -1114,12 +1120,9 @@ static int iwl_parse_tlv_firmware(struct iwl_drv *drv,
 	 * capabilities TLV is not present, or if it has an old format,
 	 * warn and continue without GSCAN.
 	 */
-	if (fw_has_capa(capa, IWL_UCODE_TLV_CAPA_GSCAN_SUPPORT) &&
-	    !gscan_capa) {
-        IWL_DEBUG_INFO(drv,
-                   "GSCAN is supported but capabilities TLV is unavailable\n");
-		__clear_bit((__force long)IWL_UCODE_TLV_CAPA_GSCAN_SUPPORT,
-			    capa->_capa);
+	if (fw_has_capa(capa, IWL_UCODE_TLV_CAPA_GSCAN_SUPPORT) && !gscan_capa) {
+        IWL_DEBUG_INFO(drv, "GSCAN is supported but capabilities TLV is unavailable\n");
+		clear_bit((__force long)IWL_UCODE_TLV_CAPA_GSCAN_SUPPORT, capa->_capa);
 	}
 
 	return 0;
@@ -1215,21 +1218,8 @@ static struct iwl_op_mode *
 _iwl_op_mode_start(struct iwl_drv *drv, struct iwlwifi_opmode_table *op)
 {
 	const struct iwl_op_mode_ops *ops = op->ops;
-	struct dentry *dbgfs_dir = NULL;
 	struct iwl_op_mode *op_mode = NULL;
-
-#ifdef CONFIG_IWLWIFI_DEBUGFS
-	drv->dbgfs_op_mode = debugfs_create_dir(op->name,
-						drv->dbgfs_drv);
-	if (!drv->dbgfs_op_mode) {
-		IWL_ERR(drv,
-			"failed to create opmode debugfs directory\n");
-		return op_mode;
-	}
-	dbgfs_dir = drv->dbgfs_op_mode;
-#endif
-
-	op_mode = ops->start(drv->trans, drv->trans->cfg, &drv->fw, dbgfs_dir);
+	op_mode = ops->start(drv->trans, drv->trans->cfg, &drv->fw);
 
 #ifdef CONFIG_IWLWIFI_DEBUGFS
 	if (!op_mode) {

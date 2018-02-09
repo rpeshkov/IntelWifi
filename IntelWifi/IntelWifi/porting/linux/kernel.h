@@ -9,19 +9,16 @@
 #ifndef kernel_h
 #define kernel_h
 
-#include "types.h"
-#include "irqreturn.h"
-#include "compiler.h"
+
+#include <linux/types.h>
+#include <linux/compiler.h>
 #include "list.h"
+
+#include <macro_stubs.h>
 
 #include <sys/errno.h>
 #include <libkern/OSTypes.h>
 #include <IOKit/IOLib.h>
-
-#define __aligned(x)        __attribute__((aligned(x)))
-#define __rcu
-
-
 
 #define ERFKILL        132    /* Operation not possible due to RF-kill */
 
@@ -49,12 +46,10 @@
 
 
 
-#define WARN_ON(x) (x)
-#define STR(x) #x
-#define WARN_ON_ONCE(x) (x)
 
-#define likely(x)       __builtin_expect(!!(x), 1)
-#define unlikely(x)     __builtin_expect(!!(x), 0)
+
+#define likely(x)       OS_EXPECT(!!(x), 1)
+#define unlikely(x)     OS_EXPECT(!!(x), 0)
 
 # define do_div(n,base) ({                    \
 uint32_t __base = (base);                \
@@ -65,10 +60,6 @@ __rem;                            \
 })
 
 
-# define __acquires(x)
-# define __releases(x)
-# define __acquire(x) (void)0
-# define __release(x) (void)0
 
 static inline int fls64(UInt64 x)
 {

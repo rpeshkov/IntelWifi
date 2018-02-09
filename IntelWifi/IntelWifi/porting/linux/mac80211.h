@@ -1215,7 +1215,7 @@ static inline bool _ieee80211_hw_check(struct ieee80211_hw *hw,
 static inline void _ieee80211_hw_set(struct ieee80211_hw *hw,
                                      enum ieee80211_hw_flags flg)
 {
-    return __set_bit(flg, hw->flags);
+    return set_bit(flg, hw->flags);
 }
 #define ieee80211_hw_set(hw, flg)    _ieee80211_hw_set(hw, IEEE80211_HW_##flg)
 

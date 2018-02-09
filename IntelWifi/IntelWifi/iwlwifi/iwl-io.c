@@ -26,8 +26,6 @@
  * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
  *
  *****************************************************************************/
-#include <linux/export.h>
-
 #include "iwl-drv.h"
 #include "iwl-io.h"
 #include "iwl-csr.h"
@@ -36,7 +34,7 @@
 #include "iwl-fh.h"
 
 void iwl_write8(struct iwl_trans *trans, u32 ofs, u8 val)
-{
+{    
 	iwl_trans_write8(trans, ofs, val);
 }
 IWL_EXPORT_SYMBOL(iwl_write8);

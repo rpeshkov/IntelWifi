@@ -1,13 +1,29 @@
-//
-//  netdevice.h
-//  IntelWifi
-//
-//  Created by Roman Peshkov on 28/12/2017.
-//  Copyright © 2017 Roman Peshkov. All rights reserved.
-//
-
-#ifndef netdevice_h
-#define netdevice_h
+/*
+ * INET        An implementation of the TCP/IP protocol suite for the LINUX
+ *        operating system.  INET is implemented using the  BSD Socket
+ *        interface as the means of communication with the user level.
+ *
+ *        Definitions for the Interfaces handler.
+ *
+ * Version:    @(#)dev.h    1.0.10    08/12/93
+ *
+ * Authors:    Ross Biro
+ *        Fred N. van Kempen, <waltje@uWalt.NL.Mugnet.ORG>
+ *        Corey Minyard <wf-rch!minyard@relay.EU.net>
+ *        Donald J. Becker, <becker@cesdis.gsfc.nasa.gov>
+ *        Alan Cox, <alan@lxorguk.ukuu.org.uk>
+ *        Bjorn Ekwall. <bj0rn@blox.se>
+ *              Pekka Riikonen <priikone@poseidon.pspt.fi>
+ *
+ *        This program is free software; you can redistribute it and/or
+ *        modify it under the terms of the GNU General Public License
+ *        as published by the Free Software Foundation; either version
+ *        2 of the License, or (at your option) any later version.
+ *
+ *        Moved to /usr/include/linux for NET3
+ */
+#ifndef _LINUX_NETDEVICE_H
+#define _LINUX_NETDEVICE_H
 
 #include "types.h"
 
@@ -146,4 +162,4 @@ enum {
 #define    NETIF_F_RX_UDP_TUNNEL_PORT  __NETIF_F(RX_UDP_TUNNEL_PORT)
 
 
-#endif /* netdevice_h */
+#endif    /* _LINUX_NETDEVICE_H */

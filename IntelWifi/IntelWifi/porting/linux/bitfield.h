@@ -165,18 +165,8 @@ test_bit(int nr, const volatile unsigned long *addr)
 }
 
 
-#define __set_bit set_bit
-#define __clear_bit clear_bit
-
-
 
 #define __bf_shf(x) (__builtin_ffsll(x) - 1)
-
-#define for_each_set_bit(bit, addr, size) \
-for ((bit) = find_first_bit((addr), (size));        \
-(bit) < (size);                    \
-(bit) = find_next_bit((addr), (size), (bit) + 1))
-
 
 
 /**

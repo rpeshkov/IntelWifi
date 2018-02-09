@@ -17,9 +17,9 @@ IwlDvmOpMode::IwlDvmOpMode(IwlTransOps *ops) {
 }
 
 
-struct ieee80211_hw *IwlDvmOpMode::start(struct iwl_trans *trans, const struct iwl_cfg *cfg, const struct iwl_fw *fw, struct dentry *dbgfs_dir) {
+struct ieee80211_hw *IwlDvmOpMode::start(struct iwl_trans *trans, const struct iwl_cfg *cfg, const struct iwl_fw *fw) {
     //IOLockLock(mutex);
-    priv = iwl_op_mode_dvm_start(trans, cfg, fw, dbgfs_dir);
+    priv = iwl_op_mode_dvm_start(trans, cfg, fw);
     iwlagn_mac_start(priv);
     struct ieee80211_vif *vif = (struct ieee80211_vif *)IOMalloc(sizeof(struct ieee80211_vif) + sizeof(struct iwl_vif_priv));
     memcpy(vif->addr, &this->priv->hw->wiphy->addresses[0], ETH_ALEN);

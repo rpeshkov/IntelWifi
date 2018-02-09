@@ -68,7 +68,6 @@
 #define __iwl_op_mode_h__
 
 #include <linux/netdevice.h>
-#include <linux/debugfs.h>
 
 // TODO: Remove stub after everything is done
 struct napi_struct {
@@ -155,8 +154,7 @@ struct iwl_cfg;
 struct iwl_op_mode_ops {
 	struct iwl_op_mode *(*start)(struct iwl_trans *trans,
 				     const struct iwl_cfg *cfg,
-				     const struct iwl_fw *fw,
-				     struct dentry *dbgfs_dir);
+				     const struct iwl_fw *fw);
 	void (*stop)(struct iwl_op_mode *op_mode);
 	void (*rx)(struct iwl_op_mode *op_mode, struct napi_struct *napi,
 		   struct iwl_rx_cmd_buffer *rxb);

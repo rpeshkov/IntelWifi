@@ -1027,7 +1027,7 @@ void iwl_internal_short_hw_scan(struct iwl_priv *priv)
 // line 997
 static IOReturn iwl_bg_start_internal_scan(OSObject *owner, void *arg0, void *arg1, void *arg2, void *arg3)
 {
-    struct iwl_priv *priv = (struct iwl_priv *)arg0;//container_of(work, struct iwl_priv, start_internal_scan);
+    struct iwl_priv *priv = (struct iwl_priv *)arg0;
     
     IWL_DEBUG_SCAN(priv, "Start internal scan\n");
     

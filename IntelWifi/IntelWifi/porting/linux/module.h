@@ -9,17 +9,6 @@
 #ifndef module_h
 #define module_h
 
-#define MODULE_FIRMWARE(fw)
-#define MODULE_DESCRIPTION(x)
-#define MODULE_AUTHOR(x)
-#define MODULE_LICENSE(x)
-
-#define __init
-#define __exit
-
-#define module_init(x)
-#define module_exit(x)
-
-#define pr_info(x)
+#define __stringify OS_STRINGIFY
 
 #endif /* module_h */
