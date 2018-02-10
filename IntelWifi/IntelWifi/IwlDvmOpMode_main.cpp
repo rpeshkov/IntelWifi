@@ -48,12 +48,7 @@ extern "C" {
 #include "tt.h"
 }
 
-
 #include "IwlDvmOpMode.hpp"
-
-
-
-
 
 /* Please keep this array *SORTED* by hex value.
  * Access is done through binary search.
@@ -465,7 +460,6 @@ static void iwl_clear_driver_stations(struct iwl_priv *priv)
 {
     struct iwl_rxon_context *ctx;
     
-    //spin_lock_bh(&priv->sta_lock);
     //IOSimpleLockLock(priv->sta_lock);
     memset(priv->stations, 0, sizeof(priv->stations));
     priv->num_stations = 0;
@@ -484,7 +478,6 @@ static void iwl_clear_driver_stations(struct iwl_priv *priv)
         ctx->key_mapping_keys = 0;
     }
     
-    //spin_unlock_bh(&priv->sta_lock);
     //IOSimpleLockUnlock(priv->sta_lock);
 }
 
@@ -531,7 +524,7 @@ void iwl_down(struct iwl_priv *priv)
     
     /* Set num_aux_in_flight must be done after the transport is stopped */
     //atomic_set(&priv->num_aux_in_flight, 0);
-    priv->num_aux_in_flight = 0;
+    OSAddAtomic(-priv->num_aux_in_flight, &priv->num_aux_in_flight);
     
     /* Clear out all status bits but a few that are stable across reset */
     priv->status &= test_bit(STATUS_RF_KILL_HW, &priv->status) << STATUS_RF_KILL_HW
@@ -584,10 +577,14 @@ static int iwl_init_drv(struct iwl_priv *priv)
 // line 1150
 static void iwl_uninit_drv(struct iwl_priv *priv)
 {
-//    kfree(priv->scan_cmd);
-//    kfree(priv->beacon_cmd);
+    if (priv->scan_cmd) {
+        IOFree(priv->scan_cmd, priv->scan_cmd_size);
+        priv->scan_cmd = NULL;
+        priv->scan_cmd_size = 0;
+    }
+    //kfree(priv->beacon_cmd);
 //    kfree(rcu_dereference_raw(priv->noa_data));
-//    iwl_calib_free_results(priv);
+    iwl_calib_free_results(priv);
 //#ifdef CONFIG_IWLWIFI_DEBUGFS
 //    kfree(priv->wowlan_sram);
 //#endif
@@ -777,8 +774,9 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     // TODO: Implement
     trans_cfg.cb_data_offs = 0;//offsetof(struct ieee80211_tx_info, driver_data[2]);
     
-//    WARN_ON(sizeof(priv->transport_queue_stop) * BITS_PER_BYTE <
-//            priv->cfg->base_params->num_of_queues);
+    if (sizeof(priv->transport_queue_stop) * BITS_PER_BYTE < priv->cfg->base_params->num_of_queues) {
+        IWL_WARN(trans, "sizeof(priv->transport_queue_stop) * BITS_PER_BYTE < priv->cfg->base_params->num_of_queues");
+    }
     
     ucode_flags = fw->ucode_capa.flags;
     
@@ -907,9 +905,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
      ********************/
 //    iwl_setup_deferred_work(priv);
     iwl_setup_rx_handlers(priv);
-
     iwl_power_initialize(priv);
-    
     iwl_tt_initialize(priv);
 
     snprintf(priv->hw->wiphy->fw_version, sizeof(priv->hw->wiphy->fw_version), "%s", fw->fw_version);
@@ -938,7 +934,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
 out_mac80211_unregister:
     //iwlagn_mac_unregister(priv);
 out_destroy_workqueue:
-//    iwl_tt_exit(priv);
+    iwl_tt_exit(priv);
 //    iwl_cancel_deferred_work(priv);
 //    destroy_workqueue(priv->workqueue);
     priv->workqueue = NULL;
@@ -961,7 +957,7 @@ void IwlDvmOpMode::iwl_op_mode_dvm_stop(struct iwl_priv* priv)
     
 //    iwlagn_mac_unregister(priv);
 
-//    iwl_tt_exit(priv);
+    iwl_tt_exit(priv);
 
     IOFree((void *)priv->eeprom_blob, priv->eeprom_blob_size);
     IOFree(priv->nvm_data, priv->nvm_data_size);

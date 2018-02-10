@@ -1393,8 +1393,7 @@ void IntelWifi::iwl_trans_pcie_op_mode_leave(struct iwl_trans *trans)
 }
 
 // line 1737
-void iwl_trans_pcie_configure(struct iwl_trans *trans,
-                                         const struct iwl_trans_config *trans_cfg)
+void iwl_trans_pcie_configure(struct iwl_trans *trans, const struct iwl_trans_config *trans_cfg)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     

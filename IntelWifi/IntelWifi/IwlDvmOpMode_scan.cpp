@@ -713,6 +713,7 @@ static int iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
 
     if (!priv->scan_cmd) {
         priv->scan_cmd = (struct iwl_scan_cmd *)IOMalloc(scan_cmd_size);
+        priv->scan_cmd_size = scan_cmd_size;
         if (!priv->scan_cmd) {
             IWL_DEBUG_SCAN(priv, "fail to allocate memory for scan\n");
             return -ENOMEM;

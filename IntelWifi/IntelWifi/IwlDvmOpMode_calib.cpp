@@ -148,6 +148,18 @@ int iwl_calib_set(struct iwl_priv *priv, const struct iwl_calib_hdr *cmd, int le
     return 0;
 }
 
+// line 143
+void iwl_calib_free_results(struct iwl_priv *priv)
+{
+    struct iwl_calib_result *res, *tmp;
+    
+    STAILQ_FOREACH_SAFE(res, &priv->calib_results, list, tmp) {
+        STAILQ_REMOVE(&priv->calib_results, res, iwl_calib_result, list);
+        IOFree(res, sizeof(*res) + res->cmd_len - sizeof(struct iwl_calib_hdr));
+    }
+}
+
+
 // line 430
 static void iwl_prepare_legacy_sensitivity_tbl(struct iwl_priv *priv, struct iwl_sensitivity_data *data, __le16 *tbl)
 {

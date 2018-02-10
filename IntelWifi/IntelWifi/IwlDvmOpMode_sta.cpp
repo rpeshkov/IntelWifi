@@ -112,6 +112,19 @@ void iwl_add_sta_callback(struct iwl_priv *priv, struct iwl_rx_cmd_buffer *rxb)
 // line 102
 int iwl_send_add_sta(struct iwl_priv *priv, struct iwl_addsta_cmd *sta, u8 flags)
 {
+    // TODO: Sometimes this functions causes kernel panic. Need to investigate why this happens
+    // Sample backtrace:
+    /*
+     0xffffff910e823660 : 0xffffff80002e956c mach_kernel : _panic + 0xec
+     0xffffff910e8236e0 : 0xffffff80003fe3cd mach_kernel : _kernel_trap + 0x92d
+     0xffffff910e8238c0 : 0xffffff800029a593 mach_kernel : _return_from_trap + 0xe3
+     0xffffff910e8238e0 : 0xffffff7f83449f35 net.rpeshkov.IntelWifi : _iwl_send_add_sta + 0x215
+     0xffffff910e823a90 : 0xffffff7f8344bcda net.rpeshkov.IntelWifi : _iwl_restore_stations + 0x41a
+     0xffffff910e823ba0 : 0xffffff7f8344178c net.rpeshkov.IntelWifi : __ZL19iwlagn_rxon_disconnP8iwl_privP16iwl_rxon_context + 0x12c
+     0xffffff910e823bf0 : 0xffffff7f83440583 net.rpeshkov.IntelWifi : _iwlagn_commit_rxon + 0x353
+     0xffffff910e823c60 : 0xffffff7f83458907 net.rpeshkov.IntelWifi : __ZL12iwl_set_modeP8iwl_privP16iwl_rxon_context + 0x37
+     0xffffff910e823c80 : 0xffffff7f834587e4 net.rpeshkov.IntelWifi : __ZN12IwlDvmOpMode19iwl_setup_interfaceEP8iwl_privP16iwl_rxon_context + 0x44
+     */
     int ret = 0;
     struct iwl_host_cmd cmd = {
         .id = REPLY_ADD_STA,

@@ -1153,12 +1153,13 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans, struct iwl_rxq *r
         
         if (rxq->id == 0)
             opmode->rx(NULL, NULL, &rxcb);
-        //            iwl_op_mode_rx(trans->op_mode, &rxq->napi,
-        //                           &rxcb);
-        //        else
-        //            iwl_op_mode_rx_rss(trans->op_mode, &rxq->napi,
-        //                               &rxcb, rxq->id);
-        //
+        
+        // TODO: Implement
+        //if (rxq->id == 0)
+        //    iwl_op_mode_rx(trans->op_mode, &rxq->napi, &rxcb);
+        //else
+        //    iwl_op_mode_rx_rss(trans->op_mode, &rxq->napi, &rxcb, rxq->id);
+        
         if (reclaim) {
             IOFree((void *)txq->entries[cmd_index].free_buf, txq->entries[cmd_index].free_buf_size);
             txq->entries[cmd_index].free_buf = NULL;
@@ -1329,9 +1330,6 @@ out:
      */
     if (unlikely(emergency && count))
         iwl_pcie_rxq_alloc_rbs(trans, rxq);
-    
-    //    if (rxq->napi.poll)
-    //        napi_gro_flush(&rxq->napi, false);
     
     iwl_pcie_rxq_restock(trans, rxq);
 }
@@ -1508,8 +1506,7 @@ void IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
     u32 inta = 0;
     u32 handled = 0;
     
-    // TODO: implement
-    //    lock_map_acquire(&trans->sync_cmd_lockdep_map);
+    // lock_map_acquire(&trans->sync_cmd_lockdep_map);
     
     //IOSimpleLockLock(trans_pcie->irq_lock);
     
@@ -1691,10 +1688,8 @@ void IntelWifi::iwl_pcie_irq_handler(int irq, void *dev_id)
         
         isr_stats->rx++;
         
-        //        local_bh_disable();
-        //fWorkLoop->disableAllInterrupts();
+        // local_bh_disable();
         iwl_pcie_rx_handle(trans, 0);
-        //fWorkLoop->enableAllInterrupts();
         //        local_bh_enable();
     }
     

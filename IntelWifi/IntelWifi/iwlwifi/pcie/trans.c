@@ -279,19 +279,15 @@ const struct iwl_trans_ops trans_ops_pcie = {
     .send_cmd = iwl_trans_pcie_send_hcmd,
     .fw_alive = iwl_trans_pcie_fw_alive,
 //    .start_hw = iwl_trans_pcie_start_hw,
-
 //    .start_fw = iwl_trans_pcie_start_fw,
 //    .stop_device = iwl_trans_pcie_stop_device,
-//
-
-//
 //    .tx = iwl_trans_pcie_tx,
 //    .reclaim = iwl_trans_pcie_reclaim,
 //
     .txq_disable = iwl_trans_pcie_txq_disable,
     .txq_enable = iwl_trans_pcie_txq_enable,
 //
-//    .txq_set_shared_mode = iwl_trans_pcie_txq_set_shared_mode,
+    .txq_set_shared_mode = iwl_trans_pcie_txq_set_shared_mode,
     
 //    .wait_tx_queues_empty = iwl_trans_pcie_wait_txqs_empty,
 //
