@@ -1,11 +1,3 @@
-//
-//  IntelWifi_trans-gen2.cpp
-//  IntelWifi
-//
-//  Created by Roman Peshkov on 04/01/2018.
-//  Copyright © 2018 Roman Peshkov. All rights reserved.
-//
-
 /******************************************************************************
  *
  * This file is provided under a dual BSD/GPLv2 license.  When using or
@@ -57,6 +49,13 @@
  *
  *****************************************************************************/
 
+//
+//  IntelWifi_trans-gen2.cpp
+//  IntelWifi
+//
+//  Created by Roman Peshkov on 04/01/2018.
+//  Copyright © 2018 Roman Peshkov. All rights reserved.
+//
 
 #include "IntelWifi.hpp"
 

@@ -23,53 +23,6 @@ public:
     virtual int start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill) = 0;
     
     
-    
-    
-//    virtual int send_cmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd) = 0;
-    
-//    int iwl_trans_send_cmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd)
-//    {
-//        int ret;
-//
-//        if (unlikely(!(cmd->flags & CMD_SEND_IN_RFKILL) &&
-//                     test_bit(STATUS_RFKILL_OPMODE, &trans->status)))
-//            return -ERFKILL;
-//
-//        if (unlikely(test_bit(STATUS_FW_ERROR, &trans->status)))
-//            return -EIO;
-//
-//        if (unlikely(trans->state != IWL_TRANS_FW_ALIVE)) {
-//            IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
-//            return -EIO;
-//        }
-//
-//        if (WARN_ON((cmd->flags & CMD_WANT_ASYNC_CALLBACK) &&
-//                    !(cmd->flags & CMD_ASYNC)))
-//            return -EINVAL;
-//
-//#ifdef CONFIG_LOCKDEP
-//        if (!(cmd->flags & CMD_ASYNC))
-//            lock_map_acquire_read(&trans->sync_cmd_lockdep_map);
-//#endif
-//
-//        if (trans->wide_cmd_header && !iwl_cmd_groupid(cmd->id))
-//            cmd->id = DEF_ID(cmd->id);
-//
-//        ret = send_cmd(trans, cmd);
-//
-////#ifdef CONFIG_LOCKDEP
-////        if (!(cmd->flags & CMD_ASYNC))
-////            lock_map_release(&trans->sync_cmd_lockdep_map);
-////#endif
-////
-////        if (WARN_ON((cmd->flags & CMD_WANT_SKB) && !ret && !cmd->resp_pkt))
-////            return -EIO;
-//
-//        return ret;
-//    }
-
-    
-    
 //    int (*start_fw)(struct iwl_trans *trans, const struct fw_img *fw,
 //                    bool run_in_rfkill);
 //    int (*update_sf)(struct iwl_trans *trans,

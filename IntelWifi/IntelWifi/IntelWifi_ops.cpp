@@ -34,6 +34,4 @@ void IntelWifi::configure(struct iwl_trans *trans, const struct iwl_trans_config
 void IntelWifi::stop_device(struct iwl_trans *trans, bool low_power) {
     iwl_trans_pcie_stop_device(trans, low_power);
     trans->state = IWL_TRANS_NO_FW;
-
 }
-

@@ -29,6 +29,13 @@
  *
  *****************************************************************************/
 
+//
+//  IntelWifi_rx.cpp
+//  IntelWifi
+//
+//  Created by Roman Peshkov on 02/01/2018.
+//  Copyright © 2018 Roman Peshkov. All rights reserved.
+//
 
 #include "IntelWifi.hpp"
 #include "iwlwifi/fw/api/tx.h"

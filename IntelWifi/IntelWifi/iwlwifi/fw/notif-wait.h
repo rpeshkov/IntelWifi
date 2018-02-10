@@ -135,7 +135,6 @@ iwl_notification_wait_notify(struct iwl_notif_wait_data *notif_data,
 			     struct iwl_rx_packet *pkt)
 {
     if (iwl_notification_wait(notif_data, pkt)) {
-//        DebugLog("Notification wait success\n");
         iwl_notification_notify(notif_data);
     }
 		

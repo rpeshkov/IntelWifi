@@ -65,7 +65,6 @@
  *
  *****************************************************************************/
 
-
 //
 //  trans.c
 //  IntelWifi
@@ -75,11 +74,9 @@
 //
 
 #include "iwl-trans.h"
+#include "iwl-csr.h"
 
 #include "internal.h"
-
-
-#include "iwl-csr.h"
 
 OS_INLINE void _OSWriteInt8(volatile void* base, uintptr_t byteOffset, uint8_t data)
 {

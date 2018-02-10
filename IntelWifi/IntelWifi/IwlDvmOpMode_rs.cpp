@@ -23,16 +23,6 @@
  * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
  *
  *****************************************************************************/
-//#include <linux/kernel.h>
-//#include <linux/skbuff.h>
-//#include <linux/slab.h>
-//#include <net/mac80211.h>
-//
-//#include <linux/netdevice.h>
-//#include <linux/etherdevice.h>
-//#include <linux/delay.h>
-//
-//#include <linux/workqueue.h>
 
 #include "dev.h"
 #include "agn.h"

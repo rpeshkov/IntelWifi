@@ -16,10 +16,10 @@ struct pci_device_id {
 };
 
 
-#define IWL_PCI_DEVICE(dev, subdev, cfg) \
-.vendor = 0x8086,  .device = (dev), \
-.subvendor = 0xFFFF, .subdevice = (subdev), \
-.driver_data = (u8 *)&(cfg)
+#define IWL_PCI_DEVICE(dev, subdev, cfg)        \
+    .vendor = 0x8086,  .device = (dev),         \
+    .subvendor = 0xFFFF, .subdevice = (subdev), \
+    .driver_data = (u8 *)&(cfg)
 
 /* Hardware specific file defines the PCI IDs table for that hardware module */
 static const struct pci_device_id iwl_hw_card_ids[] = {
