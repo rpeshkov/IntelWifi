@@ -120,7 +120,7 @@ int iwlagn_mac_setup_register(struct iwl_priv *priv, const struct iwl_ucode_capa
         hw->wiphy->interface_modes |= ctx->exclusive_interface_modes;
     }
     
-    //BUILD_BUG_ON(NUM_IWL_RXON_CTX != 2);
+    BUILD_BUG_ON(NUM_IWL_RXON_CTX != 2);
     
     if (hw->wiphy->interface_modes & BIT(NL80211_IFTYPE_AP)) {
         hw->wiphy->iface_combinations = iwlagn_iface_combinations_dualmode;

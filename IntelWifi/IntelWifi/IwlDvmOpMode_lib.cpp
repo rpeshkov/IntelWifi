@@ -126,8 +126,7 @@ void iwlagn_send_advance_bt_config(struct iwl_priv *priv)
     struct iwl_bt_cmd_v2 bt_cmd_v2;
     int ret;
     
-//    BUILD_BUG_ON(sizeof(iwlagn_def_3w_lookup) !=
-//                 sizeof(basic.bt3_lookup_table));
+    BUILD_BUG_ON(sizeof(iwlagn_def_3w_lookup) != sizeof(basic.bt3_lookup_table));
     
     if (priv->lib->bt_params) {
         /*

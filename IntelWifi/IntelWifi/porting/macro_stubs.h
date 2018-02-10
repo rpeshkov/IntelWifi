@@ -41,4 +41,6 @@
 
 #define __stringify OS_STRINGIFY
 
+#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+
 #endif /* macro_stubs_h */

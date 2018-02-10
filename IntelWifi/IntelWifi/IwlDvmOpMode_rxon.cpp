@@ -492,8 +492,8 @@ int iwlagn_set_pan_params(struct iwl_priv *priv)
     if (priv->valid_contexts == BIT(IWL_RXON_CTX_BSS))
         return 0;
     
-//    BUILD_BUG_ON(NUM_IWL_RXON_CTX != 2);
-//
+    BUILD_BUG_ON(NUM_IWL_RXON_CTX != 2);
+
 //    lockdep_assert_held(&priv->mutex);
     
     ctx_bss = &priv->contexts[IWL_RXON_CTX_BSS];
@@ -890,7 +890,7 @@ static void iwl_calc_basic_rates(struct iwl_priv *priv, struct iwl_rxon_context 
                 if (lowest_present_ofdm > hw)
                     lowest_present_ofdm = hw;
             } else {
-                //BUILD_BUG_ON(IWL_FIRST_CCK_RATE != 0);
+                BUILD_BUG_ON(IWL_FIRST_CCK_RATE != 0);
 
                 cck |= BIT(hw);
                 if (lowest_present_cck > hw)
@@ -990,7 +990,7 @@ int iwlagn_commit_rxon(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
         return -EBUSY;
     
     /* This function hardcodes a bunch of dual-mode assumptions */
-    //BUILD_BUG_ON(NUM_IWL_RXON_CTX != 2);
+    BUILD_BUG_ON(NUM_IWL_RXON_CTX != 2);
     
     if (!ctx->is_active)
         return 0;

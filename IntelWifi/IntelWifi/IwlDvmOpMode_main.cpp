@@ -223,7 +223,7 @@ static void iwl_init_context(struct iwl_priv *priv, u32 ucode_flags)
     memcpy(priv->contexts[IWL_RXON_CTX_PAN].ac_to_fifo, iwlagn_pan_ac_to_fifo, sizeof(iwlagn_pan_ac_to_fifo));
     priv->contexts[IWL_RXON_CTX_PAN].mcast_queue = IWL_IPAN_MCAST_QUEUE;
     
-    //BUILD_BUG_ON(NUM_IWL_RXON_CTX != 2);
+    BUILD_BUG_ON(NUM_IWL_RXON_CTX != 2);
 }
 
 // line 678

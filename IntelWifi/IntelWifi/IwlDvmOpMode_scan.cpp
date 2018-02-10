@@ -425,7 +425,7 @@ static u16 iwl_limit_dwell(struct iwl_priv *priv, u16 dwell_time)
     int n_active = 0;
     u16 limit;
     
-    //BUILD_BUG_ON(NUM_IWL_RXON_CTX != 2);
+    BUILD_BUG_ON(NUM_IWL_RXON_CTX != 2);
     
     /*
      * If we're associated, we clamp the dwell time 98%

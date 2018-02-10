@@ -917,8 +917,7 @@ static inline void iwl_trans_resume(struct iwl_trans *trans)
 }
 
 static inline struct iwl_trans_dump_data *
-iwl_trans_dump_data(struct iwl_trans *trans,
-		    const struct iwl_fw_dbg_trigger_tlv *trigger)
+iwl_trans_dump_data(struct iwl_trans *trans, const struct iwl_fw_dbg_trigger_tlv *trigger)
 {
 	if (!trans->ops->dump_data)
 		return NULL;
@@ -934,8 +933,7 @@ iwl_trans_alloc_tx_cmd(struct iwl_trans *trans)
 
 int iwl_trans_send_cmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd);
 
-static inline void iwl_trans_free_tx_cmd(struct iwl_trans *trans,
-					 struct iwl_device_cmd *dev_cmd)
+static inline void iwl_trans_free_tx_cmd(struct iwl_trans *trans, struct iwl_device_cmd *dev_cmd)
 {
 	//kmem_cache_free(trans->dev_cmd_pool, dev_cmd);
     IOFree(dev_cmd, sizeof(*dev_cmd));
@@ -955,8 +953,7 @@ static inline int iwl_trans_tx(struct iwl_trans *trans, struct sk_buff *skb,
 	return trans->ops->tx(trans, skb, dev_cmd, queue);
 }
 
-static inline void iwl_trans_reclaim(struct iwl_trans *trans, int queue,
-				     int ssn, struct sk_buff_head *skbs)
+static inline void iwl_trans_reclaim(struct iwl_trans *trans, int queue, int ssn, struct sk_buff_head *skbs)
 {
 	if (WARN_ON_ONCE(trans->state != IWL_TRANS_FW_ALIVE)) {
 		IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
@@ -966,8 +963,7 @@ static inline void iwl_trans_reclaim(struct iwl_trans *trans, int queue,
 	trans->ops->reclaim(trans, queue, ssn, skbs);
 }
 
-static inline void iwl_trans_txq_disable(struct iwl_trans *trans, int queue,
-					 bool configure_scd)
+static inline void iwl_trans_txq_disable(struct iwl_trans *trans, int queue, bool configure_scd)
 {
 	trans->ops->txq_disable(trans, queue, configure_scd);
 }
@@ -1053,9 +1049,7 @@ void iwl_trans_ac_txq_enable(struct iwl_trans *trans, int queue, int fifo,
     iwl_trans_txq_enable_cfg(trans, queue, 0, &cfg, queue_wdg_timeout);
 }
 
-static inline void iwl_trans_freeze_txq_timer(struct iwl_trans *trans,
-					      unsigned long txqs,
-					      bool freeze)
+static inline void iwl_trans_freeze_txq_timer(struct iwl_trans *trans, unsigned long txqs, bool freeze)
 {
 	if (WARN_ON_ONCE(trans->state != IWL_TRANS_FW_ALIVE)) {
 		IWL_ERR(trans, "%s bad state = %d\n", __func__, trans->state);
@@ -1137,11 +1131,11 @@ static inline int iwl_trans_read_mem(struct iwl_trans *trans, u32 addr,
 	return trans->ops->read_mem(trans, addr, buf, dwords);
 }
 
-#define iwl_trans_read_mem_bytes(trans, addr, buf, bufsize)		      \
-	do {								      \
-		if (__builtin_constant_p(bufsize))			      \
-			BUILD_BUG_ON((bufsize) % sizeof(u32));		      \
-		iwl_trans_read_mem(trans, addr, buf, (bufsize) / sizeof(u32));\
+#define iwl_trans_read_mem_bytes(trans, addr, buf, bufsize)		        \
+	do {								                                \
+		if (__builtin_constant_p(bufsize))			                    \
+			BUILD_BUG_ON((bufsize) % sizeof(u32));		                \
+		iwl_trans_read_mem(trans, addr, buf, (bufsize) / sizeof(u32));  \
 	} while (0)
 
 static inline u32 iwl_trans_read_mem32(struct iwl_trans *trans, u32 addr)
@@ -1188,7 +1182,6 @@ static inline void
 iwl_trans_release_nic_access(struct iwl_trans *trans, IOInterruptState *state)
 {
 	trans->ops->release_nic_access(trans, state);
-//	__release(nic_access);
 }
 
 static inline void iwl_trans_fw_error(struct iwl_trans *trans)

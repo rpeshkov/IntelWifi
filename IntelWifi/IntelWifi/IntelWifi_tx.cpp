@@ -117,9 +117,8 @@ static int iwl_queue_init(struct iwl_txq *q, int slots_num)
 // line 127
 int iwl_pcie_alloc_dma_ptr(struct iwl_trans *trans, struct iwl_dma_ptr **ptr, size_t size)
 {
-    if (*ptr) {
-        if ((*ptr)->addr)
-            return -EINVAL;
+    if (*ptr && (*ptr)->addr) {
+        return -EINVAL;
     }
     
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
@@ -154,7 +153,9 @@ static void iwl_pcie_txq_inval_byte_cnt_tbl(struct iwl_trans *trans, struct iwl_
     __le16 bc_ent;
     struct iwl_tx_cmd *tx_cmd = (struct iwl_tx_cmd *)txq->entries[read_ptr].cmd->payload;
     
-    //WARN_ON(read_ptr >= TFD_QUEUE_SIZE_MAX);
+    if (read_ptr >= TFD_QUEUE_SIZE_MAX) {
+        IWL_WARN(trans, "read_ptr >= TFD_QUEUE_SIZE_MAX");
+    }
     
     if (txq_id != trans_pcie->cmd_queue)
         sta_id = tx_cmd->sta_id;
@@ -309,7 +310,9 @@ static void iwl_pcie_tfd_unmap(struct iwl_trans *trans, struct iwl_cmd_meta *met
         /* @todo issue fatal error, it is quite serious situation */
         return;
     }
-    
+
+    // Since working with DMA is quite different in OSX, unmapping is basically just freeing of buffer descriptors
+    // that were previously allocated
     for (i = 0; i < ARRAY_SIZE(meta->dma); ++i) {
         if (meta->dma[i]) {
             free_dma_buf(meta->dma[i]);
@@ -318,7 +321,6 @@ static void iwl_pcie_tfd_unmap(struct iwl_trans *trans, struct iwl_cmd_meta *met
     }
     
     /* first TB is never freed - it's the bidirectional DMA data */
-   
 //    for (i = 1; i < num_tbs; i++) {
 //        if (meta->tbs & BIT(i))
 //            dma_unmap_page(trans->dev,
@@ -327,10 +329,8 @@ static void iwl_pcie_tfd_unmap(struct iwl_trans *trans, struct iwl_cmd_meta *met
 //                           DMA_TO_DEVICE);
 //        else
 //            dma_unmap_single(trans->dev,
-//                             iwl_pcie_tfd_tb_get_addr(trans, tfd,
-//                                                      i),
-//                             iwl_pcie_tfd_tb_get_len(trans, tfd,
-//                                                     i),
+//                             iwl_pcie_tfd_tb_get_addr(trans, tfd, i),
+//                             iwl_pcie_tfd_tb_get_len(trans, tfd, i),
 //                             DMA_TO_DEVICE);
 //    }
     
@@ -346,7 +346,49 @@ static void iwl_pcie_tfd_unmap(struct iwl_trans *trans, struct iwl_cmd_meta *met
     
 }
 
+/* line 416
+ * iwl_pcie_txq_free_tfd - Free all chunks referenced by TFD [txq->q.read_ptr]
+ * @trans - transport private data
+ * @txq - tx queue
+ * @dma_dir - the direction of the DMA mapping
+ *
+ * Does NOT advance any TFD circular buffer read/write indexes
+ * Does NOT free the TFD itself (which is within circular buffer)
+ */
+void iwl_pcie_txq_free_tfd(struct iwl_trans *trans, struct iwl_txq *txq)
+{
+    /* rd_ptr is bounded by TFD_QUEUE_SIZE_MAX and
+     * idx is bounded by n_window
+     */
+    int rd_ptr = txq->read_ptr;
+    int idx = iwl_pcie_get_cmd_index(txq, rd_ptr);
+    
+    //lockdep_assert_held(&txq->lock);
+    
+    /* We have only q->n_window txq->entries, but we use
+     * TFD_QUEUE_SIZE_MAX tfds
+     */
+    iwl_pcie_tfd_unmap(trans, &txq->entries[idx].meta, txq, rd_ptr);
+    
+    /* free SKB */
+    if (txq->entries) {
+        struct sk_buff *skb;
+        
+        skb = txq->entries[idx].skb;
+        
+        /* Can be called from irqs-disabled context
+         * If skb is not NULL, it means that the whole queue is being
+         * freed and that the queue is not empty - free the skb
+         */
+        if (skb) {
+            // TODO: Implement
+            // iwl_op_mode_free_skb(trans->op_mode, skb);
+            txq->entries[idx].skb = NULL;
+        }
+    }
+}
 
+// line 457
 static int iwl_pcie_txq_build_tfd(struct iwl_trans *trans, struct iwl_txq *txq, dma_addr_t addr, u16 len, bool reset)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
@@ -390,8 +432,7 @@ int IntelWifi::iwl_pcie_txq_alloc(struct iwl_trans *trans, struct iwl_txq *txq, 
         return -EINVAL;
 
     // TODO: Implement
-//    setup_timer(&txq->stuck_timer, iwl_pcie_txq_stuck_timer,
-//                (unsigned long)txq);
+//    setup_timer(&txq->stuck_timer, iwl_pcie_txq_stuck_timer, (unsigned long)txq);
     txq->trans_pcie = trans_pcie;
     
     txq->n_window = slots_num;
@@ -446,8 +487,7 @@ error:
 }
 
 // line 551
-int IntelWifi::iwl_pcie_txq_init(struct iwl_trans *trans, struct iwl_txq *txq,
-                      int slots_num, bool cmd_queue)
+int IntelWifi::iwl_pcie_txq_init(struct iwl_trans *trans, struct iwl_txq *txq, int slots_num, bool cmd_queue)
 {
     int ret;
     
@@ -455,7 +495,7 @@ int IntelWifi::iwl_pcie_txq_init(struct iwl_trans *trans, struct iwl_txq *txq,
     
     /* TFD_QUEUE_SIZE_MAX must be power-of-two size, otherwise
      * iwl_queue_inc_wrap and iwl_queue_dec_wrap are broken. */
-    //BUILD_BUG_ON(TFD_QUEUE_SIZE_MAX & (TFD_QUEUE_SIZE_MAX - 1));
+    BUILD_BUG_ON(TFD_QUEUE_SIZE_MAX & (TFD_QUEUE_SIZE_MAX - 1));
     
     /* Initialize queue's high/low-water marks, and head/tail indexes */
     ret = iwl_queue_init(txq, slots_num);
@@ -500,6 +540,60 @@ static void iwl_pcie_clear_cmd_in_flight(struct iwl_trans *trans)
     __iwl_trans_pcie_clear_bit(trans, CSR_GP_CNTRL, CSR_GP_CNTRL_REG_FLAG_MAC_ACCESS_REQ);
 }
 
+/* line 615
+ * iwl_pcie_txq_unmap -  Unmap any remaining DMA mappings and free skb's
+ */
+static void iwl_pcie_txq_unmap(struct iwl_trans *trans, int txq_id)
+{
+    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    struct iwl_txq *txq = trans_pcie->txq[txq_id];
+    
+    //spin_lock_bh(&txq->lock);
+    while (txq->write_ptr != txq->read_ptr) {
+        IWL_DEBUG_TX_REPLY(trans, "Q %d Free %d\n", txq_id, txq->read_ptr);
+        
+        if (txq_id != trans_pcie->cmd_queue) {
+            struct sk_buff *skb = txq->entries[txq->read_ptr].skb;
+            
+            if (WARN_ON_ONCE(!skb))
+                continue;
+            
+            // TODO: Implement
+            // iwl_pcie_free_tso_page(trans_pcie, skb);
+        }
+        iwl_pcie_txq_free_tfd(trans, txq);
+        txq->read_ptr = iwl_queue_inc_wrap(txq->read_ptr);
+        
+        if (txq->read_ptr == txq->write_ptr) {
+            // unsigned long flags;
+            
+            //spin_lock_irqsave(&trans_pcie->reg_lock, flags);
+            if (txq_id != trans_pcie->cmd_queue) {
+                IWL_DEBUG_RPM(trans, "Q %d - last tx freed\n", txq->id);
+                iwl_trans_unref(trans);
+            } else {
+                iwl_pcie_clear_cmd_in_flight(trans);
+            }
+            //spin_unlock_irqrestore(&trans_pcie->reg_lock, flags);
+        }
+    }
+
+    // TODO: Implement
+//    while (!skb_queue_empty(&txq->overflow_q)) {
+//        struct sk_buff *skb = __skb_dequeue(&txq->overflow_q);
+//
+//        iwl_op_mode_free_skb(trans->op_mode, skb);
+//    }
+    
+    //spin_unlock_bh(&txq->lock);
+    
+    /* just in case - this queue may have been stopped */
+    // TODO: Implement
+    // iwl_wake_queue(trans, txq);
+}
+
+
+
 /* line 666
  * iwl_pcie_txq_free - Deallocate DMA queue.
  * @txq: Transmit queue to deallocate.
@@ -518,8 +612,7 @@ static void iwl_pcie_txq_free(struct iwl_trans *trans, int txq_id)
     if (WARN_ON(!txq))
         return;
     
-    // TODO: Implement
-    //iwl_pcie_txq_unmap(trans, txq_id);
+    iwl_pcie_txq_unmap(trans, txq_id);
     
     /* De-alloc array of command/tx buffers */
     if (txq_id == trans_pcie->cmd_queue)
@@ -638,7 +731,7 @@ out:
 int iwl_pcie_tx_stop(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
-    //int txq_id;
+    int txq_id;
     
     /* Turn off all Tx DMA fifos */
     iwl_scd_deactivate_fifos(trans);
@@ -659,9 +752,8 @@ int iwl_pcie_tx_stop(struct iwl_trans *trans)
         return 0;
     
     /* Unmap DMA from host system and free skb's */
-    // TODO: Implement
-//    for (txq_id = 0; txq_id < trans->cfg->base_params->num_of_queues; txq_id++)
-//        iwl_pcie_txq_unmap(trans, txq_id);
+    for (txq_id = 0; txq_id < trans->cfg->base_params->num_of_queues; txq_id++)
+        iwl_pcie_txq_unmap(trans, txq_id);
     
     return 0;
 }
@@ -1110,8 +1202,7 @@ void iwl_trans_pcie_txq_disable(struct iwl_trans *trans, int txq_id, bool config
         iwl_trans_write_mem(trans, stts_addr, (void *)zero_val, ARRAY_SIZE(zero_val));
     }
     
-    // TODO: Implement
-    //iwl_pcie_txq_unmap(trans, txq_id);
+    iwl_pcie_txq_unmap(trans, txq_id);
     trans_pcie->txq[txq_id]->ampdu = false;
     
     IWL_DEBUG_TX_QUEUES(trans, "Deactivate queue %d\n", txq_id);
@@ -1158,7 +1249,7 @@ static int iwl_pcie_enqueue_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *c
     }
     
     /* need one for the header if the first is NOCOPY */
-    //BUILD_BUG_ON(IWL_MAX_CMD_TBS_PER_TFD > IWL_NUM_OF_TBS - 1);
+    BUILD_BUG_ON(IWL_MAX_CMD_TBS_PER_TFD > IWL_NUM_OF_TBS - 1);
     
     for (i = 0; i < IWL_MAX_CMD_TBS_PER_TFD; i++) {
         cmddata[i] = (u8*)cmd->data[i];
@@ -1349,7 +1440,7 @@ static int iwl_pcie_enqueue_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *c
         iwl_pcie_txq_build_tfd(trans, txq, dma->dma, cmdlen[i], false);
     }
     
-    //BUILD_BUG_ON(IWL_TFH_NUM_TBS > sizeof(out_meta->tbs) * BITS_PER_BYTE);
+    BUILD_BUG_ON(IWL_TFH_NUM_TBS > sizeof(out_meta->tbs) * BITS_PER_BYTE);
     out_meta->flags = cmd->flags;
     if (txq->entries[idx].free_buf) {
         IWL_DEBUG_TX(trans, "txq->entries[%d].free_buf is not null", idx);

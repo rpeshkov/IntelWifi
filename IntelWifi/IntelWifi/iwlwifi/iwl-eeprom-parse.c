@@ -420,7 +420,7 @@ static void iwl_eeprom_enhanced_txpower(struct device *dev,
 	__le16 *txp_len;
 	s8 max_txp_avg_halfdbm;
 
-//    BUILD_BUG_ON(sizeof(struct iwl_eeprom_enhanced_txpwr) != 8);
+    BUILD_BUG_ON(sizeof(struct iwl_eeprom_enhanced_txpwr) != 8);
 
 	/* the length is in 16-bit words, but we want entries */
 	txp_len = (__le16 *)iwl_eeprom_query_addr(eeprom, eeprom_size,
