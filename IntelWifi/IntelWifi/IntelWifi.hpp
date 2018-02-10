@@ -9,7 +9,6 @@
 extern "C" {
     #include "iwl-debug.h"
 #include "iwlwifi/iwl-csr.h"
-//#include "iwl-debug.h"
 #include "iwl-drv.h"
 #include "iwl-trans.h"
 #include "iwl-fh.h"
@@ -20,6 +19,8 @@ extern "C" {
 #include "iwlwifi/iwl-scd.h"
 #include <linux/jiffies.h>
 }
+
+#include "iwlwifi/dma-utils.h"
 
 #include <IOKit/IOLib.h>
 #include <IOKit/IOBufferMemoryDescriptor.h>
@@ -34,14 +35,8 @@ extern "C" {
 
 
 
-//#include "Logging.h"
-
 #include "IwlTransOps.h"
 #include "IwlOpModeOps.h"
-
-extern "C" {
-
-}
 
 
 

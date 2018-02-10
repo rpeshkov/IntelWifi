@@ -153,7 +153,9 @@ extern "C" {
 static int iwl_rxq_space(const struct iwl_rxq *rxq)
 {
     /* Make sure rx queue size is a power of 2 */
-    //WARN_ON(rxq->queue_size & (rxq->queue_size - 1));
+    if (rxq->queue_size & (rxq->queue_size - 1)) {
+        IWL_WARN(rxq, "rxq->queue_size must be a power of 2");
+    }
     
     /*
      * There can be up to (RX_QUEUE_ISZE - 1) free slots, to avoid ambiguity
@@ -631,112 +633,58 @@ static int iwl_pcie_rx_alloc(struct iwl_trans *trans)
          * Allocate the circular buffer of Read Buffer Descriptors
          * (RBDs)
          */
-        IOBufferMemoryDescriptor *rxqBd =
-        IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionOut | kIOMemoryPhysicallyContiguous), free_size * rxq->queue_size, 0x00000000FFFFFFFFULL);
-        
-        if (rxqBd->prepare() != kIOReturnSuccess) {
-            DebugLog("rxqBd->prepare() failed.\n");
-            return -1;
-        }
-
-        rxq->bd = rxqBd->getBytesNoCopy();
-
-        IODMACommand *rxqBdCmd = IODMACommand::withSpecification(kIODMACommandOutputHost32, 32, 0, IODMACommand::kMapped, 0, 1);
-        if (rxqBdCmd->setMemoryDescriptor(rxqBd) != kIOReturnSuccess) {
-            DebugLog("rxqBdCmd->setMemoryDescriptor(rxqBd) failed.\n");
-            return -1;
-        }
-
-        rxqBdCmd->prepare();
-
-        IODMACommand::Segment32 rxqBdSeg;
-        UInt64 rxqBdOfs = 0;
-        UInt32 rxqBdNumSegs = 1;
-
-        
-        if (rxqBdCmd->gen32IOVMSegments(&rxqBdOfs, &rxqBdSeg, &rxqBdNumSegs) != kIOReturnSuccess) {
-            TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
-            return -1;
-        }
-
-        rxq->bd_dma = rxqBdSeg.fIOVMAddr;
+        struct iwl_dma_ptr *rxq_bd_buf = allocate_dma_buf(free_size * rxq->queue_size, DMA_BIT_MASK(trans_pcie->addr_size));
+        rxq->bd_mem_buf = rxq_bd_buf;
+        rxq->bd = rxq_bd_buf->addr;
+        rxq->bd_dma = rxq_bd_buf->dma;
         bzero(rxq->bd, free_size * rxq->queue_size);
         
         if (trans->cfg->mq_rx_supported) {
-            IOBufferMemoryDescriptor *usedBd =
-            IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionIn| kIOMemoryPhysicallyContiguous), sizeof(__le32) * rxq->queue_size, 0x00000000FFFFFFFFULL);
-            
-            IODMACommand *usedBdCmd = IODMACommand::withSpecification(kIODMACommandOutputHost32, 32, 0, IODMACommand::kMapped, 0, 1);
-            usedBdCmd->setMemoryDescriptor(usedBd);
-            usedBdCmd->prepare();
-            
-            IODMACommand::Segment32 usedBdSeg;
-            UInt64 usedBdOfs = 0;
-            UInt32 usedBdNumSegs = 1;
-            
-            if (usedBdCmd->gen32IOVMSegments(&usedBdOfs, &usedBdSeg, &usedBdNumSegs) != kIOReturnSuccess) {
-                TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
-                return -1;
-            }
-            rxq->used_bd = (__le32 *)usedBd->getBytesNoCopy();
-            rxq->used_bd_dma = usedBdSeg.fIOVMAddr;
+            struct iwl_dma_ptr *used_bd_buf = allocate_dma_buf(sizeof(__le32) * rxq->queue_size, DMA_BIT_MASK(trans_pcie->addr_size));
+            rxq->used_bd_buf = used_bd_buf;
+            rxq->used_bd = (__le32 *)used_bd_buf->addr;
+            rxq->used_bd_dma = used_bd_buf->dma;
             bzero(rxq->used_bd, sizeof(__le32) * rxq->queue_size);
         }
         
         /*Allocate the driver's pointer to receive buffer status */
-     
-        IOBufferMemoryDescriptor *bmd =
-        IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionIn | kIOMemoryPhysicallyContiguous), sizeof(*rxq->rb_stts), 0x00000000FFFFFFFFULL);
-        bmd->prepare();
-        rxq->rb_stts = (struct iwl_rb_status*)bmd->getBytesNoCopy();
-        
-        IODMACommand *cmd = IODMACommand::withSpecification(kIODMACommandOutputHost32, 32, 0, IODMACommand::kMapped, 0, 1);
-        cmd->setMemoryDescriptor(bmd);
-        cmd->prepare();
-        
-        IODMACommand::Segment32 seg;
-        UInt64 ofs = 0;
-        UInt32 numSegs = 1;
-        
-        if (cmd->gen32IOVMSegments(&ofs, &seg, &numSegs) != kIOReturnSuccess) {
-            TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
-            return -1;
-        }
-        
-        rxq->rb_stts_dma = seg.fIOVMAddr;
+        struct iwl_dma_ptr *rxq_rb_stts_buf = allocate_dma_buf(sizeof(*rxq->rb_stts), DMA_BIT_MASK(trans_pcie->addr_size));
+        rxq->rb_stts_buf = rxq_rb_stts_buf;
+        rxq->rb_stts = (struct iwl_rb_status*)rxq_rb_stts_buf->addr;
+        rxq->rb_stts_dma = rxq_rb_stts_buf->dma;
         bzero(rxq->rb_stts, sizeof(struct iwl_rb_status));
-
+        
         if (!rxq->rb_stts) {
-            //goto err;
-            return -ENOMEM;
+            goto err;
         }
         
     }
     return 0;
     
-    // TODO: Implement
-//err:
-//    for (i = 0; i < trans->num_rx_queues; i++) {
-//        struct iwl_rxq *rxq = &trans_pcie->rxq[i];
-//
-//        if (rxq->bd)
-//            dma_free_coherent(dev, free_size * rxq->queue_size,
-//                              rxq->bd, rxq->bd_dma);
-//        rxq->bd_dma = 0;
-//        rxq->bd = NULL;
-//
-//        if (rxq->rb_stts)
-//            dma_free_coherent(trans->dev,
-//                              sizeof(struct iwl_rb_status),
-//                              rxq->rb_stts, rxq->rb_stts_dma);
-//
-//        if (rxq->used_bd)
-//            dma_free_coherent(dev, sizeof(__le32) * rxq->queue_size,
-//                              rxq->used_bd, rxq->used_bd_dma);
-//        rxq->used_bd_dma = 0;
-//        rxq->used_bd = NULL;
-//    }
-//    kfree(trans_pcie->rxq);
+err:
+    for (i = 0; i < trans->num_rx_queues; i++) {
+        struct iwl_rxq *rxq = &trans_pcie->rxq[i];
+
+        if (rxq->bd) {
+            free_dma_buf(rxq->bd_mem_buf);
+        }
+        
+        rxq->bd_dma = 0;
+        rxq->bd = NULL;
+
+        if (rxq->rb_stts) {
+            free_dma_buf(rxq->rb_stts_buf);
+        }
+            
+
+        if (rxq->used_bd) {
+            free_dma_buf(rxq->used_bd_buf);
+        }
+            
+        rxq->used_bd_dma = 0;
+        rxq->used_bd = NULL;
+    }
+    IOFree(trans_pcie->rxq, sizeof(struct iwl_rxq) * trans->num_rx_queues);
     
     return -ENOMEM;
 }
@@ -764,10 +712,8 @@ static void iwl_pcie_rx_hw_init(struct iwl_trans *trans, struct iwl_rxq *rxq)
             rb_size = FH_RCSR_RX_CONFIG_REG_VAL_RB_SIZE_4K;
     }
     
-    if (!iwl_trans_grab_nic_access(trans, &state)) {
-        DebugLog("IntelWifi: UNABLE TO GRAB NIC ACCESS");
+    if (!iwl_trans_grab_nic_access(trans, &state))
         return;
-    }
     
     /* Stop Rx DMA */
     iwl_write32(trans, FH_MEM_RCSR_CHNL0_CONFIG_REG, 0);
@@ -976,11 +922,6 @@ static int _iwl_pcie_rx_init(struct iwl_trans *trans)
         memset(rxq->rb_stts, 0, sizeof(*rxq->rb_stts));
         
         iwl_pcie_rx_init_rxb_lists(rxq);
-
-        // TODO: Implement
-//        if (!rxq->napi.poll)
-//            netif_napi_add(&trans_pcie->napi_dev, &rxq->napi,
-//                           iwl_pcie_dummy_napi_poll, 64);
         
         //IOSimpleLockUnlock(rxq->lock);
     }
@@ -1219,7 +1160,7 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans, struct iwl_rxq *r
         //                               &rxcb, rxq->id);
         //
         if (reclaim) {
-            //kzfree(txq->entries[cmd_index].free_buf);
+            IOFree((void *)txq->entries[cmd_index].free_buf, txq->entries[cmd_index].free_buf_size);
             txq->entries[cmd_index].free_buf = NULL;
         }
         
@@ -1811,10 +1752,7 @@ void iwl_pcie_free_ict(struct iwl_trans *trans)
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
     if (trans_pcie->ict_tbl) {
-        // TODO: Implement
-        //        dma_free_coherent(trans->dev, ICT_SIZE,
-        //                          trans_pcie->ict_tbl,
-        //                          trans_pcie->ict_tbl_dma);
+        free_dma_buf(trans_pcie->ict_dma_buf);
         trans_pcie->ict_tbl = NULL;
         trans_pcie->ict_tbl_dma = 0;
     }
@@ -1829,24 +1767,11 @@ int iwl_pcie_alloc_ict(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
-    IOBufferMemoryDescriptor *bmd =
-    IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, (kIODirectionInOut | kIOMemoryPhysicallyContiguous | kIOMapInhibitCache), ICT_SIZE, 0x00000000FFFFFFFFULL);
+    struct iwl_dma_ptr* buf = allocate_dma_buf(ICT_SIZE, DMA_BIT_MASK(trans_pcie->addr_size));
     
-    IODMACommand *cmd = IODMACommand::withSpecification(kIODMACommandOutputHost64, 64, 0, IODMACommand::kMapped, 0, 1);
-    cmd->setMemoryDescriptor(bmd);
-    cmd->prepare();
-    
-    IODMACommand::Segment64 seg;
-    UInt64 ofs = 0;
-    UInt32 numSegs = 1;
-    
-    if (cmd->gen64IOVMSegments(&ofs, &seg, &numSegs) != kIOReturnSuccess) {
-        TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
-        return -1;
-    }
-    
-    trans_pcie->ict_tbl = (__le32*)bmd->getBytesNoCopy();
-    trans_pcie->ict_tbl_dma = seg.fIOVMAddr;
+    trans_pcie->ict_dma_buf = buf;
+    trans_pcie->ict_tbl = (__le32 *)buf->addr;
+    trans_pcie->ict_tbl_dma = buf->dma;
     
     if (!trans_pcie->ict_tbl)
         return -ENOMEM;

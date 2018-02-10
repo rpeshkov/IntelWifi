@@ -1523,13 +1523,15 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
         //                       PCIE_LINK_STATE_CLKPM);
     }
     
-    int addr_size;
     if (cfg->use_tfh) {
-        addr_size = 64;
+        trans_pcie->addr_size = 64;
         trans_pcie->max_tbs = IWL_TFH_NUM_TBS;
         trans_pcie->tfd_size = sizeof(struct iwl_tfh_tfd);
     } else {
-        addr_size = 36;
+        // Originally here was 36, but with this address size tx is not working.
+        // Seems like the code below with calls to pci_set_dma_mask checks this and fallback to 32,
+        // but I haven't found any solution to check this in OSX
+        trans_pcie->addr_size = 32;
         trans_pcie->max_tbs = IWL_NUM_OF_TBS;
         trans_pcie->tfd_size = sizeof(struct iwl_tfd);
     }
@@ -1537,7 +1539,7 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
     
     // original linux code: pci_set_master(pdev);
     pciDevice->setBusMasterEnable(true);
-    
+
     // TODO: Find out what should be done in IOKit for the code below
     //ret = pci_set_dma_mask(pdev, DMA_BIT_MASK(addr_size));
     //if (!ret)

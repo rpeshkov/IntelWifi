@@ -110,8 +110,10 @@ struct isr_statistics {
  */
 struct iwl_rxq {
     int id;
+    struct iwl_dma_ptr* bd_mem_buf;
     void *bd;
     dma_addr_t bd_dma;
+    struct iwl_dma_ptr* used_bd_buf;
     __le32 *used_bd;
     dma_addr_t used_bd_dma;
     u32 read;
@@ -123,6 +125,7 @@ struct iwl_rxq {
     TAILQ_HEAD(, iwl_rx_mem_buffer) rx_free;
     TAILQ_HEAD(, iwl_rx_mem_buffer) rx_used;
     bool need_update;
+    struct iwl_dma_ptr *rb_stts_buf;
     struct iwl_rb_status *rb_stts;
     dma_addr_t rb_stts_dma;
     IOSimpleLock *lock;
@@ -185,6 +188,8 @@ struct iwl_cmd_meta {
     struct iwl_host_cmd *source;
     u32 flags;
     u32 tbs;
+    
+    struct iwl_dma_ptr *dma[IWL_MAX_CMD_TBS_PER_TFD + 1];
 };
 
 
@@ -208,6 +213,7 @@ struct iwl_pcie_txq_entry {
     struct sk_buff *skb;
     /* buffer to free after command completes */
     const void *free_buf;
+    vm_size_t free_buf_size;
     struct iwl_cmd_meta meta;
 };
 
@@ -258,9 +264,11 @@ struct iwl_pcie_first_tb_buf {
  * data is a window overlayed over the HW queue.
  */
 struct iwl_txq {
+    struct iwl_dma_ptr *tfds_dma_ptr;
     void *tfds;
     struct iwl_pcie_first_tb_buf *first_tb_bufs;
     dma_addr_t first_tb_dma;
+    struct iwl_dma_ptr *first_tb_dma_ptr;
     struct iwl_pcie_txq_entry *entries;
     IOSimpleLock *lock;
     unsigned long frozen_expiry_remainder;
@@ -288,8 +296,7 @@ struct iwl_txq {
 static inline dma_addr_t
 iwl_pcie_get_first_tb_dma(struct iwl_txq *txq, int idx)
 {
-    return txq->first_tb_dma +
-    sizeof(struct iwl_pcie_first_tb_buf) * idx;
+    return txq->first_tb_dma + sizeof(struct iwl_pcie_first_tb_buf) * idx;
 }
 
 static inline u16 iwl_pcie_tfd_tb_get_len(struct iwl_trans *trans, void *_tfd,
@@ -322,6 +329,7 @@ struct iwl_trans_pcie {
     /* INT ICT Table */
     __le32 *ict_tbl;
     dma_addr_t ict_tbl_dma;
+    struct iwl_dma_ptr* ict_dma_buf;
     int ict_index;
     bool use_ict;
     bool is_down, opmode_down;
@@ -332,8 +340,8 @@ struct iwl_trans_pcie {
     IOLock *mutex;
     u32 inta_mask;
     u32 scd_base_addr;
-    struct iwl_dma_ptr scd_bc_tbls;
-    struct iwl_dma_ptr kw;
+    struct iwl_dma_ptr *scd_bc_tbls;
+    struct iwl_dma_ptr *kw;
     
     struct iwl_txq *txq_memory;
     struct iwl_txq *txq[IWL_MAX_TVQM_QUEUES];
@@ -342,6 +350,7 @@ struct iwl_trans_pcie {
     
     /* PCI bus related data */
     volatile void* hw_base;
+    int addr_size;
     
     bool ucode_write_complete;
     IOLock* ucode_write_waitq;
@@ -358,9 +367,8 @@ struct iwl_trans_pcie {
     u8 max_tbs;
     u16 tfd_size;
 
-    UInt8 max_skb_frags;
-    UInt32 hw_rev;
-    
+    u8 max_skb_frags;
+    u32 hw_rev;
     
     enum iwl_amsdu_size rx_buf_size;
     bool bc_table_dword;
@@ -621,16 +629,13 @@ static inline u8 iwl_pcie_get_cmd_index(struct iwl_txq *q, u32 index)
     return index & (q->n_window - 1);
 }
 
-static inline void *iwl_pcie_get_tfd(struct iwl_trans_pcie *trans_pcie,
-                                     struct iwl_txq *txq, int idx)
+static inline void *iwl_pcie_get_tfd(struct iwl_trans_pcie *trans_pcie, struct iwl_txq *txq, int idx)
 {
-    return (u8*)txq->tfds + trans_pcie->tfd_size * iwl_pcie_get_cmd_index(txq,
-                                                                     idx);
+    return (u8*)txq->tfds + trans_pcie->tfd_size * iwl_pcie_get_cmd_index(txq, idx);
 }
 
 
-static inline void __iwl_trans_pcie_set_bits_mask(struct iwl_trans *trans,
-                                                  u32 reg, u32 mask, u32 value)
+static inline void __iwl_trans_pcie_set_bits_mask(struct iwl_trans *trans, u32 reg, u32 mask, u32 value)
 {
     u32 v;
     
