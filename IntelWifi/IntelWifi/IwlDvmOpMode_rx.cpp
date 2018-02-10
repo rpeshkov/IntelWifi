@@ -630,7 +630,7 @@ static void iwlagn_pass_packet_to_mac80211(struct iwl_priv *priv,
         return;
     
     if (ieee80211_is_mgmt(hdr->frame_control)) {
-        IWL_DEBUG_FRAME(priv, "Management frame. Frame control: 0x%x", hdr->frame_control);
+        IWL_DEBUG_RX(priv, "Management frame. Frame control: 0x%x", hdr->frame_control);
         struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt *)(pkt->data + sizeof(ampdu_status));
         if (ieee80211_is_beacon(hdr->frame_control) && priv->scan_request) {
             u8 ssid_el_id = mgmt->u.beacon.variable[0];
@@ -638,7 +638,7 @@ static void iwlagn_pass_packet_to_mac80211(struct iwl_priv *priv,
             char ssid[IEEE80211_MAX_SSID_LEN + 1];
             memcpy(ssid, mgmt->u.beacon.variable + 2, ssid_len);
             ssid[ssid_len] = '\0';
-            IWL_DEBUG_FRAME(priv, "BEACON => FC: 0x%x; SC: 0x%x; Duration ID: %d; SSID: %d %s(%d)",
+            IWL_DEBUG_RX(priv, "BEACON => FC: 0x%x; SC: 0x%x; Duration ID: %d; SSID: %d %s(%d)",
                          mgmt->frame_control, mgmt->seq_ctrl, mgmt->duration, ssid_el_id, ssid, ssid_len);
         }
     }

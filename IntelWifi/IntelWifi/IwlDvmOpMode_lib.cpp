@@ -281,8 +281,7 @@ static int iwl_get_idle_rx_chain_count(struct iwl_priv *priv, int active_cnt)
         case IEEE80211_SMPS_OFF:
             return active_cnt;
         default:
-            DebugLog("invalid SMPS mode %d",
-                 priv->current_ht_config.smps);
+            IWL_DEBUG_RX(priv, "invalid SMPS mode %d", priv->current_ht_config.smps);
             return active_cnt;
     }
 }

@@ -177,7 +177,6 @@ int iwl_wait_notification(struct iwl_notif_wait_data *notif_wait, struct iwl_not
     clock_interval_to_deadline((u32)timeout, kMillisecondScale, (UInt64 *) &deadline);
     
     ret = IOLockSleepDeadline(notif_wait->notif_waitq, wait_entry, deadline, THREAD_INTERRUPTIBLE);
-    DebugLog("After sleep status: %d", ret);
     iwl_remove_notification(notif_wait, wait_entry);
     IOLockUnlock(notif_wait->notif_waitq);
 

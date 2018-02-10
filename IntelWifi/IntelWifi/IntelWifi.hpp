@@ -7,7 +7,9 @@
 #include <net/if.h>
 
 extern "C" {
+    #include "iwl-debug.h"
 #include "iwlwifi/iwl-csr.h"
+//#include "iwl-debug.h"
 #include "iwl-drv.h"
 #include "iwl-trans.h"
 #include "iwl-fh.h"
@@ -30,10 +32,17 @@ extern "C" {
 #include <IOKit/network/IOPacketQueue.h>
 #include <IOKit/IOMemoryCursor.h>
 
-#include "Logging.h"
+
+
+//#include "Logging.h"
 
 #include "IwlTransOps.h"
 #include "IwlOpModeOps.h"
+
+extern "C" {
+
+}
+
 
 
 

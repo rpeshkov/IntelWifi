@@ -403,7 +403,6 @@ static inline int iwl_is_ctkill(struct iwl_priv *priv)
 static inline int iwl_is_ready_rf(struct iwl_priv *priv)
 {
     if (iwl_is_rfkill(priv)) {
-        DebugLog("Is rfkill");
 		return 0;
     }
 
@@ -431,24 +430,23 @@ static inline void iwl_dvm_set_pmi(struct iwl_priv *priv, bool state)
 //}
 //#endif /* CONFIG_IWLWIFI_DEBUGFS */
 
-//#ifdef CONFIG_IWLWIFI_DEBUG
-//#define IWL_DEBUG_QUIET_RFKILL(m, fmt, args...)    \
-//do {                                    \
-//    if (!iwl_is_rfkill((m)))                    \
-//        IWL_ERR(m, fmt, ##args);                \
-//    else                                \
-//        __iwl_err((m)->dev, true,                \
-//              !iwl_have_debug_level(IWL_DL_RADIO),        \
-//              fmt, ##args);                    \
-//} while (0)
-//#else
-//#define IWL_DEBUG_QUIET_RFKILL(m, fmt, args...)    \
-//do {                                    \
-//    if (!iwl_is_rfkill((m)))                    \
-//        IWL_ERR(m, fmt, ##args);                \
-//    else                                \
-//        __iwl_err((m)->dev, true, true, fmt, ##args);    \
-//} while (0)
-//#endif                /* CONFIG_IWLWIFI_DEBUG */
+#ifdef CONFIG_IWLWIFI_DEBUG
+#define IWL_DEBUG_QUIET_RFKILL(m, fmt, args...)                 \
+do {                                                            \
+    if (!iwl_is_rfkill((m)))                                    \
+        IWL_ERR(m, fmt, ##args);                                \
+    else                                                        \
+        __iwl_err(true, !iwl_have_debug_level(IWL_DL_RADIO),    \
+                  fmt, ##args);                                 \
+} while (0)
+#else
+#define IWL_DEBUG_QUIET_RFKILL(m, fmt, args...)     \
+do {                                                \
+    if (!iwl_is_rfkill((m)))                        \
+        IWL_ERR(m, fmt, ##args);                    \
+    else                                            \
+        __iwl_err(true, true, fmt, ##args);         \
+} while (0)
+#endif                /* CONFIG_IWLWIFI_DEBUG */
 
 #endif /* __iwl_agn_h__ */

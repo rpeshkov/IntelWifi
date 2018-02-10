@@ -14,6 +14,8 @@ extern "C" {
     #include <net/cfg80211.h>
 #include <linux/jiffies.h>
     
+    #include "iwl-debug.h"
+    
 }
 
 #include <IOKit/IOBufferMemoryDescriptor.h>
@@ -22,6 +24,7 @@ extern "C" {
 
 
 extern "C" {
+
     #include "tt.h"
 #include "dev.h"
 #include "agn.h"

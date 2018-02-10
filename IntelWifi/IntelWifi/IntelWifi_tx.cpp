@@ -137,7 +137,6 @@ int iwl_pcie_alloc_dma_ptr(struct iwl_trans *trans, struct iwl_dma_ptr *ptr, siz
     UInt32 numSegs = 1;
     
     if (cmd->gen64IOVMSegments(&ofs, &seg, &numSegs) != kIOReturnSuccess) {
-        TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
         return -1;
     }
     
@@ -1396,7 +1395,6 @@ static int iwl_pcie_enqueue_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *c
         UInt32 numSegs = 1;
         
         if (cmd->gen64IOVMSegments(&ofs, &seg, &numSegs) != kIOReturnSuccess) {
-            TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
             return -1;
         }
         
@@ -1455,7 +1453,6 @@ static int iwl_pcie_enqueue_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *c
         UInt32 numSegs = 1;
         
         if (cmd->gen64IOVMSegments(&ofs, &seg, &numSegs) != kIOReturnSuccess) {
-            TraceLog("EVERYTHING IS VEEEERY BAAAD :(");
             return -1;
         }
         

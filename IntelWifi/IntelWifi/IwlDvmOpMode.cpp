@@ -60,7 +60,7 @@ void IwlDvmOpMode::scan() {
 }
 
 void IwlDvmOpMode::add_interface(struct ieee80211_vif *vif) {
-    DebugLog("ADD INTERFACE");
+    //DebugLog("ADD INTERFACE");
 //    IOLockLock(mutex);
     
     
