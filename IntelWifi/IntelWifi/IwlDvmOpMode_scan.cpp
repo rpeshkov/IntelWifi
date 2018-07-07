@@ -960,7 +960,7 @@ static int iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
 // line 929
 void iwl_init_scan_params(struct iwl_priv *priv)
 {
-    u8 ant_idx = fls(priv->nvm_data->valid_tx_ant) - 1;
+    u8 ant_idx = linux_fls(priv->nvm_data->valid_tx_ant) - 1;
     if (!priv->scan_tx_ant[NL80211_BAND_5GHZ])
         priv->scan_tx_ant[NL80211_BAND_5GHZ] = ant_idx;
     if (!priv->scan_tx_ant[NL80211_BAND_2GHZ])

@@ -50,7 +50,7 @@ void free_dma_buf(struct iwl_dma_ptr *dma_ptr) {
     dma_ptr->cmd = NULL;
     
     IOBufferMemoryDescriptor *bmd = static_cast<IOBufferMemoryDescriptor *>(dma_ptr->bmd);
-    bmd->complete();
+//    bmd->complete();
     bmd->release();
     dma_ptr->bmd = NULL;
     

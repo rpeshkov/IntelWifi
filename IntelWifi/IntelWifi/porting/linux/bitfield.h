@@ -191,7 +191,7 @@ test_bit(int nr, const volatile unsigned long *addr)
  * Note fls(0) = 0, fls(1) = 1, fls(0x80000000) = 32.
  */
 
-static inline int fls(int x)
+static inline int linux_fls(int x)
 {
     int r = 32;
     

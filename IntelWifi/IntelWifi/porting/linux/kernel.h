@@ -85,7 +85,7 @@ int __get_order(unsigned long size)
     size--;
     size >>= PAGE_SHIFT;
 #if BITS_PER_LONG == 32
-    order = fls(size);
+    order = linux_fls(size);
 #else
     order = fls64(size);
 #endif
