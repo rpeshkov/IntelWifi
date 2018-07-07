@@ -12,3 +12,9 @@ Installation steps:
 1. curl -O -L https://github.com/phracker/MacOSX-SDKs/releases/download/10.13/MacOSX10.12.sdk.tar.xz
 2. tar zxf ./MacOSX10.12.sdk.tar.xz
 3. sudo mv MacOSX10.12.sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/
+
+## License
+
+The Intel firmware files are covered by the [firmware license][fw-license]
+
+[fw-license]: https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/LICENCE.iwlwifi_firmware?id=HEAD
