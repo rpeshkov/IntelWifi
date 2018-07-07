@@ -81,6 +81,34 @@
 		A6FEB8332025FCF9001FE12D /* IwlDvmOpMode_tt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A6FEB8312025FCF9001FE12D /* IwlDvmOpMode_tt.cpp */; };
 		A6FFAF86201CC1580097ED10 /* IwlDvmOpMode_rs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A6FFAF85201CC1580097ED10 /* IwlDvmOpMode_rs.cpp */; };
 		A6FFAF89201CF32C0097ED10 /* find_next_bit.c in Sources */ = {isa = PBXBuildFile; fileRef = A6FFAF88201CF32C0097ED10 /* find_next_bit.c */; };
+		A6FFB87520F1783600F1EE57 /* iwlwifi-105-6.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB85920F1783300F1EE57 /* iwlwifi-105-6.ucode */; };
+		A6FFB87620F1783600F1EE57 /* iwlwifi-6000-4.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB85A20F1783300F1EE57 /* iwlwifi-6000-4.ucode */; };
+		A6FFB87720F1783600F1EE57 /* LICENSE.iwlwifi-6000g2b-ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB85B20F1783300F1EE57 /* LICENSE.iwlwifi-6000g2b-ucode */; };
+		A6FFB87820F1783600F1EE57 /* iwlwifi-6000g2b-5.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB85C20F1783400F1EE57 /* iwlwifi-6000g2b-5.ucode */; };
+		A6FFB87920F1783600F1EE57 /* iwlwifi-6050-4.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB85D20F1783400F1EE57 /* iwlwifi-6050-4.ucode */; };
+		A6FFB87A20F1783600F1EE57 /* iwlwifi-1000-3.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB85E20F1783400F1EE57 /* iwlwifi-1000-3.ucode */; };
+		A6FFB87B20F1783600F1EE57 /* iwlwifi-135-6.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB85F20F1783400F1EE57 /* iwlwifi-135-6.ucode */; };
+		A6FFB87C20F1783600F1EE57 /* iwlwifi-2030-6.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB86020F1783400F1EE57 /* iwlwifi-2030-6.ucode */; };
+		A6FFB87D20F1783600F1EE57 /* iwlwifi-1000-5.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB86120F1783400F1EE57 /* iwlwifi-1000-5.ucode */; };
+		A6FFB87E20F1783600F1EE57 /* LICENSE.iwlwifi-135-ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB86220F1783400F1EE57 /* LICENSE.iwlwifi-135-ucode */; };
+		A6FFB87F20F1783600F1EE57 /* LICENSE.iwlwifi-5000-ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB86320F1783400F1EE57 /* LICENSE.iwlwifi-5000-ucode */; };
+		A6FFB88020F1783600F1EE57 /* iwlwifi-5000-2.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB86420F1783400F1EE57 /* iwlwifi-5000-2.ucode */; };
+		A6FFB88120F1783600F1EE57 /* LICENSE.iwlwifi-5150-ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB86520F1783400F1EE57 /* LICENSE.iwlwifi-5150-ucode */; };
+		A6FFB88220F1783600F1EE57 /* LICENSE.iwlwifi-6000-ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB86620F1783400F1EE57 /* LICENSE.iwlwifi-6000-ucode */; };
+		A6FFB88320F1783600F1EE57 /* LICENSE.iwlwifi-6000g2a-ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB86720F1783400F1EE57 /* LICENSE.iwlwifi-6000g2a-ucode */; };
+		A6FFB88420F1783600F1EE57 /* LICENSE.iwlwifi-2000-ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB86820F1783500F1EE57 /* LICENSE.iwlwifi-2000-ucode */; };
+		A6FFB88520F1783600F1EE57 /* iwlwifi-5150-2.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB86920F1783500F1EE57 /* iwlwifi-5150-2.ucode */; };
+		A6FFB88620F1783600F1EE57 /* iwlwifi-5000-1.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB86A20F1783500F1EE57 /* iwlwifi-5000-1.ucode */; };
+		A6FFB88720F1783600F1EE57 /* LICENSE.iwlwifi-100-ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB86B20F1783500F1EE57 /* LICENSE.iwlwifi-100-ucode */; };
+		A6FFB88820F1783600F1EE57 /* iwlwifi-2000-6.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB86C20F1783500F1EE57 /* iwlwifi-2000-6.ucode */; };
+		A6FFB88920F1783600F1EE57 /* LICENSE.iwlwifi-1000-ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB86D20F1783500F1EE57 /* LICENSE.iwlwifi-1000-ucode */; };
+		A6FFB88A20F1783600F1EE57 /* LICENSE.iwlwifi-105-ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB86E20F1783500F1EE57 /* LICENSE.iwlwifi-105-ucode */; };
+		A6FFB88B20F1783600F1EE57 /* LICENSE.iwlwifi-2030-ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB86F20F1783500F1EE57 /* LICENSE.iwlwifi-2030-ucode */; };
+		A6FFB88C20F1783600F1EE57 /* iwlwifi-6000g2a-5.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB87020F1783600F1EE57 /* iwlwifi-6000g2a-5.ucode */; };
+		A6FFB88D20F1783600F1EE57 /* iwlwifi-100-5.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB87120F1783600F1EE57 /* iwlwifi-100-5.ucode */; };
+		A6FFB88E20F1783600F1EE57 /* iwlwifi-5000-5.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB87220F1783600F1EE57 /* iwlwifi-5000-5.ucode */; };
+		A6FFB88F20F1783600F1EE57 /* LICENSE.iwlwifi-6050-ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB87320F1783600F1EE57 /* LICENSE.iwlwifi-6050-ucode */; };
+		A6FFB89020F1783600F1EE57 /* iwlwifi-6050-5.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A6FFB87420F1783600F1EE57 /* iwlwifi-6050-5.ucode */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -178,6 +206,34 @@
 		A6FEB8312025FCF9001FE12D /* IwlDvmOpMode_tt.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IwlDvmOpMode_tt.cpp; sourceTree = "<group>"; };
 		A6FFAF85201CC1580097ED10 /* IwlDvmOpMode_rs.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IwlDvmOpMode_rs.cpp; sourceTree = "<group>"; };
 		A6FFAF88201CF32C0097ED10 /* find_next_bit.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = find_next_bit.c; sourceTree = "<group>"; };
+		A6FFB85920F1783300F1EE57 /* iwlwifi-105-6.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-105-6.ucode"; sourceTree = "<group>"; };
+		A6FFB85A20F1783300F1EE57 /* iwlwifi-6000-4.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-6000-4.ucode"; sourceTree = "<group>"; };
+		A6FFB85B20F1783300F1EE57 /* LICENSE.iwlwifi-6000g2b-ucode */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE.iwlwifi-6000g2b-ucode"; sourceTree = "<group>"; };
+		A6FFB85C20F1783400F1EE57 /* iwlwifi-6000g2b-5.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-6000g2b-5.ucode"; sourceTree = "<group>"; };
+		A6FFB85D20F1783400F1EE57 /* iwlwifi-6050-4.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-6050-4.ucode"; sourceTree = "<group>"; };
+		A6FFB85E20F1783400F1EE57 /* iwlwifi-1000-3.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-1000-3.ucode"; sourceTree = "<group>"; };
+		A6FFB85F20F1783400F1EE57 /* iwlwifi-135-6.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-135-6.ucode"; sourceTree = "<group>"; };
+		A6FFB86020F1783400F1EE57 /* iwlwifi-2030-6.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-2030-6.ucode"; sourceTree = "<group>"; };
+		A6FFB86120F1783400F1EE57 /* iwlwifi-1000-5.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-1000-5.ucode"; sourceTree = "<group>"; };
+		A6FFB86220F1783400F1EE57 /* LICENSE.iwlwifi-135-ucode */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE.iwlwifi-135-ucode"; sourceTree = "<group>"; };
+		A6FFB86320F1783400F1EE57 /* LICENSE.iwlwifi-5000-ucode */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE.iwlwifi-5000-ucode"; sourceTree = "<group>"; };
+		A6FFB86420F1783400F1EE57 /* iwlwifi-5000-2.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-5000-2.ucode"; sourceTree = "<group>"; };
+		A6FFB86520F1783400F1EE57 /* LICENSE.iwlwifi-5150-ucode */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE.iwlwifi-5150-ucode"; sourceTree = "<group>"; };
+		A6FFB86620F1783400F1EE57 /* LICENSE.iwlwifi-6000-ucode */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE.iwlwifi-6000-ucode"; sourceTree = "<group>"; };
+		A6FFB86720F1783400F1EE57 /* LICENSE.iwlwifi-6000g2a-ucode */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE.iwlwifi-6000g2a-ucode"; sourceTree = "<group>"; };
+		A6FFB86820F1783500F1EE57 /* LICENSE.iwlwifi-2000-ucode */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE.iwlwifi-2000-ucode"; sourceTree = "<group>"; };
+		A6FFB86920F1783500F1EE57 /* iwlwifi-5150-2.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-5150-2.ucode"; sourceTree = "<group>"; };
+		A6FFB86A20F1783500F1EE57 /* iwlwifi-5000-1.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-5000-1.ucode"; sourceTree = "<group>"; };
+		A6FFB86B20F1783500F1EE57 /* LICENSE.iwlwifi-100-ucode */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE.iwlwifi-100-ucode"; sourceTree = "<group>"; };
+		A6FFB86C20F1783500F1EE57 /* iwlwifi-2000-6.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-2000-6.ucode"; sourceTree = "<group>"; };
+		A6FFB86D20F1783500F1EE57 /* LICENSE.iwlwifi-1000-ucode */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE.iwlwifi-1000-ucode"; sourceTree = "<group>"; };
+		A6FFB86E20F1783500F1EE57 /* LICENSE.iwlwifi-105-ucode */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE.iwlwifi-105-ucode"; sourceTree = "<group>"; };
+		A6FFB86F20F1783500F1EE57 /* LICENSE.iwlwifi-2030-ucode */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE.iwlwifi-2030-ucode"; sourceTree = "<group>"; };
+		A6FFB87020F1783600F1EE57 /* iwlwifi-6000g2a-5.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-6000g2a-5.ucode"; sourceTree = "<group>"; };
+		A6FFB87120F1783600F1EE57 /* iwlwifi-100-5.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-100-5.ucode"; sourceTree = "<group>"; };
+		A6FFB87220F1783600F1EE57 /* iwlwifi-5000-5.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-5000-5.ucode"; sourceTree = "<group>"; };
+		A6FFB87320F1783600F1EE57 /* LICENSE.iwlwifi-6050-ucode */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE.iwlwifi-6050-ucode"; sourceTree = "<group>"; };
+		A6FFB87420F1783600F1EE57 /* iwlwifi-6050-5.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-6050-5.ucode"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -194,7 +250,35 @@
 		A60CC38A20F1537A007E2591 /* firmware */ = {
 			isa = PBXGroup;
 			children = (
+				A6FFB87120F1783600F1EE57 /* iwlwifi-100-5.ucode */,
+				A6FFB85920F1783300F1EE57 /* iwlwifi-105-6.ucode */,
+				A6FFB85F20F1783400F1EE57 /* iwlwifi-135-6.ucode */,
+				A6FFB85E20F1783400F1EE57 /* iwlwifi-1000-3.ucode */,
+				A6FFB86120F1783400F1EE57 /* iwlwifi-1000-5.ucode */,
+				A6FFB86C20F1783500F1EE57 /* iwlwifi-2000-6.ucode */,
+				A6FFB86020F1783400F1EE57 /* iwlwifi-2030-6.ucode */,
+				A6FFB86A20F1783500F1EE57 /* iwlwifi-5000-1.ucode */,
+				A6FFB86420F1783400F1EE57 /* iwlwifi-5000-2.ucode */,
+				A6FFB87220F1783600F1EE57 /* iwlwifi-5000-5.ucode */,
+				A6FFB86920F1783500F1EE57 /* iwlwifi-5150-2.ucode */,
+				A6FFB85A20F1783300F1EE57 /* iwlwifi-6000-4.ucode */,
+				A6FFB87020F1783600F1EE57 /* iwlwifi-6000g2a-5.ucode */,
+				A6FFB85C20F1783400F1EE57 /* iwlwifi-6000g2b-5.ucode */,
 				A60CC38B20F16382007E2591 /* iwlwifi-6000g2b-6.ucode */,
+				A6FFB85D20F1783400F1EE57 /* iwlwifi-6050-4.ucode */,
+				A6FFB87420F1783600F1EE57 /* iwlwifi-6050-5.ucode */,
+				A6FFB86B20F1783500F1EE57 /* LICENSE.iwlwifi-100-ucode */,
+				A6FFB86E20F1783500F1EE57 /* LICENSE.iwlwifi-105-ucode */,
+				A6FFB86220F1783400F1EE57 /* LICENSE.iwlwifi-135-ucode */,
+				A6FFB86D20F1783500F1EE57 /* LICENSE.iwlwifi-1000-ucode */,
+				A6FFB86820F1783500F1EE57 /* LICENSE.iwlwifi-2000-ucode */,
+				A6FFB86F20F1783500F1EE57 /* LICENSE.iwlwifi-2030-ucode */,
+				A6FFB86320F1783400F1EE57 /* LICENSE.iwlwifi-5000-ucode */,
+				A6FFB86520F1783400F1EE57 /* LICENSE.iwlwifi-5150-ucode */,
+				A6FFB86620F1783400F1EE57 /* LICENSE.iwlwifi-6000-ucode */,
+				A6FFB86720F1783400F1EE57 /* LICENSE.iwlwifi-6000g2a-ucode */,
+				A6FFB85B20F1783300F1EE57 /* LICENSE.iwlwifi-6000g2b-ucode */,
+				A6FFB87320F1783600F1EE57 /* LICENSE.iwlwifi-6050-ucode */,
 			);
 			path = firmware;
 			sourceTree = "<group>";
@@ -503,7 +587,35 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A6FFB88C20F1783600F1EE57 /* iwlwifi-6000g2a-5.ucode in Resources */,
+				A6FFB88620F1783600F1EE57 /* iwlwifi-5000-1.ucode in Resources */,
+				A6FFB87920F1783600F1EE57 /* iwlwifi-6050-4.ucode in Resources */,
+				A6FFB87F20F1783600F1EE57 /* LICENSE.iwlwifi-5000-ucode in Resources */,
+				A6FFB87A20F1783600F1EE57 /* iwlwifi-1000-3.ucode in Resources */,
+				A6FFB88320F1783600F1EE57 /* LICENSE.iwlwifi-6000g2a-ucode in Resources */,
+				A6FFB88D20F1783600F1EE57 /* iwlwifi-100-5.ucode in Resources */,
+				A6FFB87720F1783600F1EE57 /* LICENSE.iwlwifi-6000g2b-ucode in Resources */,
+				A6FFB87C20F1783600F1EE57 /* iwlwifi-2030-6.ucode in Resources */,
+				A6FFB88020F1783600F1EE57 /* iwlwifi-5000-2.ucode in Resources */,
+				A6FFB88E20F1783600F1EE57 /* iwlwifi-5000-5.ucode in Resources */,
+				A6FFB88720F1783600F1EE57 /* LICENSE.iwlwifi-100-ucode in Resources */,
+				A6FFB87E20F1783600F1EE57 /* LICENSE.iwlwifi-135-ucode in Resources */,
+				A6FFB88220F1783600F1EE57 /* LICENSE.iwlwifi-6000-ucode in Resources */,
+				A6FFB88420F1783600F1EE57 /* LICENSE.iwlwifi-2000-ucode in Resources */,
+				A6FFB88120F1783600F1EE57 /* LICENSE.iwlwifi-5150-ucode in Resources */,
+				A6FFB88A20F1783600F1EE57 /* LICENSE.iwlwifi-105-ucode in Resources */,
+				A6FFB87820F1783600F1EE57 /* iwlwifi-6000g2b-5.ucode in Resources */,
+				A6FFB87520F1783600F1EE57 /* iwlwifi-105-6.ucode in Resources */,
+				A6FFB88F20F1783600F1EE57 /* LICENSE.iwlwifi-6050-ucode in Resources */,
+				A6FFB87B20F1783600F1EE57 /* iwlwifi-135-6.ucode in Resources */,
+				A6FFB88520F1783600F1EE57 /* iwlwifi-5150-2.ucode in Resources */,
+				A6FFB88920F1783600F1EE57 /* LICENSE.iwlwifi-1000-ucode in Resources */,
+				A6FFB87620F1783600F1EE57 /* iwlwifi-6000-4.ucode in Resources */,
 				A60CC38C20F16383007E2591 /* iwlwifi-6000g2b-6.ucode in Resources */,
+				A6FFB88B20F1783600F1EE57 /* LICENSE.iwlwifi-2030-ucode in Resources */,
+				A6FFB89020F1783600F1EE57 /* iwlwifi-6050-5.ucode in Resources */,
+				A6FFB88820F1783600F1EE57 /* iwlwifi-2000-6.ucode in Resources */,
+				A6FFB87D20F1783600F1EE57 /* iwlwifi-1000-5.ucode in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
