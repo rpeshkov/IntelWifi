@@ -10,16 +10,10 @@ extern "C" {
 #include <IOKit/IOCommandGate.h>
 #include "IwlDvmOpMode.hpp"
 
-
-
-
 #include <sys/errno.h>
 
 #define super IOEthernetController
 OSDefineMetaClassAndStructors(IntelWifi, IOEthernetController)
-
-
-
 
 static struct MediumTable
 {
@@ -65,28 +59,40 @@ void IntelWifi::free() {
     super::free();
 }
 
+IOService* IntelWifi::probe(IOService* provider, SInt32 *score) {
+    super::probe(provider, score);
+    
+    TraceLog("Probing dev");
+    
+    pciDevice = OSDynamicCast(IOPCIDevice, provider);
+    if (!pciDevice) {
+        TraceLog("Provider is not PCI device");
+        return NULL;
+    }
+
+    fDeviceId = pciDevice->configRead16(kIOPCIConfigDeviceID);
+    fSubsystemId = pciDevice->configRead16(kIOPCIConfigSubSystemID);
+    
+    TraceLog("Probing: 0x%04x", fDeviceId);
+    
+    fConfiguration = getConfiguration(fDeviceId, fSubsystemId);
+    if (!fConfiguration) {
+        TraceLog("ERROR: Failed to match configuration!");
+        pciDevice = NULL;
+        return NULL;
+    }
+    pciDevice->retain();
+    
+    TraceLog("Probe success for 0x%04x", fDeviceId);
+    
+    return this;
+}
+
 bool IntelWifi::start(IOService *provider) {
     TraceLog("Driver start");
     
     if (!super::start(provider)) {
         TraceLog("Super start call failed!");
-        return false;
-    }
-    
-    pciDevice = OSDynamicCast(IOPCIDevice, provider);
-    if (!pciDevice) {
-        TraceLog("Provider is not PCI device");
-        return false;
-    }
-    pciDevice->retain();
-    
-    fDeviceId = pciDevice->configRead16(kIOPCIConfigDeviceID);
-    fSubsystemId = pciDevice->configRead16(kIOPCIConfigSubSystemID);
-    
-    fConfiguration = getConfiguration(fDeviceId, fSubsystemId);
-    
-    if (!fConfiguration) {
-        TraceLog("ERROR: Failed to match configuration!");
         releaseAll();
         return false;
     }

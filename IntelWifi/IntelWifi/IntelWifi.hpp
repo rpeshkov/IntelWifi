@@ -78,6 +78,8 @@ public:
     virtual bool init(OSDictionary *properties) override;
     virtual void free() override;
     
+    virtual IOService* probe(IOService* provider, SInt32* score) override;
+    
     virtual bool start(IOService *provider) override;
     virtual void stop(IOService *provider) override;
     
