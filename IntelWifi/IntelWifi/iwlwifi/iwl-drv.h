@@ -66,6 +66,8 @@
 #define __iwl_drv_h__
 
 #include <sys/queue.h>
+#include <libkern/OSKextLib.h>
+#include <IOKit/IOLib.h>
 
 #include "fw/img.h"
 
@@ -139,7 +141,9 @@ struct iwl_drv {
     int fw_index;                   /* firmware we're trying to load */
     char firmware_name[64];         /* name of firmware file to load */
     
-    //    struct completion request_firmware_complete;
+    IOLock* request_firmware_complete;
+    
+    //struct completion request_firmware_complete;
     
 #ifdef CONFIG_IWLWIFI_DEBUGFS
     struct dentry *dbgfs_drv;

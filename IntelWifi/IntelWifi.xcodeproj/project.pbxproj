@@ -10,6 +10,7 @@
 		A602D07D202F4C2B00F22DC8 /* dma-utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A602D07C202F4C2B00F22DC8 /* dma-utils.cpp */; };
 		A607F0472011468600F9B75D /* IwlDvmOpMode_rx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A607F0462011468600F9B75D /* IwlDvmOpMode_rx.cpp */; };
 		A60CB4402012D802002FB239 /* IwlDvmOpMode_scan.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A60CB43F2012D802002FB239 /* IwlDvmOpMode_scan.cpp */; };
+		A60CC38C20F16383007E2591 /* iwlwifi-6000g2b-6.ucode in Resources */ = {isa = PBXBuildFile; fileRef = A60CC38B20F16382007E2591 /* iwlwifi-6000g2b-6.ucode */; };
 		A61264FA1FF20162006A7AEA /* iwl-csr.h in Headers */ = {isa = PBXBuildFile; fileRef = A61264F91FF20162006A7AEA /* iwl-csr.h */; };
 		A61427262001B3760093DED7 /* IntelWifi_tx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A61427252001B3760093DED7 /* IntelWifi_tx.cpp */; };
 		A61427282001BF090093DED7 /* tx.h in Headers */ = {isa = PBXBuildFile; fileRef = A61427272001BF090093DED7 /* tx.h */; };
@@ -75,7 +76,6 @@
 		A6C733BE2002CD1F00F03ACA /* calib.h in Headers */ = {isa = PBXBuildFile; fileRef = A6C733BD2002CD1F00F03ACA /* calib.h */; };
 		A6C733C02002D1A800F03ACA /* IwlDvmOpMode_mac80211.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A6C733BF2002D1A800F03ACA /* IwlDvmOpMode_mac80211.cpp */; };
 		A6C733C22002D57500F03ACA /* IwlDvmOpMode_ucode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A6C733C12002D57500F03ACA /* IwlDvmOpMode_ucode.cpp */; };
-		A6D275E71FF50F8C00F5723B /* firmware_file.h in Headers */ = {isa = PBXBuildFile; fileRef = A6D275E61FF50F8C00F5723B /* firmware_file.h */; };
 		A6E59FE41FF34BA600E86DC0 /* iwl-agn-hw.h in Headers */ = {isa = PBXBuildFile; fileRef = A6E59FE31FF34BA600E86DC0 /* iwl-agn-hw.h */; };
 		A6F3F8971FF78DA400F1582E /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = A6F3F8961FF78DA400F1582E /* util.c */; };
 		A6FEB8332025FCF9001FE12D /* IwlDvmOpMode_tt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A6FEB8312025FCF9001FE12D /* IwlDvmOpMode_tt.cpp */; };
@@ -88,6 +88,7 @@
 		A602D07C202F4C2B00F22DC8 /* dma-utils.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "dma-utils.cpp"; sourceTree = "<group>"; };
 		A607F0462011468600F9B75D /* IwlDvmOpMode_rx.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IwlDvmOpMode_rx.cpp; sourceTree = "<group>"; };
 		A60CB43F2012D802002FB239 /* IwlDvmOpMode_scan.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IwlDvmOpMode_scan.cpp; sourceTree = "<group>"; };
+		A60CC38B20F16382007E2591 /* iwlwifi-6000g2b-6.ucode */ = {isa = PBXFileReference; lastKnownFileType = file; path = "iwlwifi-6000g2b-6.ucode"; sourceTree = "<group>"; };
 		A60D702820228A9A00A60F26 /* regulatory.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = regulatory.h; sourceTree = "<group>"; };
 		A611F3EA1FF33BCD001B5538 /* iwl-eeprom-parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "iwl-eeprom-parse.h"; sourceTree = "<group>"; };
 		A61264F91FF20162006A7AEA /* iwl-csr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-csr.h"; sourceTree = "<group>"; };
@@ -170,7 +171,6 @@
 		A6C733BD2002CD1F00F03ACA /* calib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = calib.h; sourceTree = "<group>"; };
 		A6C733BF2002D1A800F03ACA /* IwlDvmOpMode_mac80211.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IwlDvmOpMode_mac80211.cpp; sourceTree = "<group>"; };
 		A6C733C12002D57500F03ACA /* IwlDvmOpMode_ucode.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IwlDvmOpMode_ucode.cpp; sourceTree = "<group>"; };
-		A6D275E61FF50F8C00F5723B /* firmware_file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = firmware_file.h; sourceTree = "<group>"; };
 		A6E59FE31FF34BA600E86DC0 /* iwl-agn-hw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-agn-hw.h"; sourceTree = "<group>"; };
 		A6F3F8931FF783A100F1582E /* cfg80211.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cfg80211.h; sourceTree = "<group>"; };
 		A6F3F8961FF78DA400F1582E /* util.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = util.c; sourceTree = "<group>"; };
@@ -191,6 +191,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A60CC38A20F1537A007E2591 /* firmware */ = {
+			isa = PBXGroup;
+			children = (
+				A60CC38B20F16382007E2591 /* iwlwifi-6000g2b-6.ucode */,
+			);
+			path = firmware;
+			sourceTree = "<group>";
+		};
 		A61264F81FF200F6006A7AEA /* iwlwifi */ = {
 			isa = PBXGroup;
 			children = (
@@ -198,7 +206,6 @@
 				A6142733200201110093DED7 /* dvm */,
 				A61525BB1FF4C8810094A282 /* fw */,
 				A6B62E16201A8DB500426B95 /* pcie */,
-				A6D275E61FF50F8C00F5723B /* firmware_file.h */,
 				A6E59FE31FF34BA600E86DC0 /* iwl-agn-hw.h */,
 				A636DA731FF421B6006AECC9 /* iwl-config.h */,
 				A61525C41FF4CED70094A282 /* iwl-context-info.h */,
@@ -326,6 +333,7 @@
 		A65083761FEFB2DC001300AC /* IntelWifi */ = {
 			isa = PBXGroup;
 			children = (
+				A60CC38A20F1537A007E2591 /* firmware */,
 				A61525A81FF4B70E0094A282 /* porting */,
 				A61264F81FF200F6006A7AEA /* iwlwifi */,
 				A65083771FEFB2DC001300AC /* IntelWifi.hpp */,
@@ -407,7 +415,6 @@
 				A6142736200202730093DED7 /* dev.h in Headers */,
 				A61525C11FF4CB760094A282 /* img.h in Headers */,
 				A61525BD1FF4C89D0094A282 /* file.h in Headers */,
-				A6D275E71FF50F8C00F5723B /* firmware_file.h in Headers */,
 				A614273E200205480093DED7 /* notif-wait.h in Headers */,
 				A61264FA1FF20162006A7AEA /* iwl-csr.h in Headers */,
 				A6142739200203220093DED7 /* rs.h in Headers */,
@@ -496,6 +503,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A60CC38C20F16383007E2591 /* iwlwifi-6000g2b-6.ucode in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

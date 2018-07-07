@@ -76,9 +76,6 @@
 #include "iwl-config.h"
 #include "iwl-modparams.h"
 
-#include "firmware_file.h"
-
-
 struct firmware {
     size_t size;
     const u8 *data;
@@ -190,20 +187,20 @@ static int iwl_alloc_fw_desc(struct iwl_drv *drv, struct fw_desc *desc,
 	return 0;
 }
 
-static void iwl_req_fw_callback(const struct firmware *ucode_raw,
-				void *context);
+static void iwl_req_fw_callback(const struct firmware *ucode_raw, void *context);
 
-static int request_firmware_nowait(void *context,
-                                   void (*cont)(const struct firmware *fw, void *context)) {
+static void firmwareLoadComplete(OSKextRequestTag requestTag, OSReturn result,
+                                 const void *resourceData,
+                                 uint32_t resourceDataLength,
+                                 void *context) {
+    
     struct firmware* fw = (struct firmware *)IOMalloc(sizeof(struct firmware));
-    fw->size = iwlwifi_6000g2b_6_ucode_len;
-    fw->data = iwlwifi_6000g2b_6_ucode;
+    fw->size = resourceDataLength;
+    fw->data = IOMalloc(fw->size);
+    memcpy((void*)fw->data, resourceData, fw->size);
     
-    cont(fw, context);
-    
-    return 0;
+    iwl_req_fw_callback(fw, context);
 }
-
 
 static int iwl_request_firmware(struct iwl_drv *drv, bool first)
 {
@@ -250,13 +247,28 @@ static int iwl_request_firmware(struct iwl_drv *drv, bool first)
 		return -ENOENT;
 	}
 
-	snprintf(drv->firmware_name, sizeof(drv->firmware_name), "%s%s.ucode",
-		 fw_pre_name, tag);
+	snprintf(drv->firmware_name, sizeof(drv->firmware_name), "%s%s.ucode", fw_pre_name, tag);
 
-    IWL_DEBUG_INFO(drv, "attempting to load firmware '%s'\n",
-               drv->firmware_name);
-
-	return request_firmware_nowait(drv, iwl_req_fw_callback);
+    IWL_DEBUG_INFO(drv, "attempting to load firmware '%s'\n", drv->firmware_name);
+    
+    IOLockLock(drv->request_firmware_complete);
+    OSReturn ret = OSKextRequestResource(OSKextGetCurrentIdentifier(),
+                                         drv->firmware_name,
+                                         firmwareLoadComplete,
+                                         drv,
+                                         NULL);
+    
+    if (ret != kIOReturnSuccess) {
+        IOLockUnlock(drv->request_firmware_complete);
+        return kIOReturnError;
+    }
+    
+    IWL_DEBUG_INFO(drv, "Waiting till firmware '%s' loading finish\n", drv->firmware_name);
+    
+    IOLockSleep(drv->request_firmware_complete, drv, THREAD_INTERRUPTIBLE);
+    IOLockUnlock(drv->request_firmware_complete);
+    
+    return kIOReturnSuccess;
 }
 
 
@@ -1477,8 +1489,11 @@ static void iwl_req_fw_callback(const struct firmware *ucode_raw, void *context)
 	 * a driver unbind (stop) doesn't run while we
 	 * are doing the start() above.
 	 */
-	//complete(&drv->request_firmware_complete);
-
+    //complete(&drv->request_firmware_complete);
+    IOLockLock(drv->request_firmware_complete);
+    IOLockWakeup(drv->request_firmware_complete, drv, true);
+    IOLockUnlock(drv->request_firmware_complete);
+	
 	/*
 	 * Load the module last so we don't block anything
 	 * else from proceeding if the module fails to load
@@ -1500,8 +1515,8 @@ static void iwl_req_fw_callback(const struct firmware *ucode_raw, void *context)
     
 //    release_firmware(ucode_raw);
 //    IOFree(ucode_raw, sizeof(*ucode_raw));
-	if (iwl_request_firmware(drv, false))
-		goto out_unbind;
+//    if (iwl_request_firmware(drv, false))
+//        goto out_unbind;
 	goto free;
 
  out_free_fw:
@@ -1541,7 +1556,9 @@ struct iwl_drv *iwl_drv_start(struct iwl_trans *trans)
 	drv->trans = trans;
 	drv->dev = trans->dev;
 
-	//init_completion(&drv->request_firmware_complete);
+    //init_completion(&drv->request_firmware_complete);
+    drv->request_firmware_complete = IOLockAlloc();
+	
 	//INIT_LIST_HEAD(&drv->list);
     // STAILQ_INIT(&drv->list);
 
@@ -1571,6 +1588,9 @@ struct iwl_drv *iwl_drv_start(struct iwl_trans *trans)
 		IWL_ERR(trans, "Couldn't request the fw\n");
 		goto err_fw;
 	}
+    
+    IOLockFree(drv->request_firmware_complete);
+    drv->request_firmware_complete = NULL;
 
 	return drv;
 
@@ -1589,6 +1609,14 @@ err:
 void iwl_drv_stop(struct iwl_drv *drv)
 {
 	//wait_for_completion(&drv->request_firmware_complete);
+    if (drv->request_firmware_complete != NULL) {
+        IOLockLock(drv->request_firmware_complete);
+        IOLockSleep(drv->request_firmware_complete, drv, THREAD_INTERRUPTIBLE);
+        IOLockUnlock(drv->request_firmware_complete);
+        IOLockFree(drv->request_firmware_complete);
+        drv->request_firmware_complete = NULL;
+    }
+    
 
 	//_iwl_op_mode_stop(drv);
 
@@ -1602,7 +1630,7 @@ void iwl_drv_stop(struct iwl_drv *drv)
 	 */
 //    if (!STAILQ_EMPTY(&drv->list))
 //
-//        STAILQ_REMOVE(&drv->list, <#elm#>, <#type#>, <#field#>)
+//        STAILQ_REMOVE(&drv->list, elm, type, field)
 //        //STAILQ_REMOVE_HEAD(&drv->list, drv);
 //        list_del(&drv->list);
 
