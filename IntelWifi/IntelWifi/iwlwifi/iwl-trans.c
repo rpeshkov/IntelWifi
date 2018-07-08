@@ -106,11 +106,9 @@ struct iwl_trans *iwl_trans_alloc(unsigned int priv_size,
 #endif
         
     // TODO: Need to remember that trans should be freed somewhere. In OSX we don't have devm_kzalloc :(
-    trans = (struct iwl_trans *)IOMalloc(sizeof(*trans) + priv_size);
+    trans = (struct iwl_trans *)iwh_zalloc(sizeof(*trans) + priv_size);
 	if (!trans)
 		return NULL;
-    
-    bzero(trans, sizeof(*trans) + priv_size);
     
     trans->priv_size = priv_size;
 
@@ -149,7 +147,7 @@ void iwl_trans_free(struct iwl_trans *trans)
 	kmem_cache_destroy(trans->dev_cmd_pool);
 #endif
     
-    IOFree(trans, sizeof(*trans) + trans->priv_size);
+    iwh_free(trans);
 }
 
 int iwl_trans_send_cmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd)

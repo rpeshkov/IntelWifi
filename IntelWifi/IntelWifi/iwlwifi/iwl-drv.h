@@ -66,10 +66,13 @@
 #define __iwl_drv_h__
 
 #include <sys/queue.h>
+#include "../iw_utils/allocation.h"
 #include <libkern/OSKextLib.h>
 #include <IOKit/IOLib.h>
 
 #include "fw/img.h"
+
+
 
 
 /* for all modules */

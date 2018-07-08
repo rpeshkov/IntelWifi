@@ -21,7 +21,7 @@ struct ieee80211_hw *IwlDvmOpMode::start(struct iwl_trans *trans, const struct i
     //IOLockLock(mutex);
     priv = iwl_op_mode_dvm_start(trans, cfg, fw);
     iwlagn_mac_start(priv);
-    struct ieee80211_vif *vif = (struct ieee80211_vif *)IOMalloc(sizeof(struct ieee80211_vif) + sizeof(struct iwl_vif_priv));
+    struct ieee80211_vif *vif = (struct ieee80211_vif *)iwh_malloc(sizeof(struct ieee80211_vif) + sizeof(struct iwl_vif_priv));
     memcpy(vif->addr, &this->priv->hw->wiphy->addresses[0], ETH_ALEN);
     vif->type = NL80211_IFTYPE_STATION;
     IOSleep(1000);
@@ -45,8 +45,7 @@ void IwlDvmOpMode::rx(struct iwl_priv *priv, struct napi_struct *napi, struct iw
 }
 
 void IwlDvmOpMode::scan() {
-    this->priv->scan_request = (struct cfg80211_scan_request *)IOMalloc(sizeof(struct cfg80211_scan_request) + sizeof(void*) * 7);
-    bzero(this->priv->scan_request, sizeof(struct cfg80211_scan_request));
+    this->priv->scan_request = (struct cfg80211_scan_request *)iwh_zalloc(sizeof(struct cfg80211_scan_request) + sizeof(void*) * 7);
     this->priv->scan_request->n_channels = 7;
     for (int i = 0; i < this->priv->scan_request->n_channels; ++i) {
         this->priv->scan_request->channels[i] = &priv->nvm_data->channels[i];
@@ -64,7 +63,7 @@ void IwlDvmOpMode::add_interface(struct ieee80211_vif *vif) {
 //    IOLockLock(mutex);
     
     
-//    struct ieee80211_channel_switch *chsw = (struct ieee80211_channel_switch *)IOMalloc(sizeof(struct ieee80211_channel_switch));
+//    struct ieee80211_channel_switch *chsw = (struct ieee80211_channel_switch *)iwh_malloc(sizeof(struct ieee80211_channel_switch));
 //    chsw->count = 1;
 //    chsw->timestamp = jiffies;
 //    chsw->block_tx = true;

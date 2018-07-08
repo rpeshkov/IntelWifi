@@ -444,15 +444,14 @@ int IntelWifi::iwl_pcie_txq_alloc(struct iwl_trans *trans, struct iwl_txq *txq, 
     
     txq->n_window = slots_num;
     
-    txq->entries = (struct iwl_pcie_txq_entry *) IOMalloc(sizeof(struct iwl_pcie_txq_entry) * slots_num);
+    txq->entries = (struct iwl_pcie_txq_entry *) iwh_zalloc(sizeof(struct iwl_pcie_txq_entry) * slots_num);
     
     if (!txq->entries)
         goto error;
-
-    bzero(txq->entries, sizeof(struct iwl_pcie_txq_entry) * slots_num);
+    
     if (cmd_queue)
         for (i = 0; i < slots_num; i++) {
-            txq->entries[i].cmd = (struct iwl_device_cmd *)IOMalloc(sizeof(struct iwl_device_cmd));
+            txq->entries[i].cmd = (struct iwl_device_cmd *)iwh_zalloc(sizeof(struct iwl_device_cmd));
             if (!txq->entries[i].cmd)
                 goto error;
         }
@@ -485,9 +484,9 @@ err_free_tfds:
 error:
     if (txq->entries && cmd_queue)
         for (i = 0; i < slots_num; i++)
-            IOFree(txq->entries[i].cmd, sizeof(struct iwl_device_cmd));
+            iwh_free(txq->entries[i].cmd);
 
-    IOFree(txq->entries, sizeof(struct iwl_pcie_txq_entry) * slots_num);
+    iwh_free(txq->entries);
     txq->entries = NULL;
     return -ENOMEM;
     
@@ -624,9 +623,8 @@ static void iwl_pcie_txq_free(struct iwl_trans *trans, int txq_id)
     /* De-alloc array of command/tx buffers */
     if (txq_id == trans_pcie->cmd_queue)
         for (i = 0; i < txq->n_window; i++) {
-            IOFree(txq->entries[i].cmd, sizeof(struct iwl_device_cmd));
-            // TODO: Implement
-            //kzfree(txq->entries[i].free_buf);
+            iwh_free(txq->entries[i].cmd);
+            iwh_free((void *)txq->entries[i].free_buf);
         }
     
     /* De-alloc circular buffer of TFDs */
@@ -638,7 +636,7 @@ static void iwl_pcie_txq_free(struct iwl_trans *trans, int txq_id)
         free_dma_buf(txq->first_tb_dma_ptr);
     }
     
-    IOFree(txq->entries, sizeof(struct iwl_pcie_txq_entry) * txq->n_window);
+    iwh_free(txq->entries);
     txq->entries = NULL;
     
     //del_timer_sync(&txq->stuck_timer);
@@ -703,7 +701,7 @@ void iwl_pcie_tx_start(struct iwl_trans *trans, u32 scd_base_addr)
 // line 812
 static void iwl_pcie_tx_stop_fh(struct iwl_trans *trans)
 {
-    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    //struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     IOInterruptState state;
     int ch, ret;
     u32 mask = 0;
@@ -786,7 +784,7 @@ void iwl_pcie_tx_free(struct iwl_trans *trans)
         }
     }
     
-    IOFree(trans_pcie->txq_memory, sizeof(struct iwl_txq) * trans->cfg->base_params->num_of_queues);
+    iwh_free(trans_pcie->txq_memory);
     trans_pcie->txq_memory = NULL;
     
     iwl_pcie_free_dma_ptr(trans, trans_pcie->kw);
@@ -827,13 +825,12 @@ int IntelWifi::iwl_pcie_tx_alloc(struct iwl_trans *trans)
         goto error;
     }
 
-    trans_pcie->txq_memory = (struct iwl_txq *)IOMalloc(sizeof(struct iwl_txq) * trans->cfg->base_params->num_of_queues);
+    trans_pcie->txq_memory = (struct iwl_txq *)iwh_zalloc(sizeof(struct iwl_txq) * trans->cfg->base_params->num_of_queues);
     if (!trans_pcie->txq_memory) {
         IWL_ERR(trans, "Not enough memory for txq\n");
         ret = -ENOMEM;
         goto error;
     }
-    bzero(trans_pcie->txq_memory, sizeof(struct iwl_txq) * trans->cfg->base_params->num_of_queues);
     
     /* Alloc and init all Tx queues, including the command queue (#4/#9) */
     for (txq_id = 0; txq_id < trans->cfg->base_params->num_of_queues; txq_id++) {
@@ -1234,7 +1231,6 @@ static int iwl_pcie_enqueue_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *c
     struct iwl_cmd_meta *out_meta;
     IOInterruptState flags;
     void *dup_buf = NULL;
-    vm_size_t dup_buf_size = 0;
     int idx;
     u16 copy_size, cmd_size, tb0_size;
     bool had_nocopy = false;
@@ -1295,10 +1291,9 @@ static int iwl_pcie_enqueue_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *c
                 goto free_dup_buf;
             }
             
-            dup_buf = IOMalloc(cmdlen[i]);
+            dup_buf = iwh_malloc(cmdlen[i]);
             if (!dup_buf)
                 return -ENOMEM;
-            dup_buf_size = cmdlen[i];
             memcpy(dup_buf, cmddata[i], cmdlen[i]);
            
         } else {
@@ -1451,11 +1446,10 @@ static int iwl_pcie_enqueue_hcmd(struct iwl_trans *trans, struct iwl_host_cmd *c
     out_meta->flags = cmd->flags;
     if (txq->entries[idx].free_buf) {
         IWL_DEBUG_TX(trans, "txq->entries[%d].free_buf is not null", idx);
-        IOFree((void *)txq->entries[idx].free_buf, txq->entries[idx].free_buf_size);
+        iwh_free((void *)txq->entries[idx].free_buf);
     }
     
     txq->entries[idx].free_buf = dup_buf;
-    txq->entries[idx].free_buf_size = dup_buf_size;
     
     //trace_iwlwifi_dev_hcmd(trans->dev, cmd, cmd_size, &out_cmd->hdr_wide);
     

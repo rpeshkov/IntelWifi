@@ -518,7 +518,7 @@ static inline void _iwl_disable_interrupts(struct iwl_trans *trans)
 // line 585
 static inline void iwl_disable_interrupts(struct iwl_trans *trans)
 {
-    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    //struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
     //IOSimpleLockLock(trans_pcie->irq_lock);
     _iwl_disable_interrupts(trans);
@@ -553,7 +553,7 @@ static inline void _iwl_enable_interrupts(struct iwl_trans *trans)
 // line 617
 static inline void iwl_enable_interrupts(struct iwl_trans *trans)
 {
-    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    //struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
     //IOSimpleLockLock(trans_pcie->irq_lock);
     _iwl_enable_interrupts(trans);

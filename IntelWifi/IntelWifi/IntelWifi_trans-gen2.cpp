@@ -245,7 +245,7 @@ void IntelWifi::iwl_trans_pcie_gen2_stop_device(struct iwl_trans *trans, bool lo
 
 int IntelWifi::iwl_pcie_gen2_nic_init(struct iwl_trans *trans)
 {
-    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    //struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     
     /* TODO: most of the logic can be removed in A0 - but not in Z0 */
     //IOSimpleLockLock(trans_pcie->irq_lock);

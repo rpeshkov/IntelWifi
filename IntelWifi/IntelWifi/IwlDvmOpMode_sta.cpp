@@ -508,7 +508,7 @@ int iwl_remove_station(struct iwl_priv *priv, const u8 sta_id, const u8 *addr)
     }
     
     if (priv->stations[sta_id].used & IWL_STA_LOCAL) {
-        IOFree(priv->stations[sta_id].lq, sizeof(struct iwl_link_quality_cmd));
+        iwh_free(priv->stations[sta_id].lq);
         priv->stations[sta_id].lq = NULL;
     }
     
@@ -745,7 +745,7 @@ void iwl_dealloc_bcast_stations(struct iwl_priv *priv)
         priv->num_stations--;
         if (WARN_ON(priv->num_stations < 0))
             priv->num_stations = 0;
-        IOFree(priv->stations[i].lq, sizeof(*priv->stations[i].lq));
+        iwh_free(priv->stations[i].lq);
         priv->stations[i].lq = NULL;
     }
     //IOSimpleLockUnlock(priv->sta_lock);
@@ -862,13 +862,12 @@ iwl_sta_alloc_lq(struct iwl_priv *priv, struct iwl_rxon_context *ctx, u8 sta_id)
 {
     struct iwl_link_quality_cmd *link_cmd;
     
-    link_cmd = (struct iwl_link_quality_cmd *)IOMalloc(sizeof(struct iwl_link_quality_cmd));
+    link_cmd = (struct iwl_link_quality_cmd *)iwh_zalloc(sizeof(struct iwl_link_quality_cmd));
     
     if (!link_cmd) {
         IWL_ERR(priv, "Unable to allocate memory for LQ cmd.\n");
         return NULL;
     }
-    bzero(link_cmd, sizeof(struct iwl_link_quality_cmd));
     
     iwl_sta_fill_lq(priv, ctx, sta_id, link_cmd);
     
@@ -1285,7 +1284,7 @@ int iwl_update_bcast_station(struct iwl_priv *priv, struct iwl_rxon_context *ctx
     
     //IOSimpleLockLock(priv->sta_lock);
     if (priv->stations[sta_id].lq)
-        IOFree(priv->stations[sta_id].lq, sizeof(struct iwl_link_quality_cmd));
+        iwh_free(priv->stations[sta_id].lq);
     else
         IWL_DEBUG_INFO(priv, "Bcast station rate scaling has not been initialized yet.\n");
     priv->stations[sta_id].lq = link_cmd;

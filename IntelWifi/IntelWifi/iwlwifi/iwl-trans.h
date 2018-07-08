@@ -78,6 +78,8 @@
 #include "fw/api/cmdhdr.h"
 #include "fw/api/txq.h"
 
+#include "../iw_utils/allocation.h"
+
 // TODO: Remove stubs
 struct sk_buff { int something; };
 struct sk_buff_head{int something;};
@@ -927,7 +929,7 @@ iwl_trans_dump_data(struct iwl_trans *trans, const struct iwl_fw_dbg_trigger_tlv
 static inline struct iwl_device_cmd *
 iwl_trans_alloc_tx_cmd(struct iwl_trans *trans)
 {
-    return (struct iwl_device_cmd *)IOMalloc(sizeof(struct iwl_device_cmd));
+    return (struct iwl_device_cmd *)iwh_malloc(sizeof(struct iwl_device_cmd));
 	//return kmem_cache_alloc(trans->dev_cmd_pool, GFP_ATOMIC);
 }
 
@@ -936,7 +938,7 @@ int iwl_trans_send_cmd(struct iwl_trans *trans, struct iwl_host_cmd *cmd);
 static inline void iwl_trans_free_tx_cmd(struct iwl_trans *trans, struct iwl_device_cmd *dev_cmd)
 {
 	//kmem_cache_free(trans->dev_cmd_pool, dev_cmd);
-    IOFree(dev_cmd, sizeof(*dev_cmd));
+    iwh_free(dev_cmd);
 }
 
 static inline int iwl_trans_tx(struct iwl_trans *trans, struct sk_buff *skb,

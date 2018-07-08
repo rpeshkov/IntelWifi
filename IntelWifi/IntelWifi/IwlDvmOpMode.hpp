@@ -15,6 +15,7 @@ extern "C" {
 #include <linux/jiffies.h>
     
     #include "iwl-debug.h"
+    #include "iw_utils/allocation.h"
     
 }
 

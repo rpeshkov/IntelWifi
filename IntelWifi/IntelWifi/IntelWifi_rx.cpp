@@ -46,6 +46,7 @@ extern "C" {
 #include "iwl-fh.h"
 #include "iwl-trans.h"
 #include "commands.h"
+#include "iw_utils/allocation.h"
 }
 
 /******************************************************************************
@@ -611,12 +612,10 @@ static int iwl_pcie_rx_alloc(struct iwl_trans *trans)
     if (WARN_ON(trans_pcie->rxq))
         return -EINVAL;
     
-    trans_pcie->rxq = (struct iwl_rxq *)IOMalloc(sizeof(struct iwl_rxq) * trans->num_rx_queues);
+    trans_pcie->rxq = (struct iwl_rxq *)iwh_zalloc(sizeof(struct iwl_rxq) * trans->num_rx_queues);
     
     if (!trans_pcie->rxq)
         return -EINVAL;
-    
-    bzero(trans_pcie->rxq, sizeof(struct iwl_rxq) * trans->num_rx_queues);
     
     rba->lock = IOSimpleLockAlloc();
     
@@ -684,7 +683,7 @@ err:
         rxq->used_bd_dma = 0;
         rxq->used_bd = NULL;
     }
-    IOFree(trans_pcie->rxq, sizeof(struct iwl_rxq) * trans->num_rx_queues);
+    iwh_free(trans_pcie->rxq);
     
     return -ENOMEM;
 }
@@ -1030,7 +1029,7 @@ void iwl_pcie_rx_free(struct iwl_trans *trans)
         //        if (rxq->napi.poll)
         //            netif_napi_del(&rxq->napi);
     }
-    IOFree(trans_pcie->rxq, sizeof(struct iwl_rxq) * trans->num_rx_queues);
+    iwh_free(trans_pcie->rxq);
 }
 
 /* line 1050
@@ -1161,7 +1160,7 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans, struct iwl_rxq *r
         //    iwl_op_mode_rx_rss(trans->op_mode, &rxq->napi, &rxcb, rxq->id);
         
         if (reclaim) {
-            IOFree((void *)txq->entries[cmd_index].free_buf, txq->entries[cmd_index].free_buf_size);
+            iwh_free((void *)txq->entries[cmd_index].free_buf);
             txq->entries[cmd_index].free_buf = NULL;
         }
         

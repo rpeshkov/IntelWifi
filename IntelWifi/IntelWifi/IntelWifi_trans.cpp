@@ -400,7 +400,7 @@ void IntelWifi::iwl_pcie_apm_stop(struct iwl_trans *trans, bool op_mode_leave)
 // line 505
 int IntelWifi::iwl_pcie_nic_init(struct iwl_trans *trans)
 {
-    struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
+    //struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     int ret;
     
     /* nic_init */

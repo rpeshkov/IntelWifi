@@ -21,6 +21,7 @@ extern "C" {
 }
 
 #include "iwlwifi/dma-utils.h"
+#include "iw_utils/allocation.h"
 
 #include <IOKit/IOLib.h>
 #include <IOKit/IOBufferMemoryDescriptor.h>

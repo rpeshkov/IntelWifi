@@ -578,9 +578,8 @@ static int iwl_init_drv(struct iwl_priv *priv)
 static void iwl_uninit_drv(struct iwl_priv *priv)
 {
     if (priv->scan_cmd) {
-        IOFree(priv->scan_cmd, priv->scan_cmd_size);
+        iwh_free(priv->scan_cmd);
         priv->scan_cmd = NULL;
-        priv->scan_cmd_size = 0;
     }
     //kfree(priv->beacon_cmd);
 //    kfree(rcu_dereference_raw(priv->noa_data));
@@ -833,8 +832,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     /* Reset chip to save power until we load uCode during "up". */
     _ops->stop_device(priv->trans, true);
     
-    priv->nvm_data = iwl_parse_eeprom_data(NULL, priv->cfg, priv->eeprom_blob, priv->eeprom_blob_size,
-                                           &priv->nvm_data_size);
+    priv->nvm_data = iwl_parse_eeprom_data(NULL, priv->cfg, priv->eeprom_blob, priv->eeprom_blob_size);
     
     if (!priv->nvm_data)
         goto out_free_eeprom_blob;
@@ -858,7 +856,7 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     }
     
     // TODO: This was added by me. Without it, channel is not initialized and rxon commit fails
-    def = (struct cfg80211_chan_def *)IOMalloc(sizeof(struct cfg80211_chan_def));
+    def = (struct cfg80211_chan_def *)iwh_malloc(sizeof(struct cfg80211_chan_def));
     def->chan = &priv->nvm_data->channels[3];
     def->width =  NL80211_CHAN_WIDTH_40;
     def->center_freq1 = def->chan->center_freq;
@@ -940,9 +938,9 @@ out_destroy_workqueue:
     priv->workqueue = NULL;
     iwl_uninit_drv(priv);
 out_free_eeprom_blob:
-    IOFree(priv->eeprom_blob, priv->eeprom_blob_size);
+    iwh_free(priv->eeprom_blob);
 out_free_eeprom:
-    IOFree(priv->nvm_data, priv->nvm_data_size);
+    iwh_free(priv->nvm_data);
 out_free_hw:
 //    ieee80211_free_hw(priv->hw);
 out:
@@ -959,8 +957,8 @@ void IwlDvmOpMode::iwl_op_mode_dvm_stop(struct iwl_priv* priv)
 
     iwl_tt_exit(priv);
 
-    IOFree((void *)priv->eeprom_blob, priv->eeprom_blob_size);
-    IOFree(priv->nvm_data, priv->nvm_data_size);
+    iwh_free((void *)priv->eeprom_blob);
+    iwh_free(priv->nvm_data);
 
     /*netif_stop_queue(dev); */
     //flush_workqueue(priv->workqueue);

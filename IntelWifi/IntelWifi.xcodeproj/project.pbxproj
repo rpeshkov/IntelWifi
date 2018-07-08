@@ -72,6 +72,8 @@
 		A6B62E22201AA70900426B95 /* iwl-eeprom-parse.c in Sources */ = {isa = PBXBuildFile; fileRef = A6B62E1F201AA70700426B95 /* iwl-eeprom-parse.c */; };
 		A6B62E23201AA70900426B95 /* iwl-eeprom-read.c in Sources */ = {isa = PBXBuildFile; fileRef = A6B62E20201AA70800426B95 /* iwl-eeprom-read.c */; };
 		A6B62E24201AA70900426B95 /* iwl-eeprom-read.h in Headers */ = {isa = PBXBuildFile; fileRef = A6B62E21201AA70800426B95 /* iwl-eeprom-read.h */; };
+		A6BD8BE520F2661D0051D90C /* allocation.h in Headers */ = {isa = PBXBuildFile; fileRef = A6BD8BE320F2661D0051D90C /* allocation.h */; };
+		A6BD8BE620F2661D0051D90C /* allocation.c in Sources */ = {isa = PBXBuildFile; fileRef = A6BD8BE420F2661D0051D90C /* allocation.c */; };
 		A6C733BA2002B86100F03ACA /* IwlDvmOpMode_power.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A6C733B92002B86100F03ACA /* IwlDvmOpMode_power.cpp */; };
 		A6C733BE2002CD1F00F03ACA /* calib.h in Headers */ = {isa = PBXBuildFile; fileRef = A6C733BD2002CD1F00F03ACA /* calib.h */; };
 		A6C733C02002D1A800F03ACA /* IwlDvmOpMode_mac80211.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A6C733BF2002D1A800F03ACA /* IwlDvmOpMode_mac80211.cpp */; };
@@ -194,6 +196,8 @@
 		A6B62E1F201AA70700426B95 /* iwl-eeprom-parse.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-eeprom-parse.c"; sourceTree = "<group>"; };
 		A6B62E20201AA70800426B95 /* iwl-eeprom-read.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "iwl-eeprom-read.c"; sourceTree = "<group>"; };
 		A6B62E21201AA70800426B95 /* iwl-eeprom-read.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-eeprom-read.h"; sourceTree = "<group>"; };
+		A6BD8BE320F2661D0051D90C /* allocation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = allocation.h; sourceTree = "<group>"; };
+		A6BD8BE420F2661D0051D90C /* allocation.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = allocation.c; sourceTree = "<group>"; };
 		A6C700B4202D0A6D00E4F551 /* macro_stubs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = macro_stubs.h; sourceTree = "<group>"; };
 		A6C733B92002B86100F03ACA /* IwlDvmOpMode_power.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IwlDvmOpMode_power.cpp; sourceTree = "<group>"; };
 		A6C733BD2002CD1F00F03ACA /* calib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = calib.h; sourceTree = "<group>"; };
@@ -417,6 +421,7 @@
 		A65083761FEFB2DC001300AC /* IntelWifi */ = {
 			isa = PBXGroup;
 			children = (
+				A6BD8BE220F266010051D90C /* iw_utils */,
 				A60CC38A20F1537A007E2591 /* firmware */,
 				A61525A81FF4B70E0094A282 /* porting */,
 				A61264F81FF200F6006A7AEA /* iwlwifi */,
@@ -461,6 +466,15 @@
 			path = pcie;
 			sourceTree = "<group>";
 		};
+		A6BD8BE220F266010051D90C /* iw_utils */ = {
+			isa = PBXGroup;
+			children = (
+				A6BD8BE320F2661D0051D90C /* allocation.h */,
+				A6BD8BE420F2661D0051D90C /* allocation.c */,
+			);
+			path = iw_utils;
+			sourceTree = "<group>";
+		};
 		A6F3F8941FF7841D00F1582E /* net */ = {
 			isa = PBXGroup;
 			children = (
@@ -495,6 +509,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A61525C31FF4CE520094A282 /* iwl-modparams.h in Headers */,
+				A6BD8BE520F2661D0051D90C /* allocation.h in Headers */,
 				A614272E2001F3F10093DED7 /* IwlDvmOpMode.hpp in Headers */,
 				A6142736200202730093DED7 /* dev.h in Headers */,
 				A61525C11FF4CB760094A282 /* img.h in Headers */,
@@ -659,6 +674,7 @@
 				A614367B1FFAEA5B00852FEC /* IntelWifi_trans.cpp in Sources */,
 				A614272D2001F3F10093DED7 /* IwlDvmOpMode_main.cpp in Sources */,
 				A61525A01FF4B6F90094A282 /* 8000.c in Sources */,
+				A6BD8BE620F2661D0051D90C /* allocation.c in Sources */,
 				A602D07D202F4C2B00F22DC8 /* dma-utils.cpp in Sources */,
 				A61427302001F6960093DED7 /* IntelWifi_ops.cpp in Sources */,
 				A6FEB8332025FCF9001FE12D /* IwlDvmOpMode_tt.cpp in Sources */,

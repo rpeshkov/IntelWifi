@@ -126,7 +126,7 @@ int iwl_calib_set(struct iwl_priv *priv, const struct iwl_calib_hdr *cmd, int le
 {
     struct iwl_calib_result *res, *tmp;
     vm_size_t alloc_size = sizeof(*res) + len - sizeof(struct iwl_calib_hdr);
-    res = (struct iwl_calib_result *)IOMalloc(alloc_size);
+    res = (struct iwl_calib_result *)iwh_malloc(alloc_size);
 
     if (!res)
         return -ENOMEM;
@@ -137,7 +137,7 @@ int iwl_calib_set(struct iwl_priv *priv, const struct iwl_calib_hdr *cmd, int le
         if (tmp->hdr.op_code == res->hdr.op_code) {
             STAILQ_INSERT_AFTER(&priv->calib_results, tmp, res, list);
             STAILQ_REMOVE(&priv->calib_results, tmp, iwl_calib_result, list);
-            IOFree(tmp, alloc_size);
+            iwh_free(tmp);
             return 0;
         }
     }
@@ -155,7 +155,7 @@ void iwl_calib_free_results(struct iwl_priv *priv)
     
     STAILQ_FOREACH_SAFE(res, &priv->calib_results, list, tmp) {
         STAILQ_REMOVE(&priv->calib_results, res, iwl_calib_result, list);
-        IOFree(res, sizeof(*res) + res->cmd_len - sizeof(struct iwl_calib_hdr));
+        iwh_free(res);
     }
 }
 

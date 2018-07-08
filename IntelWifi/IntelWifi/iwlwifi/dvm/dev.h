@@ -723,13 +723,11 @@ struct iwl_priv {
 	s32 last_temperature;
 
 	struct iwl_wipan_noa_data __rcu *noa_data;
-    vm_size_t noa_data_size;
 
 	/* Scan related variables */
 	unsigned long scan_start;
 	unsigned long scan_start_tsf;
 	void *scan_cmd;
-    vm_size_t scan_cmd_size;
 	enum nl80211_band scan_band;
 	struct cfg80211_scan_request *scan_request;
 	struct ieee80211_vif *scan_vif;
@@ -884,7 +882,6 @@ struct iwl_priv {
 #endif /* CONFIG_IWLWIFI_DEBUGFS */
 
 	struct iwl_nvm_data *nvm_data;
-    vm_size_t nvm_data_size;
 	/* eeprom blob for debugfs */
 	u8 *eeprom_blob;
 	size_t eeprom_blob_size;

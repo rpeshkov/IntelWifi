@@ -572,19 +572,19 @@ struct ieee80211_hw *iwl_alloc_all(void)
     struct ieee80211_hw *hw;
     
     // This is not kinda correct I guess...
-    hw = (struct ieee80211_hw *)IOMalloc(sizeof(ieee80211_hw));
-    
+    hw = (struct ieee80211_hw *)iwh_malloc(sizeof(ieee80211_hw));
     if (!hw)
         goto out;
     
-    hw->wiphy = (struct wiphy *)IOMalloc(sizeof(wiphy));
-    bzero(hw->wiphy, sizeof(wiphy));
-    hw->conf.chandef.chan = (struct ieee80211_channel *)IOMalloc(sizeof(struct ieee80211_channel));
+    hw->wiphy = (struct wiphy *)iwh_zalloc(sizeof(wiphy));
+    if (!hw->wiphy)
+        goto out;
     
-    hw->priv = IOMalloc(sizeof(iwl_priv));
+    hw->conf.chandef.chan = (struct ieee80211_channel *)iwh_zalloc(sizeof(struct ieee80211_channel));
+    
+    hw->priv = iwh_zalloc(sizeof(iwl_priv));
     if (!hw->priv)
         goto out;
-    bzero(hw->priv, sizeof(iwl_priv));
     
     priv = (struct iwl_priv *)hw->priv;
     priv->hw = hw;

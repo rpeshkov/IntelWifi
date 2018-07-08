@@ -847,11 +847,9 @@ static void iwlagn_rx_noa_notification(struct iwl_priv *priv, struct iwl_rx_cmd_
     struct iwl_wipan_noa_data *new_data, *old_data;
     struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
     struct iwl_wipan_noa_notification *noa_notif = (struct iwl_wipan_noa_notification *)pkt->data;
-    vm_size_t new_data_size, old_data_size;
 
     /* no condition -- we're in softirq */
     old_data = priv->noa_data;
-    old_data_size = priv->noa_data_size;
 
     if (noa_notif->noa_active) {
         u32 len = le16_to_cpu(noa_notif->noa_attribute.length);
@@ -863,8 +861,7 @@ static void iwlagn_rx_noa_notification(struct iwl_priv *priv, struct iwl_rx_cmd_
         len += 1 + 2;
         copylen += 1 + 2;
 
-        new_data_size = sizeof(*new_data) + len;
-        new_data = (struct iwl_wipan_noa_data *)IOMalloc(new_data_size);
+        new_data = (struct iwl_wipan_noa_data *)iwh_malloc(sizeof(*new_data) + len);
         if (new_data) {
             new_data->length = len;
             new_data->data[0] = WLAN_EID_VENDOR_SPECIFIC;
@@ -881,7 +878,7 @@ static void iwlagn_rx_noa_notification(struct iwl_priv *priv, struct iwl_rx_cmd_
     priv->noa_data = new_data;
 
     if (old_data)
-        IOFree(old_data, old_data_size);
+        iwh_free(old_data);
 }
 
 

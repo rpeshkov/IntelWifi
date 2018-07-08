@@ -600,24 +600,22 @@ void iwl_tt_initialize(struct iwl_priv *priv)
 //    INIT_WORK(&priv->ct_enter, iwl_bg_ct_enter);
 //    INIT_WORK(&priv->ct_exit, iwl_bg_ct_exit);
     
-    tt->restriction_size = IWL_TI_STATE_MAX * sizeof(struct iwl_tt_restriction);
-    tt->transaction_size = IWL_TI_STATE_MAX * (IWL_TI_STATE_MAX - 1) * sizeof(struct iwl_tt_trans);
+    vm_size_t restriction_size = IWL_TI_STATE_MAX * sizeof(struct iwl_tt_restriction);
+    vm_size_t transaction_size = IWL_TI_STATE_MAX * (IWL_TI_STATE_MAX - 1) * sizeof(struct iwl_tt_trans);
     
     if (priv->lib->adv_thermal_throttle) {
         IWL_DEBUG_TEMP(priv, "Advanced Thermal Throttling\n");
-        tt->restriction = (struct iwl_tt_restriction *)IOMalloc(tt->restriction_size);
-        tt->transaction = (struct iwl_tt_trans *)IOMalloc(tt->transaction_size);
+        tt->restriction = (struct iwl_tt_restriction *)iwh_malloc(restriction_size);
+        tt->transaction = (struct iwl_tt_trans *)iwh_malloc(transaction_size);
         if (!tt->restriction || !tt->transaction) {
             IWL_ERR(priv, "Fallback to Legacy Throttling\n");
             priv->thermal_throttle.advanced_tt = false;
             if (tt->restriction) {
-                IOFree(tt->restriction, tt->restriction_size);
-                tt->restriction_size = 0;
+                iwh_free(tt->restriction);
             }
             tt->restriction = NULL;
             if (tt->transaction) {
-                IOFree(tt->transaction, tt->transaction_size);
-                tt->transaction_size = 0;
+                iwh_free(tt->transaction);
             }
             tt->transaction = NULL;
         } else {
@@ -656,15 +654,13 @@ void iwl_tt_exit(struct iwl_priv *priv)
     if (priv->thermal_throttle.advanced_tt) {
         /* free advance thermal throttling memory */
         if (tt->restriction) {
-            IOFree(tt->restriction, tt->restriction_size);
-            tt->restriction_size = 0;
+            iwh_free(tt->restriction);
             tt->restriction = NULL;
         }
         
         if (tt->transaction) {
-            IOFree(tt->transaction, tt->transaction_size);
+            iwh_free(tt->transaction);
             tt->transaction = NULL;
-            tt->transaction_size = 0;
         }
     }
 }

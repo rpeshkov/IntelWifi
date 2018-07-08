@@ -110,8 +110,6 @@ struct iwl_tt_mgmt {
 #endif
 	struct iwl_tt_restriction *restriction;
 	struct iwl_tt_trans *transaction;
-    size_t restriction_size;
-    size_t transaction_size;
     // TODO: Implement
 //    struct timer_list ct_kill_exit_tm;
 //    struct timer_list ct_kill_waiting_tm;

@@ -374,7 +374,7 @@ int iwl_read_eeprom(struct iwl_trans *trans, u8 **eeprom, size_t *eeprom_size)
 	sz = trans->cfg->base_params->eeprom_size;
 	IWL_DEBUG_EEPROM(trans->dev, "NVM size = %d\n", sz);
 
-	e = (__le16 *)IOMalloc(sz);
+	e = (__le16 *)iwh_malloc(sz);
 	if (!e)
 		return -ENOMEM;
 
@@ -455,7 +455,7 @@ int iwl_read_eeprom(struct iwl_trans *trans, u8 **eeprom, size_t *eeprom_size)
  err_unlock:
 	iwl_eeprom_release_semaphore(trans);
  err_free:
-	IOFree(e, sz);
+	iwh_free(e);
 
 	return ret;
 }
