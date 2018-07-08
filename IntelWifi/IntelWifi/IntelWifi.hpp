@@ -34,6 +34,8 @@ extern "C" {
 #include <IOKit/network/IOPacketQueue.h>
 #include <IOKit/IOMemoryCursor.h>
 
+#include "apple80211/IO80211Controller.h"
+
 
 
 #include "IwlTransOps.h"

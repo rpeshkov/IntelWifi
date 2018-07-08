@@ -699,8 +699,8 @@ static int iwl_parse_tlv_firmware(struct iwl_drv *drv,
 				len, tlv_len);
 			return -EINVAL;
 		}
-		len -= ALIGN(tlv_len, 4);
-		data += sizeof(*tlv) + ALIGN(tlv_len, 4);
+		len -= LNX_ALIGN(tlv_len, 4);
+		data += sizeof(*tlv) + LNX_ALIGN(tlv_len, 4);
 
 		switch (tlv_type) {
 		case IWL_UCODE_TLV_INST:

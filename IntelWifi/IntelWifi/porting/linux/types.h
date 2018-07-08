@@ -106,6 +106,6 @@ static inline __u16 __le16_to_cpup(const __le16 *p)
 
 #define RT_ALIGN_T(u, uAlignment, type) ( ((type)(u) + ((uAlignment) - 1)) & ~(type)((uAlignment) - 1) )
 #define RT_ALIGN_Z(cb, uAlignment)              RT_ALIGN_T(cb, uAlignment, size_t)
-#define ALIGN RT_ALIGN_Z
+#define LNX_ALIGN RT_ALIGN_Z
 
 #endif /* types_h */

@@ -237,7 +237,7 @@ struct iwl_cmd_meta {
  * that's probably not useful.
  */
 #define IWL_FIRST_TB_SIZE    20
-#define IWL_FIRST_TB_SIZE_ALIGN ALIGN(IWL_FIRST_TB_SIZE, 64)
+#define IWL_FIRST_TB_SIZE_ALIGN LNX_ALIGN(IWL_FIRST_TB_SIZE, 64)
 
 struct iwl_pcie_txq_entry {
     struct iwl_device_cmd *cmd;

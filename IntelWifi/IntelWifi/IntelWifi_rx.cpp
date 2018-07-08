@@ -1181,7 +1181,7 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans, struct iwl_rxq *r
         }
         
         page_stolen |= rxcb._page_stolen;
-        offset += ALIGN(len, FH_RSCSR_FRAME_ALIGN);
+        offset += LNX_ALIGN(len, FH_RSCSR_FRAME_ALIGN);
     }
     
     IOBufferMemoryDescriptor *page = static_cast<IOBufferMemoryDescriptor *>(rxb->page);

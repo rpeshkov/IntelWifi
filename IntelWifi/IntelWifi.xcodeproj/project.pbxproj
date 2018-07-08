@@ -58,6 +58,12 @@
 		A62023F82022497D00B0CBD1 /* IntelWifiUserClient.hpp in Headers */ = {isa = PBXBuildFile; fileRef = A62023F62022497D00B0CBD1 /* IntelWifiUserClient.hpp */; };
 		A632A3BE1FFEB01B006B1128 /* IntelWifi_trans-gen2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A632A3BD1FFEB01B006B1128 /* IntelWifi_trans-gen2.cpp */; };
 		A636DA741FF421B7006AECC9 /* iwl-config.h in Headers */ = {isa = PBXBuildFile; fileRef = A636DA731FF421B6006AECC9 /* iwl-config.h */; };
+		A63C033220F2796D004A8D0B /* IO80211Interface.h in Headers */ = {isa = PBXBuildFile; fileRef = A63C032C20F2796C004A8D0B /* IO80211Interface.h */; };
+		A63C033320F2796D004A8D0B /* apple80211_var.h in Headers */ = {isa = PBXBuildFile; fileRef = A63C032D20F2796C004A8D0B /* apple80211_var.h */; };
+		A63C033420F2796D004A8D0B /* IO80211Controller.h in Headers */ = {isa = PBXBuildFile; fileRef = A63C032E20F2796C004A8D0B /* IO80211Controller.h */; };
+		A63C033520F2796D004A8D0B /* apple80211_wps.h in Headers */ = {isa = PBXBuildFile; fileRef = A63C032F20F2796C004A8D0B /* apple80211_wps.h */; };
+		A63C033620F2796D004A8D0B /* IO80211WorkLoop.h in Headers */ = {isa = PBXBuildFile; fileRef = A63C033020F2796D004A8D0B /* IO80211WorkLoop.h */; };
+		A63C033720F2796D004A8D0B /* apple80211_ioctl.h in Headers */ = {isa = PBXBuildFile; fileRef = A63C033120F2796D004A8D0B /* apple80211_ioctl.h */; };
 		A63CB759200FF46D0097DA79 /* IwlDvmOpMode_sta.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A63CB758200FF46D0097DA79 /* IwlDvmOpMode_sta.cpp */; };
 		A63CB75C2010FB5E0097DA79 /* IwlDvmOpMode_lib.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A63CB75B2010FB5E0097DA79 /* IwlDvmOpMode_lib.cpp */; };
 		A63CB75E2010FDA00097DA79 /* IwlDvmOpMode_rxon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A63CB75D2010FDA00097DA79 /* IwlDvmOpMode_rxon.cpp */; };
@@ -178,6 +184,12 @@
 		A62023F62022497D00B0CBD1 /* IntelWifiUserClient.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IntelWifiUserClient.hpp; sourceTree = "<group>"; };
 		A632A3BD1FFEB01B006B1128 /* IntelWifi_trans-gen2.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "IntelWifi_trans-gen2.cpp"; sourceTree = "<group>"; };
 		A636DA731FF421B6006AECC9 /* iwl-config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "iwl-config.h"; sourceTree = "<group>"; };
+		A63C032C20F2796C004A8D0B /* IO80211Interface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IO80211Interface.h; sourceTree = "<group>"; };
+		A63C032D20F2796C004A8D0B /* apple80211_var.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apple80211_var.h; sourceTree = "<group>"; };
+		A63C032E20F2796C004A8D0B /* IO80211Controller.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IO80211Controller.h; sourceTree = "<group>"; };
+		A63C032F20F2796C004A8D0B /* apple80211_wps.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apple80211_wps.h; sourceTree = "<group>"; };
+		A63C033020F2796D004A8D0B /* IO80211WorkLoop.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IO80211WorkLoop.h; sourceTree = "<group>"; };
+		A63C033120F2796D004A8D0B /* apple80211_ioctl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apple80211_ioctl.h; sourceTree = "<group>"; };
 		A63CB758200FF46D0097DA79 /* IwlDvmOpMode_sta.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IwlDvmOpMode_sta.cpp; sourceTree = "<group>"; };
 		A63CB75A2010EE2A0097DA79 /* etherdevice.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = etherdevice.h; sourceTree = "<group>"; };
 		A63CB75B2010FB5E0097DA79 /* IwlDvmOpMode_lib.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IwlDvmOpMode_lib.cpp; sourceTree = "<group>"; };
@@ -402,6 +414,19 @@
 			path = api;
 			sourceTree = "<group>";
 		};
+		A63C032920F27931004A8D0B /* apple80211 */ = {
+			isa = PBXGroup;
+			children = (
+				A63C033120F2796D004A8D0B /* apple80211_ioctl.h */,
+				A63C032D20F2796C004A8D0B /* apple80211_var.h */,
+				A63C032F20F2796C004A8D0B /* apple80211_wps.h */,
+				A63C032E20F2796C004A8D0B /* IO80211Controller.h */,
+				A63C032C20F2796C004A8D0B /* IO80211Interface.h */,
+				A63C033020F2796D004A8D0B /* IO80211WorkLoop.h */,
+			);
+			path = apple80211;
+			sourceTree = "<group>";
+		};
 		A650836A1FEFB2DC001300AC = {
 			isa = PBXGroup;
 			children = (
@@ -421,6 +446,7 @@
 		A65083761FEFB2DC001300AC /* IntelWifi */ = {
 			isa = PBXGroup;
 			children = (
+				A63C032920F27931004A8D0B /* apple80211 */,
 				A6BD8BE220F266010051D90C /* iw_utils */,
 				A60CC38A20F1537A007E2591 /* firmware */,
 				A61525A81FF4B70E0094A282 /* porting */,
@@ -511,7 +537,9 @@
 				A61525C31FF4CE520094A282 /* iwl-modparams.h in Headers */,
 				A6BD8BE520F2661D0051D90C /* allocation.h in Headers */,
 				A614272E2001F3F10093DED7 /* IwlDvmOpMode.hpp in Headers */,
+				A63C033720F2796D004A8D0B /* apple80211_ioctl.h in Headers */,
 				A6142736200202730093DED7 /* dev.h in Headers */,
+				A63C033520F2796D004A8D0B /* apple80211_wps.h in Headers */,
 				A61525C11FF4CB760094A282 /* img.h in Headers */,
 				A61525BD1FF4C89D0094A282 /* file.h in Headers */,
 				A614273E200205480093DED7 /* notif-wait.h in Headers */,
@@ -519,10 +547,13 @@
 				A6142739200203220093DED7 /* rs.h in Headers */,
 				A614367F1FFAF8FD00852FEC /* Configuration.h in Headers */,
 				A642B2CE20004F5000264363 /* compiler.h in Headers */,
+				A63C033220F2796D004A8D0B /* IO80211Interface.h in Headers */,
 				A6B62E1E201AA58C00426B95 /* iwl-scd.h in Headers */,
+				A63C033420F2796D004A8D0B /* IO80211Controller.h in Headers */,
 				A614273B200204B90093DED7 /* power.h in Headers */,
 				A61525C51FF4CED70094A282 /* iwl-context-info.h in Headers */,
 				A61525BF1FF4C9600094A282 /* error-dump.h in Headers */,
+				A63C033320F2796D004A8D0B /* apple80211_var.h in Headers */,
 				A6B62E24201AA70900426B95 /* iwl-eeprom-read.h in Headers */,
 				A61525C81FF4CF6A0094A282 /* cmdhdr.h in Headers */,
 				A61427452002075B0093DED7 /* agn.h in Headers */,
@@ -540,6 +571,7 @@
 				A6B62E1B201A951B00426B95 /* iwl-io.h in Headers */,
 				A65083781FEFB2DC001300AC /* IntelWifi.hpp in Headers */,
 				A61525B91FF4C52A0094A282 /* iwl-fh.h in Headers */,
+				A63C033620F2796D004A8D0B /* IO80211WorkLoop.h in Headers */,
 				A61427282001BF090093DED7 /* tx.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
