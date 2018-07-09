@@ -13,7 +13,7 @@ extern "C" {
 #include <sys/errno.h>
 
 #define super IOEthernetController
-OSDefineMetaClassAndStructors(IntelWifi, IOEthernetController)
+OSDefineMetaClassAndStructors(IntelWifi, IO80211Controller)
 
 static struct MediumTable
 {

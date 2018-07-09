@@ -66,7 +66,7 @@ static IOPMPowerState gPowerStates[kNumPowerStates] = {
 
 
 
-class IntelWifi : public IOEthernetController, public IwlTransOps
+class IntelWifi : public IO80211Controller, public IwlTransOps
 {
     OSDeclareDefaultStructors(IntelWifi)
     
@@ -107,6 +107,10 @@ public:
     
     virtual const OSString* newVendorString() const override;
     virtual const OSString* newModelString() const override;
+    
+    SInt32 apple80211Request(unsigned int, int, IO80211Interface*, void*) {
+        return kIOReturnError;
+    }
     
 protected:
     IOPCIDevice *pciDevice;

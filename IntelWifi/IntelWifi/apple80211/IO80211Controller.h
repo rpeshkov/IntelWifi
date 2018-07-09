@@ -112,7 +112,7 @@ class IO80211Controller : public IOEthernetController {
     virtual bool createWorkLoop() APPLE_KEXT_OVERRIDE;
     virtual IOReturn enable(IONetworkInterface*) APPLE_KEXT_OVERRIDE;
     virtual IOReturn disable(IONetworkInterface*) APPLE_KEXT_OVERRIDE;
-    virtual bool attachInterface(IONetworkInterface**, bool) APPLE_KEXT_OVERRIDE;
+    virtual bool attachInterface(IONetworkInterface**, bool doRegister = true) APPLE_KEXT_OVERRIDE;
     virtual IONetworkInterface * createInterface() APPLE_KEXT_OVERRIDE;
     virtual bool configureInterface(IONetworkInterface*) APPLE_KEXT_OVERRIDE;
     virtual IOReturn outputStart(IONetworkInterface*, IOOptionBits);
