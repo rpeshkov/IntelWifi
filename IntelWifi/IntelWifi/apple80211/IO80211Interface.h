@@ -65,26 +65,20 @@ class IO80211Interface : public IOEthernetInterface
     OSDeclareDefaultStructors( IO80211Interface );
     
 public:
-
-    
-    virtual IOReturn configureReport(IOReportChannelList*, unsigned int, void*, void*) APPLE_KEXT_OVERRIDE;
-    virtual IOReturn updateReport(IOReportChannelList*, unsigned int, void*, void*) APPLE_KEXT_OVERRIDE;
     virtual bool terminate(unsigned int) APPLE_KEXT_OVERRIDE;
     virtual bool attach(IOService*) APPLE_KEXT_OVERRIDE;
     virtual void detach(IOService*) APPLE_KEXT_OVERRIDE;
-    virtual const char * stringFromReturn(IOReturn) APPLE_KEXT_OVERRIDE;
-    virtual int errnoFromReturn(IOReturn) APPLE_KEXT_OVERRIDE;
     virtual bool init(IONetworkController*) APPLE_KEXT_OVERRIDE;
     virtual UInt32 inputPacket(mbuf_t, UInt32, IOOptionBits, void*) APPLE_KEXT_OVERRIDE;
     virtual bool inputEvent(unsigned int, void*) APPLE_KEXT_OVERRIDE;
     virtual SInt32 performCommand(IONetworkController*, unsigned long, void*, void*) APPLE_KEXT_OVERRIDE;
     virtual IOReturn attachToDataLinkLayer(IOOptionBits, void*) APPLE_KEXT_OVERRIDE;
     virtual void detachFromDataLinkLayer(unsigned int, void*) APPLE_KEXT_OVERRIDE;
-    virtual void setPoweredOnByUser(bool) APPLE_KEXT_OVERRIDE;
-    virtual void setEnabledBySystem(bool) APPLE_KEXT_OVERRIDE;
-    virtual bool setLinkState(IO80211LinkState, unsigned int) APPLE_KEXT_OVERRIDE;
-    virtual bool setLinkState(IO80211LinkState, int, unsigned int) APPLE_KEXT_OVERRIDE;
-    virtual UInt32 outputPacket(mbuf_t*, void*) APPLE_KEXT_OVERRIDE;
+    virtual void setPoweredOnByUser(bool);
+    virtual void setEnabledBySystem(bool);
+    virtual bool setLinkState(IO80211LinkState, unsigned int);
+    virtual bool setLinkState(IO80211LinkState, int, unsigned int);
+    virtual UInt32 outputPacket(mbuf_t, void*);
 
     virtual bool setLinkQualityMetric(int);
     virtual void handleDebugCmd(apple80211_debug_command*);

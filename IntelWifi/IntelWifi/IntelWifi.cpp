@@ -1,5 +1,3 @@
-/* add your code here */
-
 #include "IntelWifi.hpp"
 
 extern "C" {
@@ -11,6 +9,8 @@ extern "C" {
 #include "IwlDvmOpMode.hpp"
 
 #include <sys/errno.h>
+
+#include "IntelWifiTransOps.h"
 
 #define super IOEthernetController
 OSDefineMetaClassAndStructors(IntelWifi, IO80211Controller)
@@ -86,6 +86,10 @@ IOService* IntelWifi::probe(IOService* provider, SInt32 *score) {
     TraceLog("Probe success for 0x%04x", fDeviceId);
     
     return this;
+}
+
+SInt32 IntelWifi::apple80211VirtualRequest(unsigned int, int, IO80211VirtualInterface *, void *) {
+    return kIOReturnSuccess;
 }
 
 bool IntelWifi::start(IOService *provider) {
@@ -210,8 +214,8 @@ bool IntelWifi::start(IOService *provider) {
         registerPowerDriver(this, gPowerStates, kNumPowerStates);
         setIdleTimerPeriod(iwlwifi_mod_params.d0i3_timeout);
     }
-    
-    opmode = new IwlDvmOpMode(this);
+    transOps = new IntelWifiTransOps(this);
+    opmode = new IwlDvmOpMode(transOps);
     hw = opmode->start(fTrans, fTrans->cfg, &fTrans->drv->fw);
     
     if (!hw) {
@@ -326,6 +330,14 @@ IOReturn IntelWifi::setHardwareAddress(const IOEthernetAddress *addrP) {
     return kIOReturnSuccess;
 }
 
+IOReturn IntelWifi::setPromiscuousMode(bool active) {
+    return kIOReturnSuccess;
+}
+
+IOReturn IntelWifi::setMulticastMode(bool active) {
+    return kIOReturnSuccess;
+}
+
 
 
 bool IntelWifi::configureInterface(IONetworkInterface *netif) {
@@ -393,6 +405,11 @@ void IntelWifi::interruptOccured(OSObject* owner, IOInterruptEventSource* sender
     
     me->iwl_pcie_irq_handler(0, me->fTrans);
 }
+
+IO80211Interface *IntelWifi::getNetworkInterface() { 
+    return netif;
+}
+
 
 //IOReturn IntelWifi::outputStart(IONetworkInterface *interface, IOOptionBits options) {
 //    DebugLog("OUTPUT START");

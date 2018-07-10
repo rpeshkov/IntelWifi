@@ -6,32 +6,23 @@
 //  Copyright © 2018 Roman Peshkov. All rights reserved.
 //
 
-#include "IntelWifi.hpp"
+#include "IntelWifiTransOps.h"
 
-int IntelWifi::start_hw(struct iwl_trans *trans, bool low_power) {
-    return iwl_trans_pcie_start_hw(trans, low_power);
+int IntelWifiTransOps::start_hw(struct iwl_trans *trans, bool low_power) {
+    return iw->iwl_trans_pcie_start_hw(trans, low_power);
 }
 
-int IntelWifi::start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill) {
+int IntelWifiTransOps::start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill) {
     clear_bit(STATUS_FW_ERROR, &trans->status);
-    return iwl_trans_pcie_start_fw(trans, fw, run_in_rfkill);
+    return iw->iwl_trans_pcie_start_fw(trans, fw, run_in_rfkill);
 }
 
-void IntelWifi::op_mode_leave(struct iwl_trans *trans) {
+void IntelWifiTransOps::op_mode_leave(struct iwl_trans *trans) {
     //iwl_trans_op_mode_leave(trans);
-    iwl_trans_pcie_op_mode_leave(trans);
+    iw->iwl_trans_pcie_op_mode_leave(trans);
 }
 
-void IntelWifi::set_pmi(struct iwl_trans *trans, bool state) {
-    iwl_trans_set_pmi(trans, state);
-}
-
-void IntelWifi::configure(struct iwl_trans *trans, const struct iwl_trans_config *trans_cfg) {
-    iwl_trans_pcie_configure(trans, trans_cfg);
-}
-
-
-void IntelWifi::stop_device(struct iwl_trans *trans, bool low_power) {
-    iwl_trans_pcie_stop_device(trans, low_power);
+void IntelWifiTransOps::stop_device(struct iwl_trans *trans, bool low_power) {
+    iw->iwl_trans_pcie_stop_device(trans, low_power);
     trans->state = IWL_TRANS_NO_FW;
 }

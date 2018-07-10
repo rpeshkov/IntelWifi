@@ -17,8 +17,6 @@ class IwlTransOps {
 public:
     virtual int start_hw(struct iwl_trans *trans, bool low_power) = 0;
     virtual void op_mode_leave(struct iwl_trans *trans) = 0;
-    virtual void set_pmi(struct iwl_trans *trans, bool state) = 0;
-    virtual void configure(struct iwl_trans *trans, const struct iwl_trans_config *trans_cfg) = 0;
     virtual void stop_device(struct iwl_trans *trans, bool low_power) = 0;
     virtual int start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill) = 0;
     

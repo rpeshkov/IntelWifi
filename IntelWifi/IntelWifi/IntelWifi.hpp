@@ -1,10 +1,6 @@
 /* add your code here */
-
-
-
-
-
-#include <net/if.h>
+#ifndef IntelWifi_hpp
+#define IntelWifi_hpp
 
 extern "C" {
     #include "iwl-debug.h"
@@ -35,6 +31,7 @@ extern "C" {
 #include <IOKit/IOMemoryCursor.h>
 
 #include "apple80211/IO80211Controller.h"
+#include "apple80211/IO80211Interface.h"
 
 
 
@@ -66,18 +63,11 @@ static IOPMPowerState gPowerStates[kNumPowerStates] = {
 
 
 
-class IntelWifi : public IO80211Controller, public IwlTransOps
+class IntelWifi : public IO80211Controller
 {
     OSDeclareDefaultStructors(IntelWifi)
     
 public:
-    virtual int start_hw(struct iwl_trans *trans, bool low_power) override;
-    virtual void op_mode_leave(struct iwl_trans *trans) override;
-    virtual void set_pmi(struct iwl_trans *trans, bool state) override;
-    virtual void configure(struct iwl_trans *trans, const struct iwl_trans_config *trans_cfg) override;
-    virtual void stop_device(struct iwl_trans *trans, bool low_power) override;
-    virtual int start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill) override;
-    
     virtual bool init(OSDictionary *properties) override;
     virtual void free() override;
     
@@ -93,28 +83,28 @@ public:
     virtual IOReturn getHardwareAddress(IOEthernetAddress* addrP) override;
     virtual IOReturn setHardwareAddress(const IOEthernetAddress* addrP) override;
     
-    virtual IOReturn setPromiscuousMode(bool active) override
-    {
-        return kIOReturnSuccess;
-    }
+    virtual IOReturn setPromiscuousMode(bool active) override;
+    virtual IOReturn setMulticastMode(bool active) override;
     
-    virtual IOReturn setMulticastMode(bool active) override
-    {
-        return kIOReturnSuccess;
-    }
+    virtual IO80211Interface* getNetworkInterface() override;
+    
     
     bool createMediumDict();
     
     virtual const OSString* newVendorString() const override;
     virtual const OSString* newModelString() const override;
     
-    SInt32 apple80211Request(unsigned int, int, IO80211Interface*, void*) {
-        return kIOReturnError;
-    }
+    virtual SInt32 apple80211VirtualRequest(unsigned int, int, IO80211VirtualInterface*, void*) override;
+    
+    int iwl_trans_pcie_start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill); // line 1224
+    void iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power); // line 1347
+    int iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power); // line 1675
+    void iwl_trans_pcie_op_mode_leave(struct iwl_trans *trans); // line 1687
+    
     
 protected:
     IOPCIDevice *pciDevice;
-    IOEthernetInterface *netif;
+    IO80211Interface *netif;
     IOWorkLoop *fWorkLoop;
     OSDictionary *mediumDict;
     
@@ -127,6 +117,7 @@ protected:
     struct iwl_nvm_data *fNvmData;
     const struct iwl_cfg* fConfiguration;
     struct iwl_trans* fTrans;
+    IwlTransOps *transOps;
     
     
 private:
@@ -161,14 +152,14 @@ private:
     
     void _iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power); // line 1130
     
-    int iwl_trans_pcie_start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill); // line 1224
+    
     
     void iwl_trans_pcie_handle_stop_rfkill(struct iwl_trans *trans, bool was_in_rfkill); // line 1318
-    void iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power); // line 1347
+    
     void iwl_pcie_set_interrupt_capa(struct iwl_trans *trans); // line 1489
     int _iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power); // line 1636
-    int iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power); // line 1675
-    void iwl_trans_pcie_op_mode_leave(struct iwl_trans *trans); // line 1687
+
+    
     
     void iwl_trans_pcie_free(struct iwl_trans* trans); // line 1776
     
@@ -212,10 +203,7 @@ private:
     int iwl_trans_pcie_tx(struct iwl_trans *trans, struct sk_buff *skb,
                           struct iwl_device_cmd *dev_cmd, int txq_id); // line 2256
     
-    // other   
-    
-    ifnet_t fIfNet;
-    
+    // other
     UInt16 fDeviceId;
     UInt16 fSubsystemId;
     
@@ -225,3 +213,5 @@ private:
     IOCommandGate *gate;
   
 };
+
+#endif

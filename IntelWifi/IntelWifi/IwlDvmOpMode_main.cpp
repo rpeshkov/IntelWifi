@@ -788,7 +788,8 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
     }
     
     /* Configure transport layer */
-    _ops->configure(priv->trans, &trans_cfg);
+//    _ops->configure(priv->trans, &trans_cfg);
+    iwl_trans_configure(priv->trans, &trans_cfg);
     
     trans->rx_mpdu_cmd = REPLY_RX_MPDU_CMD;
     trans->rx_mpdu_cmd_hdr_size = sizeof(struct iwl_rx_mpdu_res_start);
@@ -879,7 +880,8 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
         trans_cfg.cmd_queue = IWL_DEFAULT_CMD_QUEUE_NUM;
 
         /* Configure transport layer again*/
-        _ops->configure(priv->trans, &trans_cfg);
+//        _ops->configure(priv->trans, &trans_cfg);
+        iwl_trans_configure(priv->trans, &trans_cfg);
     }
 
     /*******************

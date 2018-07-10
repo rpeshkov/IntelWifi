@@ -99,24 +99,12 @@ class IO80211Controller : public IOEthernetController {
     virtual void free() APPLE_KEXT_OVERRIDE;
     virtual bool init(OSDictionary*) APPLE_KEXT_OVERRIDE;
     
-    virtual IOReturn configureReport(IOReportChannelList*, unsigned int, void*, void*);
-    virtual IOReturn updateReport(IOReportChannelList*, unsigned int, void*, void*);
+
     virtual bool start(IOService*) APPLE_KEXT_OVERRIDE;
     virtual void stop(IOService*) APPLE_KEXT_OVERRIDE;
     
-    virtual IOService * getProvider() const APPLE_KEXT_OVERRIDE;
-    virtual IOWorkLoop * getWorkLoop() const APPLE_KEXT_OVERRIDE;
-    virtual const char * stringFromReturn(IOReturn) APPLE_KEXT_OVERRIDE;
-    virtual int errnoFromReturn(IOReturn) APPLE_KEXT_OVERRIDE;
-    virtual IOOutputQueue * getOutputQueue() const APPLE_KEXT_OVERRIDE;
-    virtual bool createWorkLoop() APPLE_KEXT_OVERRIDE;
-    virtual IOReturn enable(IONetworkInterface*) APPLE_KEXT_OVERRIDE;
-    virtual IOReturn disable(IONetworkInterface*) APPLE_KEXT_OVERRIDE;
-    virtual bool attachInterface(IONetworkInterface**, bool doRegister = true) APPLE_KEXT_OVERRIDE;
-    virtual IONetworkInterface * createInterface() APPLE_KEXT_OVERRIDE;
-    virtual bool configureInterface(IONetworkInterface*) APPLE_KEXT_OVERRIDE;
-    virtual IOReturn outputStart(IONetworkInterface*, IOOptionBits);
-    virtual IOReturn getHardwareAddress(IOEthernetAddress*) APPLE_KEXT_OVERRIDE;
+    virtual IOReturn outputStart(IONetworkInterface*, IOOptionBits) { return kIOReturnSuccess; };
+
     virtual void requestPacketTx(void*, unsigned int) ;
     virtual IOReturn getHardwareAddressForInterface(IO80211Interface*, IOEthernetAddress*) ;
     virtual void inputMonitorPacket(mbuf_t, unsigned int, void*, unsigned long) ;
@@ -127,7 +115,7 @@ class IO80211Controller : public IOEthernetController {
     virtual IO80211Interface * getNetworkInterface() ;
     virtual SInt32 apple80211_ioctl(IO80211Interface*, IO80211VirtualInterface*, ifnet_t, unsigned long, void*) ;
     virtual SInt32 apple80211_ioctl(IO80211Interface*, ifnet_t, unsigned long, void*) { return 0; } ;
-    virtual SInt32 apple80211Request(unsigned int, int, IO80211Interface*, void*) = 0;
+//    virtual SInt32 apple80211Request(unsigned int, int, IO80211Interface*, void*) = 0;
     virtual SInt32 apple80211VirtualRequest(unsigned int, int, IO80211VirtualInterface*, void*) ;
     virtual SInt32 stopDMA() { return 0x66; };
     virtual UInt32 hardwareOutputQueueDepth(IO80211Interface*) { return 0; };
