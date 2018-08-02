@@ -32,12 +32,8 @@ extern "C" {
 #include "apple80211/IO80211Controller.h"
 #include "apple80211/IO80211Interface.h"
 
-
-
 #include "IwlTransOps.h"
 #include "IwlOpModeOps.h"
-
-
 
 
 // Configuration
@@ -69,73 +65,30 @@ class IntelWifi : public IO80211Controller
 public:
     bool init(OSDictionary *properties) override;
     void free() override;
-    
     IOService* probe(IOService* provider, SInt32* score) override;
-    
     bool start(IOService *provider) override;
     void stop(IOService *provider) override;
-    
     SInt32 apple80211Request(unsigned int, int, IO80211Interface*, void*) override;
-
     const OSString* newVendorString() const override;
     const OSString* newModelString() const override;
-    
     IOReturn getHardwareAddressForInterface(IO80211Interface* netif, IOEthernetAddress* addr) override;
     IOReturn getHardwareAddress(IOEthernetAddress* addrP) override;
-    bool configureInterface(IONetworkInterface *netif) override;
-    
     IOReturn enable(IONetworkInterface *netif) override;
-        
-    
     IOReturn disable(IONetworkInterface *netif) override;
-    
+    bool configureInterface(IONetworkInterface *netif) override;
     IO80211Interface *getNetworkInterface();
-    
     IOReturn setPromiscuousMode(bool active) override;
     IOReturn setMulticastMode(bool active) override;
     
-    SInt32 monitorModeSetEnabled(IO80211Interface* interface, bool enabled, unsigned int dlt) override;
-    
-protected:
-    IOPCIDevice *pciDevice;
-    IO80211Interface *netif;
-    IOWorkLoop *fWorkLoop;
-    OSDictionary *mediumDict;
-    
-    IONetworkStats *fNetworkStats;
-    IOEthernetStats *fEthernetStats;
-    IOFilterInterruptEventSource* fInterruptSource;
-    
-    IOMemoryMap *fMemoryMap;
-    
-    struct iwl_nvm_data *fNvmData;
-    const struct iwl_cfg* fConfiguration;
-    struct iwl_trans* fTrans;
-    IwlTransOps *transOps;
 public:
     int iwl_trans_pcie_start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill); // line 1224
     void iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power); // line 1347
     int iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power); // line 1675
     void iwl_trans_pcie_op_mode_leave(struct iwl_trans *trans); // line 1687
-
-//    IO80211Interface* getInterface();
-    
     
 private:
     bool createMediumDict();
-    inline void releaseAll() {
-        RELEASE(fInterruptSource);
-        RELEASE(fWorkLoop);
-        RELEASE(mediumDict);
-        
-        RELEASE(fMemoryMap);
-        if (fTrans) {
-            iwl_trans_pcie_free(fTrans);
-            fTrans = NULL;
-        }
-        
-        RELEASE(pciDevice);
-    }
+    inline void releaseAll();
     
     static void interruptOccured(OSObject* owner, IOInterruptEventSource* sender, int count);
     static bool interruptFilter(OSObject* owner, IOFilterInterruptEventSource * src);
@@ -174,10 +127,8 @@ private:
     void iwl_trans_pcie_gen2_stop_device(struct iwl_trans *trans, bool low_power);
     int iwl_pcie_gen2_nic_init(struct iwl_trans *trans);
     void iwl_trans_pcie_gen2_fw_alive(struct iwl_trans *trans, u32 scd_addr);
-    int iwl_trans_pcie_gen2_start_fw(struct iwl_trans *trans,
-                                     const struct fw_img *fw, bool run_in_rfkill);
-
-    
+    int iwl_trans_pcie_gen2_start_fw(struct iwl_trans *trans, const struct fw_img *fw,
+                                     bool run_in_rfkill);
 
     
     // rx.c
@@ -187,10 +138,8 @@ private:
     void iwl_pcie_irq_handle_error(struct iwl_trans *trans);
 
     void iwl_pcie_rx_handle(struct iwl_trans *trans, int queue);
-    void iwl_pcie_rx_handle_rb(struct iwl_trans *trans,
-                                          struct iwl_rxq *rxq,
-                                          struct iwl_rx_mem_buffer *rxb,
-                                          bool emergency);
+    void iwl_pcie_rx_handle_rb(struct iwl_trans *trans, struct iwl_rxq *rxq,
+                               struct iwl_rx_mem_buffer *rxb, bool emergency);
     
     // tx.c
     int iwl_pcie_txq_alloc(struct iwl_trans *trans, struct iwl_txq *txq, int slots_num, bool cmd_queue); // line 487
@@ -200,8 +149,7 @@ private:
     void iwl_pcie_txq_progress(struct iwl_txq *txq); // line 1034
     void iwl_pcie_cmdq_reclaim(struct iwl_trans *trans, int txq_id, int idx); // line 1211
 
-    void iwl_pcie_hcmd_complete(struct iwl_trans *trans,
-                                           struct iwl_rx_cmd_buffer *rxb); // line 1723
+    void iwl_pcie_hcmd_complete(struct iwl_trans *trans, struct iwl_rx_cmd_buffer *rxb); // line 1723
     int iwl_trans_pcie_tx(struct iwl_trans *trans, struct sk_buff *skb,
                           struct iwl_device_cmd *dev_cmd, int txq_id); // line 2256
     
@@ -209,11 +157,26 @@ private:
     UInt16 fDeviceId;
     UInt16 fSubsystemId;
     
-public:IwlOpModeOps *opmode;
-private:
+    IwlOpModeOps *opmode;
+
     struct ieee80211_hw *hw;
     IOCommandGate *gate;
-  
+    
+    IOPCIDevice *pciDevice;
+    IO80211Interface *netif;
+    IOWorkLoop *fWorkLoop;
+    OSDictionary *mediumDict;
+    
+    IONetworkStats *fNetworkStats;
+    IOEthernetStats *fEthernetStats;
+    IOFilterInterruptEventSource* fInterruptSource;
+    
+    IOMemoryMap *fMemoryMap;
+    
+    struct iwl_nvm_data *fNvmData;
+    const struct iwl_cfg* fConfiguration;
+    struct iwl_trans* fTrans;
+    IwlTransOps *transOps;
 };
 
 #endif

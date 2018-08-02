@@ -62,7 +62,7 @@ IOReturn IntelWifiUserClient::scan(IntelWifiUserClient *target, void *reference,
 }
 
 IOReturn IntelWifiUserClient::scanImpl() {
-    this->fProvider->opmode->scan();
+//    this->fProvider->opmode->scan();
     return kIOReturnSuccess;
 }
 

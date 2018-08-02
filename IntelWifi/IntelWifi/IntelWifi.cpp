@@ -8,8 +8,6 @@ extern "C" {
 #include <IOKit/IOCommandGate.h>
 #include "IwlDvmOpMode.hpp"
 
-#include <sys/errno.h>
-
 #include "IntelWifiTransOps.h"
 
 #define super IO80211Controller
@@ -25,36 +23,14 @@ static struct MediumTable
 };
 
 
-int IntelWifi::findMSIInterruptTypeIndex()
-{
-    IOReturn ret;
-    int index, source = 0;
-    for (index = 0; ; index++)
-    {
-        int interruptType;
-        ret = pciDevice->getInterruptType(index, &interruptType);
-        if (ret != kIOReturnSuccess)
-            break;
-        if (interruptType & kIOInterruptTypePCIMessaged)
-        {
-            source = index;
-            break;
-        }
-    }
-    return source;
-}
-
 bool IntelWifi::init(OSDictionary *properties) {
     TraceLog("Driver init()");
-    
     return super::init(properties);
 }
 
 void IntelWifi::free() {
     TraceLog("Driver free()");
-    
     releaseAll();
-    
     TraceLog("Fully finished");
     super::free();
 }
@@ -90,10 +66,6 @@ IOService* IntelWifi::probe(IOService* provider, SInt32 *score) {
 
 SInt32 IntelWifi::apple80211Request(unsigned int, int, IO80211Interface *, void *) {
     return kIOReturnError;
-}
-
-SInt32 IntelWifi::monitorModeSetEnabled(IO80211Interface* interface, bool enabled, UInt32 dlt) {
-    return kIOReturnSuccess;
 }
 
 bool IntelWifi::start(IOService *provider) {
@@ -139,10 +111,6 @@ bool IntelWifi::start(IOService *provider) {
         return 0;
     }
     gate->enable();
-    
-//    fInterruptSource->enable();
-//    fWorkLoop->enableAllInterrupts();
-//    fWorkLoop->enableAllEventSources();
     
     fTrans = iwl_trans_pcie_alloc(fConfiguration);
     if (!fTrans) {
@@ -197,7 +165,6 @@ bool IntelWifi::start(IOService *provider) {
     }
 #endif
 
-    
     fTrans->drv = iwl_drv_start(fTrans);
     if (!fTrans->drv) {
         TraceLog("DRV init failed!");
@@ -218,6 +185,7 @@ bool IntelWifi::start(IOService *provider) {
         registerPowerDriver(this, gPowerStates, kNumPowerStates);
         setIdleTimerPeriod(iwlwifi_mod_params.d0i3_timeout);
     }
+    
     transOps = new IntelWifiTransOps(this);
     opmode = new IwlDvmOpMode(transOps);
     hw = opmode->start(fTrans, fTrans->cfg, &fTrans->drv->fw);
@@ -274,31 +242,6 @@ void IntelWifi::stop(IOService *provider) {
     TraceLog("Stopped");
 }
 
-bool IntelWifi::createMediumDict() {
-    UInt32 capacity = sizeof(mediumTable) / sizeof(struct MediumTable);
-    
-    mediumDict = OSDictionary::withCapacity(capacity);
-    if (mediumDict == 0) {
-        return false;
-    }
-    
-    for (UInt32 i = 0; i < capacity; i++) {
-        IONetworkMedium* medium = IONetworkMedium::medium(mediumTable[i].type, mediumTable[i].speed);
-        if (medium) {
-            IONetworkMedium::addMedium(mediumDict, medium);
-            medium->release();
-        }
-    }
-    
-    if (!publishMediumDictionary(mediumDict)) {
-        return false;
-    }
-    
-    IONetworkMedium *m = IONetworkMedium::getMediumWithType(mediumDict, kIOMediumIEEE80211Auto);
-    setSelectedMedium(m);
-    return true;
-}
-
 
 IOReturn IntelWifi::enable(IONetworkInterface *netif) {
     TraceLog("enable");
@@ -308,23 +251,17 @@ IOReturn IntelWifi::enable(IONetworkInterface *netif) {
     setLinkStatus(kIONetworkLinkActive | kIONetworkLinkValid, medium);
     fTrans->intf = netif;
     
-    
     return kIOReturnSuccess;
 }
-
-
 
 IOReturn IntelWifi::disable(IONetworkInterface *netif) {
     TraceLog("disable");
     fTrans->intf = NULL;
-//    netif->flushInputQueue();
     return kIOReturnSuccess;
 }
 
-
-
 IOReturn IntelWifi::getHardwareAddress(IOEthernetAddress *addrP) {
-    memcpy(addrP->bytes, &hw->wiphy->addresses[0], ETH_ALEN);
+    memcpy(addrP->bytes, &hw->wiphy->addresses[0], ETHER_ADDR_LEN);
     return kIOReturnSuccess;
 }
 
@@ -359,23 +296,11 @@ bool IntelWifi::configureInterface(IONetworkInterface *netif) {
     return true;
 }
 
-const OSString* IntelWifi::newVendorString() const {
-    return OSString::withCString("Intel");
-}
-
-
-const OSString* IntelWifi::newModelString() const {
-    return OSString::withCString(fConfiguration->name);
-}
-
 IOReturn IntelWifi::gateAction(OSObject *owner, void *arg0, void *arg1, void *arg2, void *arg3) {
     if (!owner) {
         return kIOReturnSuccess;
     }
     
-    //IntelWifi *me = static_cast<IntelWifi *>(owner);
-//    u32 len = (u32)arg1;
-//    return me->netif->inputPacket((mbuf_t)arg0, len, IONetworkInterface::kInputOptionQueuePacket);
     return kIOReturnSuccess;
 }
 
@@ -409,3 +334,78 @@ void IntelWifi::interruptOccured(OSObject* owner, IOInterruptEventSource* sender
 IO80211Interface *IntelWifi::getNetworkInterface() {
     return netif;
 }
+
+const OSString* IntelWifi::newVendorString() const {
+    return OSString::withCString("Intel");
+}
+
+const OSString* IntelWifi::newModelString() const {
+    return OSString::withCString(fConfiguration->name);
+}
+
+
+// MARK: Private routines
+
+bool IntelWifi::createMediumDict() {
+    UInt32 capacity = sizeof(mediumTable) / sizeof(struct MediumTable);
+    
+    mediumDict = OSDictionary::withCapacity(capacity);
+    if (mediumDict == 0) {
+        return false;
+    }
+    
+    for (UInt32 i = 0; i < capacity; i++) {
+        IONetworkMedium* medium = IONetworkMedium::medium(mediumTable[i].type, mediumTable[i].speed);
+        if (medium) {
+            IONetworkMedium::addMedium(mediumDict, medium);
+            medium->release();
+        }
+    }
+    
+    if (!publishMediumDictionary(mediumDict)) {
+        return false;
+    }
+    
+    IONetworkMedium *m = IONetworkMedium::getMediumWithType(mediumDict, kIOMediumIEEE80211Auto);
+    setSelectedMedium(m);
+    return true;
+}
+
+/**
+ * Search for Message Signaled Interrupts source
+ */
+int IntelWifi::findMSIInterruptTypeIndex() {
+    IOReturn ret;
+    int index, source = 0;
+    for (index = 0; ; index++)
+    {
+        int interruptType;
+        ret = pciDevice->getInterruptType(index, &interruptType);
+        if (ret != kIOReturnSuccess)
+            break;
+        if (interruptType & kIOInterruptTypePCIMessaged)
+        {
+            source = index;
+            break;
+        }
+    }
+    return source;
+}
+
+/**
+ * Release all internal fields
+ */
+void IntelWifi::releaseAll() {
+    RELEASE(fInterruptSource);
+    RELEASE(fWorkLoop);
+    RELEASE(mediumDict);
+    
+    RELEASE(fMemoryMap);
+    if (fTrans) {
+        iwl_trans_pcie_free(fTrans);
+        fTrans = NULL;
+    }
+    
+    RELEASE(pciDevice);
+}
+
