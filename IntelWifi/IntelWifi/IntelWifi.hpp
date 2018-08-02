@@ -25,10 +25,9 @@ extern "C" {
 #include <IOKit/IOTimerEventSource.h>
 #include <IOKit/IOFilterInterruptEventSource.h>
 #include <IOKit/pci/IOPCIDevice.h>
-#include <IOKit/network/IOEthernetController.h>
-#include <IOKit/network/IOEthernetInterface.h>
 #include <IOKit/network/IOPacketQueue.h>
 #include <IOKit/IOMemoryCursor.h>
+
 
 #include "apple80211/IO80211Controller.h"
 #include "apple80211/IO80211Interface.h"
@@ -68,39 +67,34 @@ class IntelWifi : public IO80211Controller
     OSDeclareDefaultStructors(IntelWifi)
     
 public:
-    virtual bool init(OSDictionary *properties) override;
-    virtual void free() override;
+    bool init(OSDictionary *properties) override;
+    void free() override;
     
-    virtual IOService* probe(IOService* provider, SInt32* score) override;
+    IOService* probe(IOService* provider, SInt32* score) override;
     
-    virtual bool start(IOService *provider) override;
-    virtual void stop(IOService *provider) override;
+    bool start(IOService *provider) override;
+    void stop(IOService *provider) override;
     
-    virtual bool configureInterface(IONetworkInterface* netif) override;
+    SInt32 apple80211Request(unsigned int, int, IO80211Interface*, void*) override;
+
+    const OSString* newVendorString() const override;
+    const OSString* newModelString() const override;
     
-    virtual IOReturn enable(IONetworkInterface* netif) override;
-    virtual IOReturn disable(IONetworkInterface* netif) override;
-    virtual IOReturn getHardwareAddress(IOEthernetAddress* addrP) override;
-    virtual IOReturn setHardwareAddress(const IOEthernetAddress* addrP) override;
+    IOReturn getHardwareAddressForInterface(IO80211Interface* netif, IOEthernetAddress* addr) override;
+    IOReturn getHardwareAddress(IOEthernetAddress* addrP) override;
+    bool configureInterface(IONetworkInterface *netif) override;
     
-    virtual IOReturn setPromiscuousMode(bool active) override;
-    virtual IOReturn setMulticastMode(bool active) override;
+    IOReturn enable(IONetworkInterface *netif) override;
+        
     
-    virtual IO80211Interface* getNetworkInterface() override;
+    IOReturn disable(IONetworkInterface *netif) override;
     
+    IO80211Interface *getNetworkInterface();
     
-    bool createMediumDict();
+    IOReturn setPromiscuousMode(bool active) override;
+    IOReturn setMulticastMode(bool active) override;
     
-    virtual const OSString* newVendorString() const override;
-    virtual const OSString* newModelString() const override;
-    
-    virtual SInt32 apple80211VirtualRequest(unsigned int, int, IO80211VirtualInterface*, void*) override;
-    
-    int iwl_trans_pcie_start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill); // line 1224
-    void iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power); // line 1347
-    int iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power); // line 1675
-    void iwl_trans_pcie_op_mode_leave(struct iwl_trans *trans); // line 1687
-    
+    SInt32 monitorModeSetEnabled(IO80211Interface* interface, bool enabled, unsigned int dlt) override;
     
 protected:
     IOPCIDevice *pciDevice;
@@ -118,9 +112,17 @@ protected:
     const struct iwl_cfg* fConfiguration;
     struct iwl_trans* fTrans;
     IwlTransOps *transOps;
+public:
+    int iwl_trans_pcie_start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill); // line 1224
+    void iwl_trans_pcie_stop_device(struct iwl_trans *trans, bool low_power); // line 1347
+    int iwl_trans_pcie_start_hw(struct iwl_trans *trans, bool low_power); // line 1675
+    void iwl_trans_pcie_op_mode_leave(struct iwl_trans *trans); // line 1687
+
+//    IO80211Interface* getInterface();
     
     
 private:
+    bool createMediumDict();
     inline void releaseAll() {
         RELEASE(fInterruptSource);
         RELEASE(fWorkLoop);

@@ -6,7 +6,7 @@
 #include <libkern/version.h>
 
 #if VERSION_MAJOR > 8
-	#define _MODERN_BPF
+#define _MODERN_BPF
 #endif
 
 #include <sys/kpi_mbuf.h>
@@ -95,16 +95,29 @@ extern IOCTL_FUNC gSetHandlerTable[];
 
 class IO80211Controller : public IOEthernetController {
     OSDeclareAbstractStructors( IO80211Controller )
-
+    
     virtual void free() APPLE_KEXT_OVERRIDE;
     virtual bool init(OSDictionary*) APPLE_KEXT_OVERRIDE;
     
-
+    virtual IOReturn configureReport(IOReportChannelList*, unsigned int, void*, void*);
+    virtual IOReturn updateReport(IOReportChannelList*, unsigned int, void*, void*);
     virtual bool start(IOService*) APPLE_KEXT_OVERRIDE;
     virtual void stop(IOService*) APPLE_KEXT_OVERRIDE;
     
-    virtual IOReturn outputStart(IONetworkInterface*, IOOptionBits) { return kIOReturnSuccess; };
-
+    virtual IOService * getProvider() const APPLE_KEXT_OVERRIDE;
+    virtual IOWorkLoop * getWorkLoop() const APPLE_KEXT_OVERRIDE;
+    virtual const char * stringFromReturn(IOReturn) APPLE_KEXT_OVERRIDE;
+    virtual int errnoFromReturn(IOReturn) APPLE_KEXT_OVERRIDE;
+    virtual IOOutputQueue * getOutputQueue() const APPLE_KEXT_OVERRIDE;
+    virtual bool createWorkLoop() APPLE_KEXT_OVERRIDE;
+    virtual IOReturn enable(IONetworkInterface*) APPLE_KEXT_OVERRIDE;
+    virtual IOReturn disable(IONetworkInterface*) APPLE_KEXT_OVERRIDE;
+    virtual bool attachInterface(IONetworkInterface**, bool attach = true) APPLE_KEXT_OVERRIDE;
+    virtual IONetworkInterface * createInterface() APPLE_KEXT_OVERRIDE;
+    virtual bool configureInterface(IONetworkInterface*) APPLE_KEXT_OVERRIDE;
+//    virtual IOReturn outputStart(IONetworkInterface *    interface,
+//                                 IOOptionBits            options) APPLE_KEXT_OVERRIDE;
+    virtual IOReturn getHardwareAddress(IOEthernetAddress*) APPLE_KEXT_OVERRIDE;
     virtual void requestPacketTx(void*, unsigned int) ;
     virtual IOReturn getHardwareAddressForInterface(IO80211Interface*, IOEthernetAddress*) ;
     virtual void inputMonitorPacket(mbuf_t, unsigned int, void*, unsigned long) ;
@@ -115,7 +128,7 @@ class IO80211Controller : public IOEthernetController {
     virtual IO80211Interface * getNetworkInterface() ;
     virtual SInt32 apple80211_ioctl(IO80211Interface*, IO80211VirtualInterface*, ifnet_t, unsigned long, void*) ;
     virtual SInt32 apple80211_ioctl(IO80211Interface*, ifnet_t, unsigned long, void*) { return 0; } ;
-//    virtual SInt32 apple80211Request(unsigned int, int, IO80211Interface*, void*) = 0;
+    virtual SInt32 apple80211Request(unsigned int, int, IO80211Interface*, void*) = 0;
     virtual SInt32 apple80211VirtualRequest(unsigned int, int, IO80211VirtualInterface*, void*) ;
     virtual SInt32 stopDMA() { return 0x66; };
     virtual UInt32 hardwareOutputQueueDepth(IO80211Interface*) { return 0; };
@@ -131,10 +144,8 @@ class IO80211Controller : public IOEthernetController {
     virtual IOReturn flowIdSupported() { return 0; };
     virtual IO80211FlowQueueLegacy * requestFlowQueue(FlowIdMetadata const*);
     virtual void releaseFlowQueue(IO80211FlowQueue*) ;
-    #if VERSION_MAJOR == 17
     virtual IOReturn enablePacketTimestamping() { return 0; } ;
     virtual IOReturn disablePacketTimestamping() { return 0; } ;
-    #endif
     virtual UInt32 selfDiagnosticsReport(int, char const*, unsigned int) ;
     virtual UInt32 getDataQueueDepth(OSObject*) ;
     virtual mbuf_flags_t inputPacket(mbuf_t) ;
@@ -159,10 +170,10 @@ class IO80211Controller : public IOEthernetController {
     OSMetaClassDeclareReservedUnused(IO80211Controller, 13);
     OSMetaClassDeclareReservedUnused(IO80211Controller, 14);
     OSMetaClassDeclareReservedUnused(IO80211Controller, 15);
-
+    
 protected:
     static IORegistryPlane gIO80211Plane;
-
+    
     void logIOCTL(apple80211req*);
     void logDebug(char const*, ...);
     void vlogDebug(unsigned long long, char const*, va_list);
@@ -227,13 +238,13 @@ protected:
     void unlockIOReporterLegen();
     IOReturn removeReporterLegend(IOService*, IOReporter*, char const*, char const*);
     IOReturn addReporterLegend(IOService*, IOReporter*, char const*, char const*);
-
+    
     // 0x3b8 bytes of data fields, 0x118 from parent IOEthernetController
     IOTimerEventSource * _report_gathering_timer; // 0x118
     OSArray * _reporter_num;                 // 0x120 OSArray of OSNumber
-    UInt32 _var_128;                   // timeout ticks        
+    UInt32 _var_128;                   // timeout ticks
     bool _wan_debug_enable;            // 0x12c
-                                       // 3 bytes padding
+    // 3 bytes padding
     UInt32 _debug_value;               // 0x130
     IORecursiveLock * _recursive_lock; // 0x138
     UInt64 _ht_cap_0x0;                  // 0x140
@@ -257,18 +268,18 @@ protected:
     UInt32 _infra_channel_flags;  // 0x1e0 compared with offet 8 of apple80211_channel
     UInt32 _current_channel;   // 0x1e8 loaded with offet 04 of apple80211_channel
     UInt32 _current_channel_fags;   // 0x1ec loaded with offet 08 of apple80211_channel
-    UInt8 _awdl_sync[0x190]; // 0x1f0, 0x190 bytes apple80211_awdl_sync_channel_sequence 
+    UInt8 _awdl_sync[0x190]; // 0x1f0, 0x190 bytes apple80211_awdl_sync_channel_sequence
     IONotifier * _powerDownNotifier;          // 0x380
     IOService  * _provider;            // 0x388
     IO80211RangingManager * _ranger_manager; // 0x390
     bool       _var_398;               // 0x398 checked in IO80211Controller::disable(IONetworkInterface*)
-                                       // 7 byte padding
+    // 7 byte padding
     IONotifier * _notifier1;           // 0x3a0
     bool         _var_3a8;             // 0x3a8
-                                       // 7 byte padding
+    // 7 byte padding
     UInt64       _last_pointer;        // 0x3b0  unused
 };
 
 #endif /* defined(KERNEL) && defined(__cplusplus) */
-	
+
 #endif /* !_IO80211CONTROLLER_H */

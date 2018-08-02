@@ -12,7 +12,7 @@ extern "C" {
 
 #include "IntelWifiTransOps.h"
 
-#define super IOEthernetController
+#define super IO80211Controller
 OSDefineMetaClassAndStructors(IntelWifi, IO80211Controller)
 
 static struct MediumTable
@@ -88,7 +88,11 @@ IOService* IntelWifi::probe(IOService* provider, SInt32 *score) {
     return this;
 }
 
-SInt32 IntelWifi::apple80211VirtualRequest(unsigned int, int, IO80211VirtualInterface *, void *) {
+SInt32 IntelWifi::apple80211Request(unsigned int, int, IO80211Interface *, void *) {
+    return kIOReturnError;
+}
+
+SInt32 IntelWifi::monitorModeSetEnabled(IO80211Interface* interface, bool enabled, UInt32 dlt) {
     return kIOReturnSuccess;
 }
 
@@ -324,10 +328,8 @@ IOReturn IntelWifi::getHardwareAddress(IOEthernetAddress *addrP) {
     return kIOReturnSuccess;
 }
 
-
-
-IOReturn IntelWifi::setHardwareAddress(const IOEthernetAddress *addrP) { 
-    return kIOReturnSuccess;
+IOReturn IntelWifi::getHardwareAddressForInterface(IO80211Interface* netif, IOEthernetAddress* addr) {
+    return getHardwareAddress(addr);
 }
 
 IOReturn IntelWifi::setPromiscuousMode(bool active) {
@@ -337,8 +339,6 @@ IOReturn IntelWifi::setPromiscuousMode(bool active) {
 IOReturn IntelWifi::setMulticastMode(bool active) {
     return kIOReturnSuccess;
 }
-
-
 
 bool IntelWifi::configureInterface(IONetworkInterface *netif) {
     TraceLog("Configure interface");
@@ -406,13 +406,6 @@ void IntelWifi::interruptOccured(OSObject* owner, IOInterruptEventSource* sender
     me->iwl_pcie_irq_handler(0, me->fTrans);
 }
 
-IO80211Interface *IntelWifi::getNetworkInterface() { 
+IO80211Interface *IntelWifi::getNetworkInterface() {
     return netif;
 }
-
-
-//IOReturn IntelWifi::outputStart(IONetworkInterface *interface, IOOptionBits options) {
-//    DebugLog("OUTPUT START");
-//    return kIOReturnSuccess;
-//}
-
