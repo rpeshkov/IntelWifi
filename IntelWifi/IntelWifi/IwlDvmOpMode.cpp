@@ -11,7 +11,7 @@
 #include "dev.h"
 #include "agn.h"
 
-IwlDvmOpMode::IwlDvmOpMode(IwlTransOps *ops) {
+IwlDvmOpMode::IwlDvmOpMode(TransOps *ops) {
     _ops = ops;
     mutex = IOLockAlloc();
 }
@@ -42,20 +42,6 @@ void IwlDvmOpMode::stop(struct iwl_priv *priv) {
 
 void IwlDvmOpMode::rx(struct iwl_priv *priv, struct napi_struct *napi, struct iwl_rx_cmd_buffer *rxb) {
     iwl_rx_dispatch(this->priv, napi, rxb);
-}
-
-void IwlDvmOpMode::scan() {
-    this->priv->scan_request = (struct cfg80211_scan_request *)iwh_zalloc(sizeof(struct cfg80211_scan_request) + sizeof(void*) * 7);
-    this->priv->scan_request->n_channels = 7;
-    for (int i = 0; i < this->priv->scan_request->n_channels; ++i) {
-        this->priv->scan_request->channels[i] = &priv->nvm_data->channels[i];
-    }
-    
-    int ret = iwl_scan_initiate(this->priv, NULL, IWL_SCAN_NORMAL, NL80211_BAND_2GHZ);
-    
-    if (ret) {
-        IWL_DEBUG_SCAN(this->priv, "Scan failed with status: %d", ret);
-    }
 }
 
 void IwlDvmOpMode::add_interface(struct ieee80211_vif *vif) {

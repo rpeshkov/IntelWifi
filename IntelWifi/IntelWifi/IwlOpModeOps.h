@@ -9,7 +9,7 @@
 #ifndef IwlOpModeOps_h
 #define IwlOpModeOps_h
 
-#include "IwlTransOps.h"
+
 
 extern "C" {
 #include "iwl-trans.h"
@@ -26,9 +26,6 @@ public:
     virtual void nic_config(struct iwl_priv *priv) = 0;
     virtual void stop(struct iwl_priv *priv) = 0;
     virtual void rx(struct iwl_priv *priv, struct napi_struct *napi, struct iwl_rx_cmd_buffer *rxb) = 0;
-    
-    virtual void scan() = 0;
-    
     
     virtual void add_interface(struct ieee80211_vif *vif) = 0;
     virtual void channel_switch(struct iwl_priv *priv, struct ieee80211_vif *vif, struct ieee80211_channel_switch *chsw) = 0;

@@ -880,7 +880,6 @@ struct iwl_priv *IwlDvmOpMode::iwl_op_mode_dvm_start(struct iwl_trans *trans, co
         trans_cfg.cmd_queue = IWL_DEFAULT_CMD_QUEUE_NUM;
 
         /* Configure transport layer again*/
-//        _ops->configure(priv->trans, &trans_cfg);
         iwl_trans_configure(priv->trans, &trans_cfg);
     }
 

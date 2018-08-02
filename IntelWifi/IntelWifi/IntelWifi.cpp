@@ -8,7 +8,7 @@ extern "C" {
 #include <IOKit/IOCommandGate.h>
 #include "IwlDvmOpMode.hpp"
 
-#include "IntelWifiTransOps.h"
+#include "IwlTransOps.h"
 
 #define super IO80211Controller
 OSDefineMetaClassAndStructors(IntelWifi, IO80211Controller)
@@ -64,8 +64,18 @@ IOService* IntelWifi::probe(IOService* provider, SInt32 *score) {
     return this;
 }
 
-SInt32 IntelWifi::apple80211Request(unsigned int, int, IO80211Interface *, void *) {
-    return kIOReturnError;
+SInt32 IntelWifi::apple80211Request(UInt32 request_type, int request_number,
+                                    IO80211Interface* interface, void* data) {
+    if (request_type != SIOCGA80211 && request_type != SIOCSA80211) {
+        TraceLog("Invalid IOCTL request type: %u", request_type);
+        return kIOReturnError;
+    }
+    IOReturn ret = kIOReturnError;
+    
+    bool isGet = (request_type == SIOCGA80211);
+    TraceLog("IOCTL %s(%d)", isGet ? "get" : "set", request_number);
+    
+    return ret;
 }
 
 bool IntelWifi::start(IOService *provider) {
@@ -166,6 +176,7 @@ bool IntelWifi::start(IOService *provider) {
 #endif
 
     fTrans->drv = iwl_drv_start(fTrans);
+    
     if (!fTrans->drv) {
         TraceLog("DRV init failed!");
         releaseAll();
@@ -186,7 +197,7 @@ bool IntelWifi::start(IOService *provider) {
         setIdleTimerPeriod(iwlwifi_mod_params.d0i3_timeout);
     }
     
-    transOps = new IntelWifiTransOps(this);
+    transOps = new IwlTransOps(this);
     opmode = new IwlDvmOpMode(transOps);
     hw = opmode->start(fTrans, fTrans->cfg, &fTrans->drv->fw);
     

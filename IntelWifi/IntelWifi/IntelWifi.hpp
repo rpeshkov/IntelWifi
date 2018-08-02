@@ -32,7 +32,7 @@ extern "C" {
 #include "apple80211/IO80211Controller.h"
 #include "apple80211/IO80211Interface.h"
 
-#include "IwlTransOps.h"
+#include "TransOps.h"
 #include "IwlOpModeOps.h"
 
 
@@ -176,7 +176,7 @@ private:
     struct iwl_nvm_data *fNvmData;
     const struct iwl_cfg* fConfiguration;
     struct iwl_trans* fTrans;
-    IwlTransOps *transOps;
+    TransOps *transOps;
 };
 
 #endif

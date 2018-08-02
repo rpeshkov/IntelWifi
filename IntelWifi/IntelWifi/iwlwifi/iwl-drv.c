@@ -1305,8 +1305,7 @@ static void iwl_req_fw_callback(const struct firmware *ucode_raw, void *context)
 	if (ucode->ver)
 		err = iwl_parse_v1_v2_firmware(drv, ucode_raw, pieces);
 	else
-		err = iwl_parse_tlv_firmware(drv, ucode_raw, pieces,
-					     &fw->ucode_capa, &usniffer_images);
+		err = iwl_parse_tlv_firmware(drv, ucode_raw, pieces, &fw->ucode_capa, &usniffer_images);
 
     if (err)
         goto try_again;
@@ -1462,8 +1461,7 @@ static void iwl_req_fw_callback(const struct firmware *ucode_raw, void *context)
 		break;
 	}
 
-    IWL_INFO(drv, "loaded firmware version %s op_mode %s\n",
-         drv->fw.fw_version, op->name);
+    IWL_INFO(drv, "loaded firmware version %s op_mode %s\n", drv->fw.fw_version, op->name);
 
 	/* add this device to the list of devices using this op_mode */
 //    list_add_tail(&drv->list, &op->drv);
