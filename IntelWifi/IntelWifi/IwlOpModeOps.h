@@ -15,6 +15,20 @@ extern "C" {
 #include "iwl-trans.h"
 }
 
+#include <IOKit/IOLib.h>
+#include <IOKit/IOBufferMemoryDescriptor.h>
+#include <IOKit/IODMACommand.h>
+#include <IOKit/IOTimerEventSource.h>
+#include <IOKit/IOFilterInterruptEventSource.h>
+#include <IOKit/pci/IOPCIDevice.h>
+#include <IOKit/network/IOPacketQueue.h>
+#include <IOKit/IOMemoryCursor.h>
+
+
+#include "apple80211/IO80211Controller.h"
+#include "apple80211/IO80211Interface.h"
+
+
 
 
 class IwlOpModeOps {
@@ -27,8 +41,19 @@ public:
     virtual void stop(struct iwl_priv *priv) = 0;
     virtual void rx(struct iwl_priv *priv, struct napi_struct *napi, struct iwl_rx_cmd_buffer *rxb) = 0;
     
-    virtual void add_interface(struct ieee80211_vif *vif) = 0;
-    virtual void channel_switch(struct iwl_priv *priv, struct ieee80211_vif *vif, struct ieee80211_channel_switch *chsw) = 0;
+    
+    // IOCTL
+    virtual IOReturn getPOWER(IO80211Interface *intf, apple80211_power_data *power_data) = 0;
+    virtual IOReturn setPOWER(IO80211Interface *intf, apple80211_power_data *power_data) = 0;
+    
+    
+    
+    
+    
+    // Linux calls
+    
+//    virtual void add_interface(struct ieee80211_vif *vif) = 0;
+//    virtual void channel_switch(struct iwl_priv *priv, struct ieee80211_vif *vif, struct ieee80211_channel_switch *chsw) = 0;
 
 //    void (*rx_rss)(struct iwl_op_mode *op_mode, struct napi_struct *napi,
 //                   struct iwl_rx_cmd_buffer *rxb, unsigned int queue);

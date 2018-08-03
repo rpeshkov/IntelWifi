@@ -75,6 +75,27 @@ SInt32 IntelWifi::apple80211Request(UInt32 request_type, int request_number,
     bool isGet = (request_type == SIOCGA80211);
     TraceLog("IOCTL %s(%d)", isGet ? "get" : "set", request_number);
     
+#define IOCTL_GET(REQ_TYPE, REQ, DATA_TYPE) \
+if (REQ_TYPE == SIOCGA80211) { \
+ret = opmode->get##REQ(interface, (struct DATA_TYPE* )data); \
+}
+#define IOCTL_SET(REQ_TYPE, REQ, DATA_TYPE) \
+if (REQ_TYPE == SIOCSA80211) { \
+ret = opmode->set##REQ(interface, (struct DATA_TYPE* )data); \
+}
+
+    switch (request_number) {
+        case APPLE80211_IOC_POWER: // 19
+            IOCTL_GET(request_type, POWER, apple80211_power_data);
+            IOCTL_SET(request_type, POWER, apple80211_power_data);
+            break;
+    }
+    
+    
+    
+#undef IOCTL_SET
+#undef IOCTL_GET
+    
     return ret;
 }
 

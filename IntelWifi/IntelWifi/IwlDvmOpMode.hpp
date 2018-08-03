@@ -48,8 +48,11 @@ public:
     void stop(struct iwl_priv *priv) override;
     void rx(struct iwl_priv *priv, struct napi_struct *napi, struct iwl_rx_cmd_buffer *rxb) override;
     
-    void add_interface(struct ieee80211_vif *vif) override;
-    void channel_switch(struct iwl_priv *priv, struct ieee80211_vif *vif, struct ieee80211_channel_switch *chsw) override;
+//    void add_interface(struct ieee80211_vif *vif) override;
+//    void channel_switch(struct iwl_priv *priv, struct ieee80211_vif *vif, struct ieee80211_channel_switch *chsw) override;
+    
+    IOReturn getPOWER(IO80211Interface *intf, apple80211_power_data *power_data) override;
+    IOReturn setPOWER(IO80211Interface *intf, apple80211_power_data *power_data) override;
 
     
 private:
@@ -83,8 +86,6 @@ private:
     TransOps *_ops;
     
     struct iwl_priv *priv;
-    
-    IOLock *mutex;
 };
 
 

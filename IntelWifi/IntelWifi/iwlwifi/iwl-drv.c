@@ -231,15 +231,10 @@ static int iwl_request_firmware(struct iwl_drv *drv, bool first)
 		IWL_ERR(drv, "no suitable firmware found!\n");
 
 		if (cfg->ucode_api_min == cfg->ucode_api_max) {
-			IWL_ERR(drv, "%s%d is required\n", fw_pre_name,
-				cfg->ucode_api_max);
+			IWL_ERR(drv, "%s%d is required\n", fw_pre_name, cfg->ucode_api_max);
 		} else {
-			IWL_ERR(drv, "minimum version required: %s%d\n",
-				fw_pre_name,
-				cfg->ucode_api_min);
-			IWL_ERR(drv, "maximum version supported: %s%d\n",
-				fw_pre_name,
-				cfg->ucode_api_max);
+			IWL_ERR(drv, "minimum version required: %s%d\n", fw_pre_name, cfg->ucode_api_min);
+			IWL_ERR(drv, "maximum version supported: %s%d\n", fw_pre_name, cfg->ucode_api_max);
 		}
 
 		IWL_ERR(drv,
@@ -1278,8 +1273,7 @@ static void iwl_req_fw_callback(const struct firmware *ucode_raw, void *context)
 	bool usniffer_images = false;
 
 	fw->ucode_capa.max_probe_length = IWL_DEFAULT_MAX_PROBE_LENGTH;
-	fw->ucode_capa.standard_phy_calibration_size =
-			IWL_DEFAULT_STANDARD_PHY_CALIBRATE_TBL_SIZE;
+	fw->ucode_capa.standard_phy_calibration_size = IWL_DEFAULT_STANDARD_PHY_CALIBRATE_TBL_SIZE;
 	fw->ucode_capa.n_scan_channels = IWL_DEFAULT_SCAN_CHANNELS;
     
     pieces = iwh_zalloc(sizeof(*pieces));
@@ -1291,7 +1285,7 @@ static void iwl_req_fw_callback(const struct firmware *ucode_raw, void *context)
         goto try_again;
 
     IWL_DEBUG_INFO(drv, "Loaded firmware file '%s' (%zd bytes).\n",
-               drv->firmware_name, ucode_raw->size);
+                   drv->firmware_name, ucode_raw->size);
 
 	/* Make sure that we got at least the API version number */
 	if (ucode_raw->size < 4) {
@@ -1368,25 +1362,16 @@ static void iwl_req_fw_callback(const struct firmware *ucode_raw, void *context)
 
     memset(&trigger_tlv_sz, 0xff, sizeof(trigger_tlv_sz));
 
-    trigger_tlv_sz[FW_DBG_TRIGGER_MISSED_BEACONS] =
-        sizeof(struct iwl_fw_dbg_trigger_missed_bcon);
+    trigger_tlv_sz[FW_DBG_TRIGGER_MISSED_BEACONS] = sizeof(struct iwl_fw_dbg_trigger_missed_bcon);
     trigger_tlv_sz[FW_DBG_TRIGGER_CHANNEL_SWITCH] = 0;
-    trigger_tlv_sz[FW_DBG_TRIGGER_FW_NOTIF] =
-        sizeof(struct iwl_fw_dbg_trigger_cmd);
-    trigger_tlv_sz[FW_DBG_TRIGGER_MLME] =
-        sizeof(struct iwl_fw_dbg_trigger_mlme);
-    trigger_tlv_sz[FW_DBG_TRIGGER_STATS] =
-        sizeof(struct iwl_fw_dbg_trigger_stats);
-    trigger_tlv_sz[FW_DBG_TRIGGER_RSSI] =
-        sizeof(struct iwl_fw_dbg_trigger_low_rssi);
-    trigger_tlv_sz[FW_DBG_TRIGGER_TXQ_TIMERS] =
-        sizeof(struct iwl_fw_dbg_trigger_txq_timer);
-    trigger_tlv_sz[FW_DBG_TRIGGER_TIME_EVENT] =
-        sizeof(struct iwl_fw_dbg_trigger_time_event);
-    trigger_tlv_sz[FW_DBG_TRIGGER_BA] =
-        sizeof(struct iwl_fw_dbg_trigger_ba);
-    trigger_tlv_sz[FW_DBG_TRIGGER_TDLS] =
-        sizeof(struct iwl_fw_dbg_trigger_tdls);
+    trigger_tlv_sz[FW_DBG_TRIGGER_FW_NOTIF] = sizeof(struct iwl_fw_dbg_trigger_cmd);
+    trigger_tlv_sz[FW_DBG_TRIGGER_MLME] = sizeof(struct iwl_fw_dbg_trigger_mlme);
+    trigger_tlv_sz[FW_DBG_TRIGGER_STATS] = sizeof(struct iwl_fw_dbg_trigger_stats);
+    trigger_tlv_sz[FW_DBG_TRIGGER_RSSI] = sizeof(struct iwl_fw_dbg_trigger_low_rssi);
+    trigger_tlv_sz[FW_DBG_TRIGGER_TXQ_TIMERS] = sizeof(struct iwl_fw_dbg_trigger_txq_timer);
+    trigger_tlv_sz[FW_DBG_TRIGGER_TIME_EVENT] = sizeof(struct iwl_fw_dbg_trigger_time_event);
+    trigger_tlv_sz[FW_DBG_TRIGGER_BA] = sizeof(struct iwl_fw_dbg_trigger_ba);
+    trigger_tlv_sz[FW_DBG_TRIGGER_TDLS] = sizeof(struct iwl_fw_dbg_trigger_tdls);
 
     for (i = 0; i < ARRAY_SIZE(drv->fw.dbg_trigger_tlv); i++) {
         if (pieces->dbg_trigger_tlv[i]) {
@@ -1397,9 +1382,7 @@ static void iwl_req_fw_callback(const struct firmware *ucode_raw, void *context)
              * We'd better be noisy to be sure he knows what's
              * going on.
              */
-            if (WARN_ON(pieces->dbg_trigger_tlv_len[i] <
-                    (trigger_tlv_sz[i] +
-                     sizeof(struct iwl_fw_dbg_trigger_tlv))))
+            if (WARN_ON(pieces->dbg_trigger_tlv_len[i] < (trigger_tlv_sz[i] + sizeof(struct iwl_fw_dbg_trigger_tlv))))
                 goto out_free_fw;
             drv->fw.dbg_trigger_tlv_len[i] = pieces->dbg_trigger_tlv_len[i];
             memcpy(drv->fw.dbg_trigger_tlv[i], pieces->dbg_trigger_tlv[i], drv->fw.dbg_trigger_tlv_len[i]);
@@ -1424,25 +1407,21 @@ static void iwl_req_fw_callback(const struct firmware *ucode_raw, void *context)
     if (pieces->init_evtlog_size)
         fw->init_evtlog_size = (pieces->init_evtlog_size - 16)/12;
     else
-        fw->init_evtlog_size =
-            drv->trans->cfg->base_params->max_event_log_size;
+        fw->init_evtlog_size = drv->trans->cfg->base_params->max_event_log_size;
     fw->init_errlog_ptr = pieces->init_errlog_ptr;
     fw->inst_evtlog_ptr = pieces->inst_evtlog_ptr;
     if (pieces->inst_evtlog_size)
         fw->inst_evtlog_size = (pieces->inst_evtlog_size - 16)/12;
     else
-        fw->inst_evtlog_size =
-            drv->trans->cfg->base_params->max_event_log_size;
+        fw->inst_evtlog_size = drv->trans->cfg->base_params->max_event_log_size;
     fw->inst_errlog_ptr = pieces->inst_errlog_ptr;
 
     /*
      * figure out the offset of chain noise reset and gain commands
      * base on the size of standard phy calibration commands table size
      */
-    if (fw->ucode_capa.standard_phy_calibration_size >
-        IWL_MAX_PHY_CALIBRATE_TBL_SIZE)
-        fw->ucode_capa.standard_phy_calibration_size =
-            IWL_MAX_STANDARD_PHY_CALIBRATE_TBL_SIZE;
+    if (fw->ucode_capa.standard_phy_calibration_size > IWL_MAX_PHY_CALIBRATE_TBL_SIZE)
+        fw->ucode_capa.standard_phy_calibration_size = IWL_MAX_STANDARD_PHY_CALIBRATE_TBL_SIZE;
 
     /* We have our copies now, allow OS release its copies */
     //release_firmware(ucode_raw);
@@ -1450,32 +1429,34 @@ static void iwl_req_fw_callback(const struct firmware *ucode_raw, void *context)
 
     IOLockLock(iwlwifi_opmode_table_mtx);
     
-	switch (fw->type) {
-	case IWL_FW_DVM:
+    switch (fw->type) {
+    case IWL_FW_DVM:
         op = &iwlwifi_opmode_table[DVM_OP_MODE];
-		break;
-	default:
-		//WARN(1, "Invalid fw type %d\n", fw->type);
-	case IWL_FW_MVM:
+        break;
+    default:
+        //WARN(1, "Invalid fw type %d\n", fw->type);
+    case IWL_FW_MVM:
         op = &iwlwifi_opmode_table[MVM_OP_MODE];
-		break;
-	}
+        break;
+    }
 
     IWL_INFO(drv, "loaded firmware version %s op_mode %s\n", drv->fw.fw_version, op->name);
 
 	/* add this device to the list of devices using this op_mode */
 //    list_add_tail(&drv->list, &op->drv);
 
-    if (op->ops) {
-        drv->op_mode = _iwl_op_mode_start(drv, op);
-
-        if (!drv->op_mode) {
-            IOLockUnlock(iwlwifi_opmode_table_mtx);
-            goto out_unbind;
-        }
-    } else {
-        load_module = true;
-    }
+    
+// NOT USED. OpMode starts in start method of IntelWifi
+//    if (op->ops) {
+//        drv->op_mode = _iwl_op_mode_start(drv, op);
+//
+//        if (!drv->op_mode) {
+//            IOLockUnlock(iwlwifi_opmode_table_mtx);
+//            goto out_unbind;
+//        }
+//    } else {
+//        load_module = true;
+//    }
 
     IOLockUnlock(iwlwifi_opmode_table_mtx);
 
@@ -1550,16 +1531,14 @@ struct iwl_drv *iwl_drv_start(struct iwl_trans *trans)
 	drv->trans = trans;
 	drv->dev = trans->dev;
 
-    //init_completion(&drv->request_firmware_complete);
     drv->request_firmware_complete = IOLockAlloc();
 	
-	//INIT_LIST_HEAD(&drv->list);
+	// INIT_LIST_HEAD(&drv->list);
     // STAILQ_INIT(&drv->list);
 
 #ifdef CONFIG_IWLWIFI_DEBUGFS
 	/* Create the device debugfs entries. */
-	drv->dbgfs_drv = debugfs_create_dir(dev_name(trans->dev),
-					    iwl_dbgfs_root);
+	drv->dbgfs_drv = debugfs_create_dir(dev_name(trans->dev), iwl_dbgfs_root);
 
 	if (!drv->dbgfs_drv) {
 		IWL_ERR(drv, "failed to create debugfs directory\n");

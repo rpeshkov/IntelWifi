@@ -1650,8 +1650,6 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
     
     trans->hw_id = (fDeviceId << 16) + fSubsystemId;
     snprintf(trans->hw_id_str, sizeof(trans->hw_id_str), "PCI ID: 0x%04X:0x%04X", fDeviceId, fSubsystemId);
-    DebugLog("%s", trans->hw_id_str);
-    
     
     /* Initialize the wait queue for commands */
     trans_pcie->wait_command_queue = IOLockAlloc();
@@ -1686,12 +1684,9 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
     
     fInterruptSource->enable();
     
-    
-    
     //    trans_pcie->rba.alloc_wq = alloc_workqueue("rb_allocator",
     //                                               WQ_HIGHPRI | WQ_UNBOUND, 1);
     //    INIT_WORK(&trans_pcie->rba.rx_alloc, iwl_pcie_rx_allocator_work);
-    
     
 #ifdef CONFIG_IWLWIFI_PCIE_RTPM
     trans->runtime_pm_mode = IWL_PLAT_PM_MODE_D0I3;
