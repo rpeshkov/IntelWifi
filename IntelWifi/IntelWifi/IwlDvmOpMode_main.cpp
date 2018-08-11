@@ -483,7 +483,7 @@ static void iwl_clear_driver_stations(struct iwl_priv *priv)
 
 
 // line 916
-void iwl_down(struct iwl_priv *priv)
+void IwlDvmOpMode::iwl_down(struct iwl_priv *priv)
 {
     int exit_pending;
     
@@ -520,11 +520,10 @@ void iwl_down(struct iwl_priv *priv)
     
     priv->ucode_loaded = false;
     
-    // TODO: Implement
+    _ops->stop_device(priv->trans, true);
 //    iwl_trans_stop_device(priv->trans);
     
     /* Set num_aux_in_flight must be done after the transport is stopped */
-    //atomic_set(&priv->num_aux_in_flight, 0);
     OSAddAtomic(-priv->num_aux_in_flight, &priv->num_aux_in_flight);
     
     /* Clear out all status bits but a few that are stable across reset */

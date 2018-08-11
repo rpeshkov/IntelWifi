@@ -61,6 +61,7 @@ public:
     
 private:
     // main.c
+    void iwl_down(struct iwl_priv *priv); // line 916
     struct iwl_priv *iwl_op_mode_dvm_start(struct iwl_trans *trans,
                                            const struct iwl_cfg *cfg,
                                            const struct iwl_fw *fw); // line 1232

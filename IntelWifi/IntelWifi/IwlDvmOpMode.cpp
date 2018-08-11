@@ -75,15 +75,9 @@ IOReturn IwlDvmOpMode::setPOWER(IO80211Interface *intf, apple80211_power_data *p
     
         switch (power_state) {
             case APPLE80211_POWER_OFF:
-                // TODO: If I get the logic that's implemented in iwlwifi, only iwlagn_mac_stop
-                // should be called. But stop_device method in trans is not implemented, so here
-                // I call both methods, so the first one sets required flags and second unloads
-                // everything
                 iwlagn_mac_stop(priv);
-                stop(priv);
                 break;
             case APPLE80211_POWER_ON:
-                
                 iwlagn_mac_start(priv);
                 break;
             default:
