@@ -42,12 +42,14 @@ public:
     virtual void rx(struct iwl_priv *priv, struct napi_struct *napi, struct iwl_rx_cmd_buffer *rxb) = 0;
     
     
-    // IOCTL
+    // IOCTLs
+    // 12
+    virtual IOReturn getCARD_CAPABILITIES(IO80211Interface *interface, struct apple80211_capability_data *cd) = 0;
+    // 14
+    virtual IOReturn getPHY_MODE(IO80211Interface *interface, struct apple80211_phymode_data *pd) = 0;
+    // 19
     virtual IOReturn getPOWER(IO80211Interface *intf, apple80211_power_data *power_data) = 0;
     virtual IOReturn setPOWER(IO80211Interface *intf, apple80211_power_data *power_data) = 0;
-    
-    
-    
     
     
     // Linux calls

@@ -520,7 +520,8 @@ void iwl_down(struct iwl_priv *priv)
     
     priv->ucode_loaded = false;
     
-    //iwl_trans_stop_device(priv->trans);
+    // TODO: Implement
+//    iwl_trans_stop_device(priv->trans);
     
     /* Set num_aux_in_flight must be done after the transport is stopped */
     //atomic_set(&priv->num_aux_in_flight, 0);

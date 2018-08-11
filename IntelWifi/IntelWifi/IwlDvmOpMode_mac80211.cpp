@@ -311,6 +311,29 @@ int IwlDvmOpMode::iwlagn_mac_start(struct iwl_priv *priv)
     return 0;
 }
 
+// line 323
+void IwlDvmOpMode::iwlagn_mac_stop(struct iwl_priv *priv)
+{
+    IWL_DEBUG_MAC80211(priv, "enter\n");
+    
+    if (!priv->is_open)
+        return;
+    
+    priv->is_open = 0;
+    
+    IOLockLock(priv->mutex);
+    iwl_down(priv);
+    IOLockUnlock(priv->mutex);
+    
+    // TODO: Implement
+//    iwl_cancel_deferred_work(priv);
+    
+//    flush_workqueue(priv->workqueue);
+    
+    IWL_DEBUG_MAC80211(priv, "leave\n");
+
+}
+
 // line 964
 void IwlDvmOpMode::iwlagn_mac_channel_switch(struct iwl_priv *priv, struct ieee80211_vif *vif,
                                              struct ieee80211_channel_switch *ch_switch)

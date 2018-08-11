@@ -51,6 +51,10 @@ public:
 //    void add_interface(struct ieee80211_vif *vif) override;
 //    void channel_switch(struct iwl_priv *priv, struct ieee80211_vif *vif, struct ieee80211_channel_switch *chsw) override;
     
+    IOReturn getCARD_CAPABILITIES(IO80211Interface *interface, struct apple80211_capability_data *cd) override;
+    
+    IOReturn getPHY_MODE(IO80211Interface *interface, struct apple80211_phymode_data *pd) override;
+    
     IOReturn getPOWER(IO80211Interface *intf, apple80211_power_data *power_data) override;
     IOReturn setPOWER(IO80211Interface *intf, apple80211_power_data *power_data) override;
 
@@ -65,6 +69,7 @@ private:
     // mac80211.c
     int __iwl_up(struct iwl_priv *priv); // line 238
     int iwlagn_mac_start(struct iwl_priv *priv); // line 296
+    void iwlagn_mac_stop(struct iwl_priv *priv); // line 323
     void iwlagn_mac_channel_switch(struct iwl_priv *priv,
                                                  struct ieee80211_vif *vif,
                                                  struct ieee80211_channel_switch *ch_switch); // line 964

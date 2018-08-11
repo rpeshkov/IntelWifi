@@ -79,6 +79,11 @@ public:
     IO80211Interface *getNetworkInterface();
     IOReturn setPromiscuousMode(bool active) override;
     IOReturn setMulticastMode(bool active) override;
+    SInt32 monitorModeSetEnabled(IO80211Interface*, bool, unsigned int) override {
+        return kIOReturnSuccess;
+    }
+    bool createWorkLoop() override;
+    IOWorkLoop* getWorkLoop() const override;
     
 public:
     int iwl_trans_pcie_start_fw(struct iwl_trans *trans, const struct fw_img *fw, bool run_in_rfkill); // line 1224
@@ -165,6 +170,7 @@ private:
     IOPCIDevice *pciDevice;
     IO80211Interface *netif;
     IOWorkLoop *fWorkLoop;
+    IOWorkLoop *fIrqLoop;
     OSDictionary *mediumDict;
     
     IONetworkStats *fNetworkStats;

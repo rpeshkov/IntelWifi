@@ -8,6 +8,8 @@ extern "C" {
 #include <IOKit/IOCommandGate.h>
 #include "IwlDvmOpMode.hpp"
 
+#include "IO80211WorkLoop.h"
+
 #include "IwlTransOps.h"
 
 #define super IO80211Controller
@@ -85,6 +87,11 @@ ret = opmode->set##REQ(interface, (struct DATA_TYPE* )data); \
 }
 
     switch (request_number) {
+        case APPLE80211_IOC_CARD_CAPABILITIES: // 12
+            IOCTL_GET(request_type, CARD_CAPABILITIES, apple80211_capability_data);
+            break;
+        case APPLE80211_IOC_PHY_MODE: // 14
+            IOCTL_GET(request_type, PHY_MODE, apple80211_phymode_data);
         case APPLE80211_IOC_POWER: // 19
             IOCTL_GET(request_type, POWER, apple80211_power_data);
             IOCTL_SET(request_type, POWER, apple80211_power_data);
@@ -99,6 +106,18 @@ ret = opmode->set##REQ(interface, (struct DATA_TYPE* )data); \
     return ret;
 }
 
+bool IntelWifi::createWorkLoop() {
+    if (!fWorkLoop) {
+        fWorkLoop = IO80211WorkLoop::workLoop();
+    }
+    
+    return (fWorkLoop != NULL);
+}
+
+IOWorkLoop* IntelWifi::getWorkLoop() const {
+    return fWorkLoop;
+}
+
 bool IntelWifi::start(IOService *provider) {
     TraceLog("Driver start");
     
@@ -108,16 +127,8 @@ bool IntelWifi::start(IOService *provider) {
         return false;
     }
     
-    fWorkLoop = getWorkLoop();
-    if (!fWorkLoop) {
-        TraceLog("getWorkLoop failed!");
-        releaseAll();
-        return false;
-    }
-    
-    fWorkLoop->retain();
-    
     int source = findMSIInterruptTypeIndex();
+    fIrqLoop = IO80211WorkLoop::workLoop();
     fInterruptSource = IOFilterInterruptEventSource::filterInterruptEventSource(this,
                                                                                 (IOInterruptEventAction) &IntelWifi::interruptOccured,
                                                                                 (IOFilterInterruptAction) &IntelWifi::interruptFilter,
@@ -128,11 +139,13 @@ bool IntelWifi::start(IOService *provider) {
         return 0;
     }
     
-    if (fWorkLoop->addEventSource(fInterruptSource) != kIOReturnSuccess) {
+    if (fIrqLoop->addEventSource(fInterruptSource) != kIOReturnSuccess) {
         TraceLog("EventSource registration failed");
         releaseAll();
         return 0;
     }
+    
+    fInterruptSource->enable();
     
     gate = IOCommandGate::commandGate(this, (IOCommandGate::Action)&IntelWifi::gateAction);
     
@@ -338,11 +351,12 @@ IOReturn IntelWifi::gateAction(OSObject *owner, void *arg0, void *arg1, void *ar
 
 bool IntelWifi::interruptFilter(OSObject* owner, IOFilterInterruptEventSource * src) {
     IntelWifi* me = (IntelWifi*)owner;
-    
+
     if (me == 0) {
+        TraceLog("Interrupt filter");
         return false;
     }
-    
+
     /* Disable (but don't clear!) interrupts here to avoid
      * back-to-back ISRs and sporadic interrupts from our NIC.
      * If we have something to service, the tasklet will re-enable ints.

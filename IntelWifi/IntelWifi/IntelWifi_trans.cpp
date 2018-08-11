@@ -1682,7 +1682,7 @@ struct iwl_trans* IntelWifi::iwl_trans_pcie_alloc(const struct iwl_cfg *cfg) {
         trans_pcie->inta_mask = CSR_INI_SET_MASK;
     }
     
-    fInterruptSource->enable();
+    
     
     //    trans_pcie->rba.alloc_wq = alloc_workqueue("rb_allocator",
     //                                               WQ_HIGHPRI | WQ_UNBOUND, 1);
