@@ -148,6 +148,21 @@ extern "C" {
  *
  */
 
+/*
+ * CUSTOM
+ */
+
+static dma_addr_t iwl_dmamap_mbuf(struct iwl_trans *trans, mbuf_t m) {
+    IOMbufNaturalMemoryCursor *curs = static_cast<IOMbufNaturalMemoryCursor *>(trans->mbuf_cursor);
+    IOPhysicalSegment rxSeg;
+    curs->getPhysicalSegments(m, &rxSeg, 1);
+    return rxSeg.location;
+}
+
+/*
+ * CUSTOM END
+ */
+
 /* line 139
  * iwl_rxq_space - Return number of free slots available in queue.
  */
@@ -362,9 +377,13 @@ static void iwl_pcie_rxq_restock(struct iwl_trans *trans, struct iwl_rxq *rxq)
  * iwl_pcie_rx_alloc_page - allocates and returns a page.
  *
  */
-static IOBufferMemoryDescriptor *iwl_pcie_rx_alloc_page(struct iwl_trans *trans)
+static mbuf_t iwl_pcie_rx_alloc_page(struct iwl_trans *trans)
 {
-    return IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, 0, PAGE_SIZE, 0x00000000FFFFFFFFULL);
+    IOEthernetController *dev = static_cast<IOEthernetController *>(trans->dev);
+    mbuf_t m = dev->allocatePacket(4096);
+    return m;
+    
+    // return IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, 0, PAGE_SIZE, 0x00000000FFFFFFFFULL);
 }
 
 /* line 384
@@ -380,7 +399,7 @@ static void iwl_pcie_rxq_alloc_rbs(struct iwl_trans *trans, struct iwl_rxq *rxq)
 {
     //struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     struct iwl_rx_mem_buffer *rxb;
-    IOBufferMemoryDescriptor *page;
+    mbuf_t page;
     
     while (1) {
         //IOSimpleLockLock(rxq->lock);
@@ -400,8 +419,9 @@ static void iwl_pcie_rxq_alloc_rbs(struct iwl_trans *trans, struct iwl_rxq *rxq)
         if (TAILQ_EMPTY(&rxq->rx_used)) {
             //IOSimpleLockUnlock(rxq->lock);
             //__free_pages(page, trans_pcie->rx_page_order);
-            page->complete();
-            page->release();
+//            page->complete();
+//            page->release();
+//            mbuf_freem(page);
             page = NULL;
             return;
         }
@@ -413,11 +433,12 @@ static void iwl_pcie_rxq_alloc_rbs(struct iwl_trans *trans, struct iwl_rxq *rxq)
         //BUG_ON(rxb->page);
         rxb->page = page;
         /* Get physical address of the RB */
-        rxb->page_dma = page->getPhysicalSegment(0, 0);
+        rxb->page_dma = iwl_dmamap_mbuf(trans, rxb->page); //page->getPhysicalSegment(0, 0);
         
         if (!rxb->page_dma) {
-            page->complete();
-            page->release();
+//            page->complete();
+//            page->release();
+            // mbuf_freem(rxb->page);
             rxb->page = NULL;
             
             //IOSimpleLockLock(rxq->lock);
@@ -443,9 +464,10 @@ static void iwl_pcie_free_rbs_pool(struct iwl_trans *trans)
         if (!trans_pcie->rx_pool[i].page)
             continue;
         trans_pcie->rx_pool[i].page_dma = NULL;
-        IOBufferMemoryDescriptor *p = static_cast<IOBufferMemoryDescriptor *>(trans_pcie->rx_pool[i].page);
-        p->complete();
-        p->release();
+//        IOBufferMemoryDescriptor *p = static_cast<IOBufferMemoryDescriptor *>(trans_pcie->rx_pool[i].page);
+//        p->complete();
+//        p->release();
+        mbuf_freem(trans_pcie->rx_pool[i].page);
         trans_pcie->rx_pool[i].page = NULL;
     }
 }
@@ -485,7 +507,8 @@ static void iwl_pcie_rx_allocator(struct iwl_trans *trans)
         for (i = 0; i < RX_CLAIM_REQ_ALLOC;) {
             struct iwl_rx_mem_buffer *rxb;
             //struct page *page;
-            IOBufferMemoryDescriptor *page;
+//            IOBufferMemoryDescriptor *page;
+            mbuf_t page;
             
             /* List should never be empty - each reused RBD is
              * returned to the list, and initial pool covers any
@@ -504,10 +527,10 @@ static void iwl_pcie_rx_allocator(struct iwl_trans *trans)
             rxb->page = page;
             
             /* Get physical address of the RB */
-            rxb->page_dma = page->getPhysicalSegment(0, 0);
+            rxb->page_dma = iwl_dmamap_mbuf(trans, rxb->page);  // page->getPhysicalSegment(0, 0);
             if (!rxb->page_dma) {
-                page->complete();
-                page->release();
+//                page->complete();
+//                page->release();
                 rxb->page = NULL;
                 continue;
             }
@@ -1098,7 +1121,7 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans, struct iwl_rxq *r
         struct iwl_rx_cmd_buffer rxcb = {
             ._offset = (int)offset,
             ._rx_page_order = trans_pcie->rx_page_order,
-            ._page = static_cast<IOBufferMemoryDescriptor *>(rxb->page)->getBytesNoCopy(),
+            ._page = rxb->page,
             ._page_stolen = false,
             .truesize = max_len,
         };
@@ -1184,12 +1207,12 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans, struct iwl_rxq *r
         offset += LNX_ALIGN(len, FH_RSCSR_FRAME_ALIGN);
     }
     
-    IOBufferMemoryDescriptor *page = static_cast<IOBufferMemoryDescriptor *>(rxb->page);
+//    IOBufferMemoryDescriptor *page = static_cast<IOBufferMemoryDescriptor *>(rxb->page);
     
     /* page was stolen from us -- free our reference */
     if (page_stolen) {
-        page->complete();
-        page->release();
+//        page->complete();
+//        page->release();
         rxb->page = NULL;
     }
     
@@ -1197,7 +1220,7 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans, struct iwl_rxq *r
      * SKBs that fail to Rx correctly, add them back into the
      * rx_free list for reuse later. */
     if (rxb->page != NULL) {
-        rxb->page_dma = page->getPhysicalSegment(0, 0);
+        rxb->page_dma = iwl_dmamap_mbuf(trans, rxb->page); // page->getPhysicalSegment(0, 0);
         if (!rxb->page_dma) {
             /*
              * free the page(s) as well to not break

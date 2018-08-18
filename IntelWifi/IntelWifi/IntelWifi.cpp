@@ -162,6 +162,7 @@ bool IntelWifi::start(IOService *provider) {
         releaseAll();
         return false;
     }
+    fTrans->mbuf_cursor = IOMbufNaturalMemoryCursor::withSpecification(PAGE_SIZE, 1);
     fTrans->dev = this;
     fTrans->gate = gate;
     

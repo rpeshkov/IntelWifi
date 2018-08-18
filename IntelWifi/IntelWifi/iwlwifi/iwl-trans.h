@@ -70,6 +70,8 @@
 #include <linux/ieee80211.h>
 #include <linux/kernel.h>
 
+#include <sys/kpi_mbuf.h>
+
 #include "iwl-debug.h"
 #include "iwl-modparams.h"
 #include "iwl-config.h"
@@ -269,7 +271,7 @@ static inline void iwl_free_resp(struct iwl_host_cmd *cmd)
 }
 
 struct iwl_rx_cmd_buffer {
-	void *_page;
+	mbuf_t _page;
 	int _offset;
 	bool _page_stolen;
 	u32 _rx_page_order;
@@ -280,7 +282,7 @@ static inline void *rxb_addr(struct iwl_rx_cmd_buffer *r)
 {
     
 	//return (void *)((unsigned long)page_address(r->_page) + r->_offset);
-    return (void *)((unsigned long)r->_page + r->_offset);//(void *) ((u8*)r->_page + r->_offset);
+    return (void *)((u8*)mbuf_data(r->_page) + r->_offset);//(void *) ((u8*)r->_page + r->_offset);
 }
 
 static inline int rxb_offset(struct iwl_rx_cmd_buffer *r)
@@ -724,6 +726,8 @@ enum iwl_plat_pm_mode {
  *	supposed to change during runtime.
  */
 struct iwl_trans {
+    void *mbuf_cursor; // IOMbufNaturalMemoryCursor
+    
 	const struct iwl_trans_ops *ops;
 	struct iwl_op_mode *op_mode;
 	const struct iwl_cfg *cfg;

@@ -26,6 +26,7 @@ extern "C" {
 #include <IOKit/IOFilterInterruptEventSource.h>
 #include <IOKit/pci/IOPCIDevice.h>
 #include <IOKit/network/IOPacketQueue.h>
+#include <IOKit/network/IOMbufMemoryCursor.h>
 #include <IOKit/IOMemoryCursor.h>
 
 
