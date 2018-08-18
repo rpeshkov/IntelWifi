@@ -629,9 +629,12 @@ static void iwlagn_pass_packet_to_mac80211(struct iwl_priv *priv,
     if (!iwlwifi_mod_params.swcrypto && iwlagn_set_decrypted_flag(priv, hdr, ampdu_status, stats))
         return;
     
+    
+    
     if (ieee80211_is_mgmt(hdr->frame_control)) {
         IWL_DEBUG_RX(priv, "Management frame. Frame control: 0x%x", hdr->frame_control);
         struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt *)(pkt->data + sizeof(ampdu_status));
+        
         if (ieee80211_is_beacon(hdr->frame_control)) {
             u8 ssid_el_id = mgmt->u.beacon.variable[0];
             u8 ssid_len = mgmt->u.beacon.variable[1];

@@ -159,6 +159,12 @@ static dma_addr_t iwl_dmamap_mbuf(struct iwl_trans *trans, mbuf_t m) {
     return rxSeg.location;
 }
 
+static void iwl_free_packet(struct iwl_trans *trans, mbuf_t p) {
+    IO80211Controller *dev = static_cast<IO80211Controller *>(trans->dev);
+    dev->freePacket(p);
+    return;
+}
+
 /*
  * CUSTOM END
  */
@@ -210,8 +216,6 @@ int iwl_pcie_rx_stop(struct iwl_trans *trans)
 static void iwl_pcie_rxq_inc_wr_ptr(struct iwl_trans *trans, struct iwl_rxq *rxq)
 {
     u32 reg;
-    
-    //lockdep_assert_held(&rxq->lock);
     
     /*
      * explicitly wake up the NIC if:
@@ -379,11 +383,9 @@ static void iwl_pcie_rxq_restock(struct iwl_trans *trans, struct iwl_rxq *rxq)
  */
 static mbuf_t iwl_pcie_rx_alloc_page(struct iwl_trans *trans)
 {
-    IOEthernetController *dev = static_cast<IOEthernetController *>(trans->dev);
-    mbuf_t m = dev->allocatePacket(4096);
+    IO80211Controller *dev = static_cast<IO80211Controller *>(trans->dev);
+    mbuf_t m = dev->allocatePacket(PAGE_SIZE);
     return m;
-    
-    // return IOBufferMemoryDescriptor::inTaskWithPhysicalMask(kernel_task, 0, PAGE_SIZE, 0x00000000FFFFFFFFULL);
 }
 
 /* line 384
@@ -419,9 +421,7 @@ static void iwl_pcie_rxq_alloc_rbs(struct iwl_trans *trans, struct iwl_rxq *rxq)
         if (TAILQ_EMPTY(&rxq->rx_used)) {
             //IOSimpleLockUnlock(rxq->lock);
             //__free_pages(page, trans_pcie->rx_page_order);
-//            page->complete();
-//            page->release();
-//            mbuf_freem(page);
+            iwl_free_packet(trans, page);
             page = NULL;
             return;
         }
@@ -430,20 +430,18 @@ static void iwl_pcie_rxq_alloc_rbs(struct iwl_trans *trans, struct iwl_rxq *rxq)
         TAILQ_REMOVE(&rxq->rx_used, rxb, list);
         //IOSimpleLockUnlock(rxq->lock);
         
-        //BUG_ON(rxb->page);
         rxb->page = page;
         /* Get physical address of the RB */
-        rxb->page_dma = iwl_dmamap_mbuf(trans, rxb->page); //page->getPhysicalSegment(0, 0);
+        rxb->page_dma = iwl_dmamap_mbuf(trans, rxb->page);
         
         if (!rxb->page_dma) {
-//            page->complete();
-//            page->release();
-            // mbuf_freem(rxb->page);
+            
             rxb->page = NULL;
             
             //IOSimpleLockLock(rxq->lock);
             TAILQ_INSERT_HEAD(&rxq->rx_used, rxb, list);
             //IOSimpleLockUnlock(rxq->lock);
+            iwl_free_packet(trans, page);
             return;
         }
         
@@ -464,10 +462,8 @@ static void iwl_pcie_free_rbs_pool(struct iwl_trans *trans)
         if (!trans_pcie->rx_pool[i].page)
             continue;
         trans_pcie->rx_pool[i].page_dma = NULL;
-//        IOBufferMemoryDescriptor *p = static_cast<IOBufferMemoryDescriptor *>(trans_pcie->rx_pool[i].page);
-//        p->complete();
-//        p->release();
-        mbuf_freem(trans_pcie->rx_pool[i].page);
+        //mbuf_freem(trans_pcie->rx_pool[i].page);
+        iwl_free_packet(trans, trans_pcie->rx_pool[i].page);
         trans_pcie->rx_pool[i].page = NULL;
     }
 }
@@ -506,8 +502,6 @@ static void iwl_pcie_rx_allocator(struct iwl_trans *trans)
         
         for (i = 0; i < RX_CLAIM_REQ_ALLOC;) {
             struct iwl_rx_mem_buffer *rxb;
-            //struct page *page;
-//            IOBufferMemoryDescriptor *page;
             mbuf_t page;
             
             /* List should never be empty - each reused RBD is
@@ -527,10 +521,9 @@ static void iwl_pcie_rx_allocator(struct iwl_trans *trans)
             rxb->page = page;
             
             /* Get physical address of the RB */
-            rxb->page_dma = iwl_dmamap_mbuf(trans, rxb->page);  // page->getPhysicalSegment(0, 0);
+            rxb->page_dma = iwl_dmamap_mbuf(trans, rxb->page);
             if (!rxb->page_dma) {
-//                page->complete();
-//                page->release();
+                iwl_free_packet(trans, page);
                 rxb->page = NULL;
                 continue;
             }
@@ -584,7 +577,6 @@ static void iwl_pcie_rx_allocator_get(struct iwl_trans *trans, struct iwl_rxq *r
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     struct iwl_rb_allocator *rba = &trans_pcie->rba;
     int i;
-    //lockdep_assert_held(&rxq->lock);
     
     /*
      * atomic_dec_if_positive returns req_ready - 1 for any scenario.
@@ -1211,8 +1203,7 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans, struct iwl_rxq *r
     
     /* page was stolen from us -- free our reference */
     if (page_stolen) {
-//        page->complete();
-//        page->release();
+        iwl_free_packet(trans, rxb->page);
         rxb->page = NULL;
     }
     

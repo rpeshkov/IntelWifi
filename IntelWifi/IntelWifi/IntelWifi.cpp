@@ -166,7 +166,6 @@ bool IntelWifi::start(IOService *provider) {
     fTrans->dev = this;
     fTrans->gate = gate;
     
-    
 #ifdef CONFIG_IWLMVM
     const struct iwl_cfg *cfg_7265d = NULL;
 
