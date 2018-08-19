@@ -69,7 +69,10 @@ public:
     virtual bool attach(IOService*) APPLE_KEXT_OVERRIDE;
     virtual void detach(IOService*) APPLE_KEXT_OVERRIDE;
     virtual bool init(IONetworkController*) APPLE_KEXT_OVERRIDE;
-    virtual UInt32 inputPacket(mbuf_t, UInt32, IOOptionBits, void*) APPLE_KEXT_OVERRIDE;
+    virtual UInt32 inputPacket(mbuf_t          packet,
+                               UInt32          length  = 0,
+                               IOOptionBits    options = 0,
+                               void *          param   = 0) APPLE_KEXT_OVERRIDE;
     virtual bool inputEvent(unsigned int, void*) APPLE_KEXT_OVERRIDE;
     virtual SInt32 performCommand(IONetworkController*, unsigned long, void*, void*) APPLE_KEXT_OVERRIDE;
     virtual IOReturn attachToDataLinkLayer(IOOptionBits, void*) APPLE_KEXT_OVERRIDE;

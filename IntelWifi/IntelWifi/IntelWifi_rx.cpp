@@ -161,7 +161,7 @@ static dma_addr_t iwl_dmamap_mbuf(struct iwl_trans *trans, mbuf_t m) {
 
 static void iwl_free_packet(struct iwl_trans *trans, mbuf_t p) {
     IO80211Controller *dev = static_cast<IO80211Controller *>(trans->dev);
-    dev->freePacket(p);
+//    dev->freePacket(p);
     return;
 }
 
@@ -462,7 +462,6 @@ static void iwl_pcie_free_rbs_pool(struct iwl_trans *trans)
         if (!trans_pcie->rx_pool[i].page)
             continue;
         trans_pcie->rx_pool[i].page_dma = NULL;
-        //mbuf_freem(trans_pcie->rx_pool[i].page);
         iwl_free_packet(trans, trans_pcie->rx_pool[i].page);
         trans_pcie->rx_pool[i].page = NULL;
     }
@@ -478,7 +477,7 @@ static void iwl_pcie_rx_allocator(struct iwl_trans *trans)
 {
     struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
     struct iwl_rb_allocator *rba = &trans_pcie->rba;
-    TAILQ_HEAD(, iwl_rx_mem_buffer) local_empty;
+    TAILQ_HEAD(, iwl_rx_mem_buffer) local_empty = TAILQ_HEAD_INITIALIZER(local_empty);
     
     // initial code: int pending = atomic_xchg(&rba->req_pending, 0);
     int pending = OSAddAtomic(-rba->req_pending, &rba->req_pending);
@@ -1086,6 +1085,7 @@ static void iwl_pcie_rx_reuse_rbd(struct iwl_trans *trans, struct iwl_rx_mem_buf
         
         OSIncrementAtomic(&rba->req_pending);
         // TODO: Implement
+        iwl_pcie_rx_allocator(trans);
         //queue_work(rba->alloc_wq, &rba->rx_alloc);
     }
 }
@@ -1110,6 +1110,7 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans, struct iwl_rxq *r
         u16 sequence;
         bool reclaim;
         int index, cmd_index, len;
+
         struct iwl_rx_cmd_buffer rxcb = {
             ._offset = (int)offset,
             ._rx_page_order = trans_pcie->rx_page_order,
@@ -1119,7 +1120,7 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans, struct iwl_rxq *r
         };
         
         pkt = (struct iwl_rx_packet *)rxb_addr(&rxcb);
-        
+
         if (pkt->len_n_flags == cpu_to_le32(FH_RSCSR_FRAME_INVALID)) {
             IWL_DEBUG_RX(trans, "Q %d: RB end marker at offset %d\n", rxq->id, offset);
             break;
@@ -1140,6 +1141,7 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans, struct iwl_rxq *r
         
         len = iwl_rx_packet_len(pkt);
         len += sizeof(u32); /* account for status word */
+
         //        trace_iwlwifi_dev_rx(trans->dev, trans, pkt, len);
         //        trace_iwlwifi_dev_rx_data(trans->dev, trans, pkt, len);
         
@@ -1211,7 +1213,7 @@ void IntelWifi::iwl_pcie_rx_handle_rb(struct iwl_trans *trans, struct iwl_rxq *r
      * SKBs that fail to Rx correctly, add them back into the
      * rx_free list for reuse later. */
     if (rxb->page != NULL) {
-        rxb->page_dma = iwl_dmamap_mbuf(trans, rxb->page); // page->getPhysicalSegment(0, 0);
+        rxb->page_dma = iwl_dmamap_mbuf(trans, rxb->page);
         if (!rxb->page_dma) {
             /*
              * free the page(s) as well to not break

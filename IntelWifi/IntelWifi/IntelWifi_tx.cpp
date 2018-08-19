@@ -1541,7 +1541,7 @@ void IntelWifi::iwl_pcie_hcmd_complete(struct iwl_trans *trans,
     
     /* Input error checking is done when commands are added to queue. */
     if (meta->flags & CMD_WANT_SKB) {
-        void *p = rxb_steal_page(rxb);
+        mbuf_t p = rxb_steal_page(rxb);
         
         meta->source->resp_pkt = pkt;
         meta->source->_rx_page_addr = (unsigned long)p;

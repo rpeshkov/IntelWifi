@@ -618,7 +618,7 @@ static void iwlagn_pass_packet_to_mac80211(struct iwl_priv *priv,
                                            struct ieee80211_rx_status *stats)
 {
     struct iwl_rx_packet *pkt = (struct iwl_rx_packet *)rxb_addr(rxb);
-    
+
     /* We only process data packets if the interface is open */
     if (unlikely(!priv->is_open)) {
         IWL_DEBUG_DROP_LIMIT(priv, "Dropping packet while interface is not open.\n");
@@ -628,23 +628,32 @@ static void iwlagn_pass_packet_to_mac80211(struct iwl_priv *priv,
     /* In case of HW accelerated crypto and bad decryption, drop */
     if (!iwlwifi_mod_params.swcrypto && iwlagn_set_decrypted_flag(priv, hdr, ampdu_status, stats))
         return;
+
+    IO80211Controller* dev = static_cast<IO80211Controller*>(priv->trans->dev);
     
     
     
-    if (ieee80211_is_mgmt(hdr->frame_control)) {
-        IWL_DEBUG_RX(priv, "Management frame. Frame control: 0x%x", hdr->frame_control);
-        struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt *)(pkt->data + sizeof(ampdu_status));
-        
-        if (ieee80211_is_beacon(hdr->frame_control)) {
-            u8 ssid_el_id = mgmt->u.beacon.variable[0];
-            u8 ssid_len = mgmt->u.beacon.variable[1];
-            char ssid[IEEE80211_MAX_SSID_LEN + 1];
-            memcpy(ssid, mgmt->u.beacon.variable + 2, ssid_len);
-            ssid[ssid_len] = '\0';
-            IWL_DEBUG_RX(priv, "BEACON => FC: 0x%x; SC: 0x%x; Duration ID: %d; SSID: %d %s(%d)",
-                         mgmt->frame_control, mgmt->seq_ctrl, mgmt->duration, ssid_el_id, ssid, ssid_len);
-        }
-    }
+    mbuf_t p = rxb->_page;
+    dev->getNetworkInterface()->inputPacket(p);
+    
+    
+
+    
+    
+//    if (ieee80211_is_mgmt(hdr->frame_control)) {
+//        IWL_DEBUG_RX(priv, "Management frame. Frame control: 0x%x", hdr->frame_control);
+//        struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt *)(pkt->data + sizeof(ampdu_status));
+//
+//        if (ieee80211_is_beacon(hdr->frame_control)) {
+//            u8 ssid_el_id = mgmt->u.beacon.variable[0];
+//            u8 ssid_len = mgmt->u.beacon.variable[1];
+//            char ssid[IEEE80211_MAX_SSID_LEN + 1];
+//            memcpy(ssid, mgmt->u.beacon.variable + 2, ssid_len);
+//            ssid[ssid_len] = '\0';
+//            IWL_DEBUG_RX(priv, "BEACON => FC: 0x%x; SC: 0x%x; Duration ID: %d; SSID: %d %s(%d)",
+//                         mgmt->frame_control, mgmt->seq_ctrl, mgmt->duration, ssid_el_id, ssid, ssid_len);
+//        }
+//    }
 }
 
 

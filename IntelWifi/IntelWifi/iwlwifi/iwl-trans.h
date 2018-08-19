@@ -256,8 +256,9 @@ enum iwl_hcmd_dataflag {
 struct iwl_host_cmd {
 	const void *data[IWL_MAX_CMD_TBS_PER_TFD];
 	struct iwl_rx_packet *resp_pkt;
-	unsigned long _rx_page_addr;
-	u32 _rx_page_order;
+    
+    unsigned long _rx_page_addr;
+    u32 _rx_page_order;
 
 	u32 flags;
 	u32 id;
@@ -280,9 +281,7 @@ struct iwl_rx_cmd_buffer {
 
 static inline void *rxb_addr(struct iwl_rx_cmd_buffer *r)
 {
-    
-	//return (void *)((unsigned long)page_address(r->_page) + r->_offset);
-    return (void *)((u8*)mbuf_data(r->_page) + r->_offset);//(void *) ((u8*)r->_page + r->_offset);
+    return (void *)((u8*)mbuf_data(r->_page) + r->_offset);
 }
 
 static inline int rxb_offset(struct iwl_rx_cmd_buffer *r)
@@ -290,7 +289,7 @@ static inline int rxb_offset(struct iwl_rx_cmd_buffer *r)
 	return r->_offset;
 }
 
-static inline void *rxb_steal_page(struct iwl_rx_cmd_buffer *r)
+static inline mbuf_t rxb_steal_page(struct iwl_rx_cmd_buffer *r)
 {
 	r->_page_stolen = true;
     return r->_page;

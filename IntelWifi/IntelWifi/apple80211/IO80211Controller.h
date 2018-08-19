@@ -95,7 +95,7 @@ extern IOCTL_FUNC gSetHandlerTable[];
 
 class IO80211Controller : public IOEthernetController {
     OSDeclareAbstractStructors( IO80211Controller )
-    
+public: 
     virtual void free() APPLE_KEXT_OVERRIDE;
     virtual bool init(OSDictionary*) APPLE_KEXT_OVERRIDE;
     
