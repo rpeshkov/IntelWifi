@@ -481,7 +481,6 @@ static void iwl_pcie_rx_allocator(struct iwl_trans *trans)
     
     // initial code: int pending = atomic_xchg(&rba->req_pending, 0);
     int pending = OSAddAtomic(-rba->req_pending, &rba->req_pending);
-    
     IWL_DEBUG_RX(trans, "Pending allocation requests = %d\n", pending);
     
     /* If we were scheduled - there is at least one request */
@@ -509,6 +508,10 @@ static void iwl_pcie_rx_allocator(struct iwl_trans *trans)
              * to the time the RBD is added.
              */
             //BUG_ON(list_empty(&local_empty));
+            if (TAILQ_EMPTY(&local_empty)) {
+                IWL_ERR(trans, "local_empty should never be empty!");
+                break;
+            }
             /* Get the first rxb from the rbd list */
             rxb = TAILQ_FIRST(&local_empty);
             //BUG_ON(rxb->page);
@@ -528,8 +531,8 @@ static void iwl_pcie_rx_allocator(struct iwl_trans *trans)
             }
             
             /* move the allocated entry to the out list */
-            TAILQ_INSERT_HEAD(&local_allocated, rxb, list);
             TAILQ_REMOVE(&local_empty, rxb, list);
+            TAILQ_INSERT_TAIL(&local_allocated, rxb, list);
             i++;
         }
         
@@ -539,17 +542,14 @@ static void iwl_pcie_rx_allocator(struct iwl_trans *trans)
             pending = OSAddAtomic(-rba->req_pending, &rba->req_pending);
             IWL_DEBUG_RX(trans, "Pending allocation requests = %d\n", pending);
         }
-        
         //IOSimpleLockLock(rba->lock);
         /* add the allocated rbds to the allocator allocated list */
         if (!TAILQ_EMPTY(&local_allocated))
-            TAILQ_CONCAT(&local_allocated, &rba->rbd_allocated, list);
+            TAILQ_CONCAT(&rba->rbd_allocated, &local_allocated, list);
         
         /* get more empty RBDs for current pending requests */
-        if (!TAILQ_EMPTY(&rba->rbd_empty)) {
-            TAILQ_CONCAT(&rba->rbd_empty, &local_empty, list);
-            TAILQ_INIT(&rba->rbd_empty);
-        }
+        if (!TAILQ_EMPTY(&rba->rbd_empty))
+            TAILQ_CONCAT(&local_empty, &rba->rbd_empty, list);
 
         //IOSimpleLockUnlock(rba->lock);
         
@@ -559,7 +559,7 @@ static void iwl_pcie_rx_allocator(struct iwl_trans *trans)
     //IOSimpleLockLock(rba->lock);
     /* return unused rbds to the allocator empty list */
     if (!TAILQ_EMPTY(&local_empty))
-        TAILQ_CONCAT(&local_empty, &rba->rbd_empty, list);
+        TAILQ_CONCAT(&rba->rbd_empty, &local_empty, list);
     //IOSimpleLockUnlock(rba->lock);
 }
 
@@ -594,8 +594,8 @@ static void iwl_pcie_rx_allocator_get(struct iwl_trans *trans, struct iwl_rxq *r
     for (i = 0; i < RX_CLAIM_REQ_ALLOC; i++) {
         /* Get next free Rx buffer, remove it from free list */
         struct iwl_rx_mem_buffer *rxb = TAILQ_FIRST(&rba->rbd_allocated);
-        TAILQ_INSERT_HEAD(&rxq->rx_free, rxb, list);
         TAILQ_REMOVE(&rba->rbd_allocated, rxb, list);
+        TAILQ_INSERT_TAIL(&rxq->rx_free, rxb, list);
     }
     //IOSimpleLockUnlock(rba->lock);
     
@@ -1078,7 +1078,7 @@ static void iwl_pcie_rx_reuse_rbd(struct iwl_trans *trans, struct iwl_rx_mem_buf
          Allocator has another 6 from pool for the request completion*/
         //IOSimpleLockLock(rba->lock);
         if (!TAILQ_EMPTY(&rxq->rx_used)) {
-            TAILQ_CONCAT(&rxq->rx_used, &rba->rbd_empty, list);
+            TAILQ_CONCAT(&rba->rbd_empty, &rxq->rx_used, list);
             TAILQ_INIT(&rxq->rx_used);
         }
         //IOSimpleLockUnlock(rba->lock);
@@ -1307,7 +1307,7 @@ restart:
             /* Add the remaining empty RBDs for allocator use */
             //IOSimpleLockLock(rba->lock);
             if (!TAILQ_EMPTY(&rxq->rx_used)) {
-                TAILQ_CONCAT(&rxq->rx_used, &rba->rbd_empty, list);
+                TAILQ_CONCAT(&rba->rbd_empty, &rxq->rx_used, list);
                 TAILQ_INIT(&rxq->rx_used);
             }
             //IOSimpleLockUnlock(rba->lock);

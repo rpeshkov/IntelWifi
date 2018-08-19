@@ -631,9 +631,7 @@ static void iwlagn_pass_packet_to_mac80211(struct iwl_priv *priv,
 
     IO80211Controller* dev = static_cast<IO80211Controller*>(priv->trans->dev);
     
-    
-    
-    mbuf_t p = rxb->_page;
+    mbuf_t p = rxb_steal_page(rxb);
     dev->getNetworkInterface()->inputPacket(p);
     
     
